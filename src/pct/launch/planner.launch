@@ -1,0 +1,5 @@
+<launch>
+    <arg name="pkg_path" value="$(find pct)"/>
+    <rosparam command="load" file="$(arg pkg_path)/config/planner.yaml"/>
+    <include file="$(find planner_viz)/launch/planner_viz.launch"/>
+</launch>
