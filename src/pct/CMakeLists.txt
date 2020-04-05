@@ -17,20 +17,8 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 ## System dependencies are found with CMake's conventions
-# find_package(CGAL REQUIRED)
-# find_package(Qt5OpenGL REQUIRED)
-# find_package(Qt5Svg REQUIRED)
-# # find_package(VTK REQUIRED)
+find_package(Boost 1.54.0 REQUIRED COMPONENTS system filesystem)
 
-
-# #CGAL_Qt5 is needed for the drawing and CGAL_Core is needed for this special Kernel.
-# find_package(CGAL REQUIRED COMPONENTS Qt5 Core)
-# if(CGAL_FOUND AND CGAL_Qt5_FOUND)
-#   #required to use basic_viewer
-#   add_definitions(-DCGAL_USE_BASIC_VIEWER -DQT_NO_KEYWORDS)
-# else()
-#   message("ERROR: this program requires CGAL and CGAL_Qt5 and will not be compiled.")
-# endif()
 find_package(CGAL REQUIRED)
 if ( CGAL_FOUND )
   message(STATUS "CGAL_FOUND")
@@ -220,22 +208,26 @@ include
   /opt/ros/kinetic/include/kdl
   /opt/ros/kinetic/include/urdf
   /opt/ros/kinetic/include
-  ${CGAL_USE_FILE} 
 #   ${VTK_USE_FILE}
   CGAL_CreateSingleSourceCGALProgram
+  /opt/gurobi901/linux64/
+  /opt/gurobi901/linux64/include
+  /opt/gurobi901/linux64/bin
 )
 
 link_directories(${libnabo_SOURCE_DIR}/include/libnabo/build/libnabo.a
                 ${libigl_SOURCE_DIR}/include/libigl/libigl.a
                 /opt/ros/kinetic/lib
-                /usr/local/lib)
+                /usr/local/lib
+                /opt/gurobi901/linux64/lib/
+                )
 
 
 set(DEP_LIBS ${catkin_LIBRARIES}
               /usr/local/lib/libfcl.so ${CCD_LIBRARIES} ${EIGEN3_LIBRARIES}
               /usr/lib/x86_64-linux-gnu/libboost_iostreams.a
-#               /usr/lib/x86_64-linux-gnu/libboost_system.a
-#               /usr/lib/x86_64-linux-gnu/libboost_filesystem.a
+              /usr/lib/x86_64-linux-gnu/libboost_system.a
+              /usr/lib/x86_64-linux-gnu/libboost_filesystem.a
               /usr/lib/x86_64-linux-gnu/libutil.a
               /usr/lib/x86_64-linux-gnu/libboost_thread.a
               ${libnabo_SOURCE_DIR}/include/libnabo/build/libnabo.a gomp
@@ -244,8 +236,9 @@ set(DEP_LIBS ${catkin_LIBRARIES}
               ${nlopt_ADDED_LIBS}
               ${WITH_CGAL_Core} ${WITH_CGAL_ImageIO} ${WITH_CGAL_Qt5}
               gmp
-#               ${QT_LIBRARIES}
-#               ${VTK_LIBRARIES}
+              ${Boost_LIBRARIES}
+              /opt/gurobi901/linux64/lib/libgurobi_g++5.2.a
+              /opt/gurobi901/linux64/lib/libgurobi90.so
                       )
 
 add_executable(main src/main.cpp)

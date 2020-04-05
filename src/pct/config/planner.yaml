@@ -14,9 +14,9 @@ cvrg_path_parameters:
 
     ## THESE PARAMS WILL CHANGE THE SPACING OF THE POINTS OF THE PATH
     # this param skips the hatching lines, it needs to be tweaked based on the sanding tool diameter
-    skip_hatching_lines: &skip_hatching_lines 0, # UNIT LESS (ROUGH ESTIMATE - 1 UNIT IS 1 centimeter)
+    skip_hatching_lines: &skip_hatching_lines 6, # UNIT LESS (ROUGH ESTIMATE - 1 UNIT IS 1 centimeter)
      # this param skips points along the hatching direction - DEFAULT VALUE 0
-    skip_points_hatching_lines: 6, # UNIT LESS (ROUGH ESTIMATE - 1 UNIT IS 1 centimeter)
+    skip_points_hatching_lines: 0, # UNIT LESS (ROUGH ESTIMATE - 1 UNIT IS 1 centimeter)
     # this param skips points orthogonal to the hatching direction - DEFAULT VALUE 0
     skip_points_orthogonal_lines: *skip_hatching_lines, # UNIT LESS (ROUGH ESTIMATE - 1 UNIT IS 1 centimeter)
     
@@ -35,6 +35,12 @@ cvrg_path_parameters:
 cvrg_file_paths:
   {
     cvrg_path: "/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/csv/fender.csv", # Path to save the path
+    joint_states: "/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/csv/fender_states.csv", # Path to save the trajectory
     mesh_path: "/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/meshes/fender_bin.stl",
     mesh_viz_path: "package://pct/data/meshes/fender_bin.stl"
   }
+
+cvrg_tf_param:
+    {
+        world_T_part: [ 0.5,0,0,0,0, !!python/object/apply:eval [ 90*3.14/180 ] ] # x,y,z,rx,ry,rz
+    }

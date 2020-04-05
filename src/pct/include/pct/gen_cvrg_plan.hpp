@@ -269,6 +269,16 @@ Eigen::MatrixXd gen_cvrg_plan(){
     // Convert back to metres
     tool_path.block(0,0,tool_path.rows(),3) = tool_path.block(0,0,tool_path.rows(),3)/1000;
     
+    // Apply transformation from ros parameter server
+    std::vector<double> tf;
+    ros::param::get("/cvrg_tf_param/world_T_part",tf);
+    Eigen::VectorXd tf_eigen(6);
+    tf_eigen<< tf[0],tf[1],tf[2],tf[3],tf[4],tf[5];
+    Eigen::Matrix4d world_T_part = Eigen::Matrix4d::Identity();
+    world_T_part.block(0,0,3,3) = rtf::eul2rot(tf_eigen.segment(3,3).transpose(),"XYZ");
+    world_T_part.block(0,3,3,1) = tf_eigen.segment(0,3);
+    tool_path = rtf::apply_transformation_to_waypoints(tool_path,world_T_part);
+
     // Compute Average distance between each point
     double avg_dist = 0;
     for(int i=0; i<tool_path.rows()-1;++i){

@@ -146,24 +146,6 @@ std::string rtf::validate_seq(std::string seq)
 
 ///////////////////////////////////////////////////////////
 
-Eigen::Matrix3d rtf::eul2rot(Eigen::MatrixXd eul_angles, std::string seq)
-{
-	seq = rtf::validate_seq(seq);
-	Eigen::Matrix3d rot_mat = Eigen::Matrix3d::Identity();
-	for (int i=0; i<3; ++i)
-	{
-		if(seq[i]=='X' || seq[i]=='x')
-			rot_mat = rot_mat * Eigen::AngleAxisd(eul_angles(0,i), Eigen::Vector3d::UnitX());
-		else if(seq[i]=='Y' || seq[i]=='y')
-			rot_mat = rot_mat * Eigen::AngleAxisd(eul_angles(0,i), Eigen::Vector3d::UnitY());			
-		else if(seq[i]=='Z' || seq[i]=='z')
-			rot_mat = rot_mat * Eigen::AngleAxisd(eul_angles(0,i), Eigen::Vector3d::UnitZ());					
-	}
-	return rot_mat; 
-}
-
-///////////////////////////////////////////////////////////
-
 Eigen::MatrixXd rtf::rot2eul(Eigen::Matrix3d rot_mat, std::string seq)
 {
 	seq = rtf::validate_seq(seq);
@@ -274,6 +256,39 @@ Eigen::MatrixXd rtf::eul2bxbybz(Eigen::MatrixXd eul_angles)
 		bxbybz.row(i) << R(0,0),R(1,0),R(2,0),R(0,1),R(1,1),R(2,1),R(0,2),R(1,2),R(2,2);
 	}
 	return bxbybz;
+}
+
+///////////////////////////////////////////////////////////
+
+Eigen::MatrixXd rtf::eul2bxbybz(Eigen::MatrixXd eul_angles, std::string seq)
+{
+    // input euler alpha,beta,gamma for ZYX (in radians)
+    Eigen::MatrixXd bxbybz = Eigen::MatrixXd::Constant(eul_angles.rows(),9,0);
+    for (unsigned int i=0;i<eul_angles.rows();++i)
+    {
+        Eigen::Matrix3d R = rtf::eul2rot(eul_angles.row(i),seq);
+        std::cout<< R << "\n";
+        bxbybz.row(i) << R(0,0),R(1,0),R(2,0),R(0,1),R(1,1),R(2,1),R(0,2),R(1,2),R(2,2);
+    }
+    return bxbybz;
+}
+
+///////////////////////////////////////////////////////////
+
+Eigen::Matrix3d rtf::eul2rot(Eigen::MatrixXd eul_angles, std::string seq)
+{
+    seq = rtf::validate_seq(seq);
+    Eigen::Matrix3d rot_mat = Eigen::Matrix3d::Identity();
+    for (int i=0; i<3; ++i)
+    {
+        if(seq[i]=='X' || seq[i]=='x')
+            rot_mat = rot_mat * Eigen::AngleAxisd(eul_angles(0,i), Eigen::Vector3d::UnitX());
+        else if(seq[i]=='Y' || seq[i]=='y')
+            rot_mat = rot_mat * Eigen::AngleAxisd(eul_angles(0,i), Eigen::Vector3d::UnitY());           
+        else if(seq[i]=='Z' || seq[i]=='z')
+            rot_mat = rot_mat * Eigen::AngleAxisd(eul_angles(0,i), Eigen::Vector3d::UnitZ());                   
+    }
+    return rot_mat; 
 }
 
 ///////////////////////////////////////////////////////////

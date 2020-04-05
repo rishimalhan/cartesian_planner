@@ -5,7 +5,14 @@
 
     <node pkg="tf" type="static_transform_publisher" name="map_T_world" args="0 0 0 0 0 0 /map /world 10" />
 
+    <!-- robot descriptions and visualizations -->          
+    <param name="robot_description"
+            command="$(find xacro)/xacro $(find pct)/data/urdf/iiwa7.urdf" />        
+
+    <!-- Robot TF publishers from the joint_states topics -->
+    <node pkg="robot_state_publisher" name="bot_state_pub" type="state_publisher"/>
     <node pkg="planner_viz" name="viz_wp" type="viz_wp" output="screen"/>
     <node pkg="planner_viz" name="viz_stl" type="viz_stl" output="screen"/>
     <node pkg="planner_viz" name="viz_path" type="viz_path" output="screen"/>
+    <node pkg="planner_viz" name="viz_robot" type="viz_robot" output="screen"/>
 </launch>

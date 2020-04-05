@@ -210,6 +210,9 @@ target_link_libraries(viz_stl ${DEP_LIBS})
 add_executable(viz_path src/viz_path.cpp)
 target_link_libraries(viz_path ${DEP_LIBS})
 
+add_executable(viz_robot src/viz_robot.cpp)
+target_link_libraries(viz_robot ${DEP_LIBS})
+
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
 #   src/${PROJECT_NAME}/pct.cpp

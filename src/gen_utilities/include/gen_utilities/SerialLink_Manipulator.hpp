@@ -45,7 +45,7 @@
 
 namespace SerialLink_Manipulator{
 
-
+// Jacobian Sequence is X, Y, Z, Rx, Ry, Rz
 
 class SerialLink_Manipulator
 {
