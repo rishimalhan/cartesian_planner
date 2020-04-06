@@ -9,6 +9,16 @@
     <param name="robot_description"
             command="$(find xacro)/xacro $(find pct)/data/urdf/iiwa7.urdf" />        
 
+
+    <!-- Sander Tool Plot -->
+    <param name="rob_tool" command="$(find xacro)/xacro $(find pct)/data/tools/sander.xacro"/>
+    <node pkg="robot_state_publisher" type="robot_state_publisher" name="tool_publ">
+        <remap from="robot_description" to="rob_tool" />
+    </node>
+    <node pkg="tf" name="rob_T_tool" type="static_transform_publisher" args=" 0 0 0 0 0 0 /iiwa_link_ee /tool_origin 30"/>
+
+
+
     <!-- Robot TF publishers from the joint_states topics -->
     <node pkg="robot_state_publisher" name="bot_state_pub" type="state_publisher"/>
     <node pkg="planner_viz" name="viz_wp" type="viz_wp" output="screen"/>

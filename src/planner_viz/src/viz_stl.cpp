@@ -18,16 +18,16 @@ void cvrg_update(const std_msgs::Bool::ConstPtr& msg){
 int main(int argc, char** argv){
     ros::init(argc,argv,"viz_stl");
     ros::NodeHandle wp_handler;
-    ros::Subscriber wp_sub = wp_handler.subscribe<std_msgs::Bool>("cvrg_plan",1000,cvrg_update);
+    ros::Subscriber wp_sub = wp_handler.subscribe<std_msgs::Bool>("cvrg_status",1000,cvrg_update);
     rviz_visual_tools::RvizVisualToolsPtr visual_tools_ (new rviz_visual_tools::RvizVisualTools("world","/mesh"));
     visual_tools_->enableBatchPublishing(true);
     std::string stl_path;
-    ros::param::get("/cvrg_file_paths/mesh_viz_path",stl_path);
     
     ros::Rate loop_rate(1000);
     while(ros::ok()){
         if (doUpdate){
             ROS_INFO("Updating Mesh on Display.....");
+            ros::param::get("/cvrg_file_paths/mesh_viz_path",stl_path);
             visual_tools_->deleteAllMarkers();
             // Get Part Transform
             std::vector<double> tf;

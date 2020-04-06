@@ -17,16 +17,16 @@ void cvrg_update(const std_msgs::Bool::ConstPtr& msg){
 int main(int argc, char** argv){
     ros::init(argc,argv,"viz_wp");
     ros::NodeHandle wp_handler;
-    ros::Subscriber wp_sub = wp_handler.subscribe<std_msgs::Bool>("cvrg_plan",1000,cvrg_update);
+    ros::Subscriber wp_sub = wp_handler.subscribe<std_msgs::Bool>("cvrg_status",1000,cvrg_update);
     rviz_visual_tools::RvizVisualToolsPtr visual_tools_ (new rviz_visual_tools::RvizVisualTools("world","/wp"));
     visual_tools_->enableBatchPublishing(true);
     std::string path_path;
-    ros::param::get("/cvrg_file_paths/cvrg_path",path_path);
 
     ros::Rate loop_rate(1000);
     while(ros::ok()){
         if (doUpdate){
             ROS_INFO("Updating Waypoints on Display.....");
+            ros::param::get("/cvrg_file_paths/cvrg_path",path_path);
             visual_tools_->deleteAllMarkers();
             Eigen::Matrix3d rot_mat;
             Eigen::MatrixXd path = file_rw::file_read_mat(path_path);

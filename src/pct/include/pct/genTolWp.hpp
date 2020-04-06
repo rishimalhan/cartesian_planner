@@ -21,25 +21,23 @@ std::vector<Eigen::MatrixXd> gen_wp_with_tolerance(const Eigen::MatrixXd& tolera
     for (int i=0; i<path.rows();++i){
         Eigen::MatrixXd wp_subset;
         int ctr = 0;
-        for (double angle = 0; angle<tolerances(i,0)/2; angle+=resolution){
-            if (angle-0<1e-7){
-                wp_subset.conservativeResize(ctr+1,12);
-                wp_subset.block(ctr,0,1,3) = path.block(i,0,1,3);
-                wp_subset.block(ctr,3,1,3) = path.block(i,3,1,3);
-                wp_subset.block(ctr,6,1,3) = path.block(i,6,1,3);
-                wp_subset.block(ctr,9,1,3) = path.block(i,9,1,3);
-                ctr += 1;
-                continue;
-            }
+        // Put the first waypoint
+        wp_subset.conservativeResize(ctr+1,12);
+        wp_subset.block(ctr,0,1,3) = path.block(i,0,1,3);
+        wp_subset.block(ctr,3,1,3) = path.block(i,3,1,3);
+        wp_subset.block(ctr,6,1,3) = path.block(i,6,1,3);
+        wp_subset.block(ctr,9,1,3) = path.block(i,9,1,3);
+        ctr += 1;
+        for (double angle = 0; angle<=tolerances(i,0)/2; angle+=resolution){
             // Alternately apply rotation about Z axis
             for(int sign=-1; sign<2; sign+=2){
                 Eigen::Matrix3d rot;
-                rot<< path.block(0,0,3,1).transpose(),
-                        path.block(0,1,3,1).transpose(),
-                        path.block(0,2,3,1).transpose();
+                rot.block(0,0,3,1) = path.block(i,3,1,3).transpose();
+                rot.block(0,1,3,1) = path.block(i,6,1,3).transpose();
+                rot.block(0,2,3,1) = path.block(i,9,1,3).transpose();
                 Eigen::Matrix4d p_T_pp = Eigen::Matrix4d::Identity();
                 p_T_pp.block(0,0,3,3) = rtf::rot_z(sign*angle);
-                Eigen::Matrix4d w_T_pp = rtf::hom_T(path.block(0,0,1,3).transpose(),rot) * p_T_pp; // W_T_p' = W_T_p * P_T_p'
+                Eigen::Matrix4d w_T_pp = rtf::hom_T(path.block(i,0,1,3).transpose(),rot) * p_T_pp; // W_T_p' = W_T_p * P_T_p'
                 wp_subset.conservativeResize(ctr+1,12);
                 wp_subset.block(ctr,0,1,3) = w_T_pp.block(0,3,3,1).transpose();
                 wp_subset.block(ctr,3,1,3) = w_T_pp.block(0,0,3,1).transpose();

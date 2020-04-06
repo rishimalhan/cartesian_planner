@@ -1,53 +1,6 @@
-// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// AUTHOR: RISHI MALHAN
-// CENTER FOR ADVANCED MANUFACTURING
-// UNIVERSITY OF SOUTHERN CALIFORNIA
-// EMAIL: rmalhan@usc.edu
-// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-// Function is an implementation of a quadratic program for finding an inverse kinematics solution for a given target,
-//  previous configuration and constraints imposed.
-#include <nlopt.hpp>
-#include <Eigen/Eigen>
-#include <iostream>
-#include <gen_utilities/SerialLink_Manipulator.hpp>
-#include <gen_utilities/Data_Format_Mapping.hpp>
-
-
-// Declarations
-// Class numIK starts here
-class numIK{
-private:
-    // Optimization Variables
-    nlopt::opt optimizer;
-    nlopt::algorithm alg_type;
-    int OptVarDim;  // Decision variable dimension
-    double optXtolRel;  // Relative tolerance for stopping condition
-    double gradH;   // Finite difference step size
-    double f_val;
-    bool frst_pt;
-    bool status;
-    std::vector<double> OptVarlb;   // Lower Bounds
-    std::vector<double> OptVarub;   // Upper Bounds
-    SerialLink_Manipulator::SerialLink_Manipulator* robot;
-    KDL::Frame FK_tcp;
-    Eigen::VectorXd target;
-public:
-    numIK(SerialLink_Manipulator::SerialLink_Manipulator*);
-    ~numIK();
-    double obj_func(const std::vector<double>&, std::vector<double>&);
-    double err_func(const std::vector<double>&);
-    Eigen::MatrixXd solveIK(const Eigen::VectorXd&, const Eigen::VectorXd&);
-};
-
-
-
+#include <pct/numIK.hpp>
 
 // Definitions
-
-
-
-
 // defualt nlopt fuctions begin
 // Error function only minimizes the obejective. So for max use negative.
 double err_func_gateway(const std::vector<double>& x, std::vector<double>& grad, void* data) 
@@ -64,6 +17,10 @@ double err_func_gateway(const std::vector<double>& x, std::vector<double>& grad,
 numIK::numIK(SerialLink_Manipulator::SerialLink_Manipulator* _robot){
     robot = _robot;
     OptVarDim = robot->NrOfJoints;
+    init_guess.resize(OptVarDim,1);
+    // Default initial guess
+    for (int i=0; i<OptVarDim; ++i)
+        init_guess(i,0) = 0;
 
     //choose optimizer
     // alg_type = nlopt::LN_NEWUOA;
@@ -130,9 +87,10 @@ double numIK::err_func(const std::vector<double>& x)
 
 
 //////////////////////// MAIN FUNCTION //////////////////////////////////////////////////
-Eigen::MatrixXd numIK::solveIK(const Eigen::VectorXd& init_guess, const Eigen::VectorXd& _target){
+Eigen::MatrixXd numIK::solveIK(const Eigen::VectorXd& _target){
     target = _target;
     Eigen::MatrixXd solution(OptVarDim,1);
+    status = true;
     
     std::vector<double> iterator(OptVarDim);
     for (int i=0; i<OptVarDim; ++i)
@@ -149,7 +107,7 @@ Eigen::MatrixXd numIK::solveIK(const Eigen::VectorXd& init_guess, const Eigen::V
         std::cout << "nlopt failed: " << e.what() << std::endl;
     }
 
-    if (!optSuccess || f_val > 1e-4)
+    if (!optSuccess || f_val > 1e-6)
         status = false;
 
     for (int i=0; i < OptVarDim; i++)

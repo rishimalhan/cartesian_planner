@@ -13,6 +13,9 @@
 // First element in the list is a set of root nodes. 
 // All the other elements form identical tree structures from each root node. 
 
+#ifndef __GEN_CVRG_PLAN_HPP__
+#define __GEN_CVRG_PLAN_HPP__
+
 #include <iostream>
 #include <ros/ros.h>
 #include <ros/package.h>
@@ -22,7 +25,7 @@
 #include <gen_utilities/transformation_utilities.hpp>
 #include <gen_utilities/utilities.hpp>
 
-void removeRow(Eigen::MatrixXd& matrix, unsigned int rowToRemove)
+static void removeRow(Eigen::MatrixXd& matrix, unsigned int rowToRemove)
 {
     unsigned int numRows = matrix.rows()-1;
     unsigned int numCols = matrix.cols();
@@ -35,8 +38,8 @@ void removeRow(Eigen::MatrixXd& matrix, unsigned int rowToRemove)
 
 
 // STANDARD FOR WAYPOINT: Z AXIS IS NORMAL. X AXIS IS DIRECTION OF HEADING OF TOOL. Y AXIS IS COMPUTED.
-Eigen::MatrixXd gen_cvrg_plan(){
-    std::cout<< "COMPUTING SCANNING TOOL PATH...\n";
+static Eigen::MatrixXd gen_cvrg_plan(){
+    ROS_INFO("COMPUTING SCANNING TOOL PATH......");
     bool scan_ori;
     bool scan_normals;
     double start_hatch_angle;
@@ -120,7 +123,7 @@ Eigen::MatrixXd gen_cvrg_plan(){
     f = f.array()+1;    //NOTE : adding 1 make make start index as 1... this is compatible for rest of the code 
     Eigen::MatrixXd fillpts;
 
-    std::cout << "STL V SIZE: " << v.rows() << "," << v.cols() << std::endl;
+    ROS_INFO("STL V SIZE: %d, %d", (int)v.rows(), (int)v.cols());
 
     //////////////////////////////////////
     // xmax and ymax to get the grid size
@@ -145,7 +148,7 @@ Eigen::MatrixXd gen_cvrg_plan(){
     double xmin_boundary = v.block(0,0,v.rows(),1).minCoeff();
     double ymin_boundary = v.block(0,1,v.rows(),1).minCoeff();
 
-    std::cout << "Bounds: " << xmax << "," << ymax << "," << xmin << "," << ymin << std::endl;
+    ROS_INFO("Bounds: %d, %d, %d, %d", (int)xmax, (int)ymax, (int)xmin, (int)ymin);
     //////////////////////////////////////////////////////////////////////////////
     // finding thickness of shell part and number of layers required for printing
     //////////////////////////////////////////////////////////////////////////////
@@ -202,7 +205,7 @@ Eigen::MatrixXd gen_cvrg_plan(){
         double xmin_boundary = fillpts.block(0,0,fillpts.rows(),1).minCoeff() + outer_boundary_subtraction_x_dir;
         double ymin_boundary = fillpts.block(0,1,fillpts.rows(),1).minCoeff() + outer_boundary_subtraction_y_dir;
 
-        std::cout << "Boundary Bounds: " << xmin_boundary << "," << xmax_boundary << "," << ymin_boundary << "," << ymax_boundary << std::endl;
+        ROS_INFO("Boundary Bounds: %d, %d, %d, %d", (int)xmin_boundary, (int)xmax_boundary, (int)ymin_boundary, (int)ymax_boundary);
 
         ROS_INFO("Truncating Path for Given Boundary distances...");
 
@@ -264,14 +267,15 @@ Eigen::MatrixXd gen_cvrg_plan(){
         // tool_path_strt_idx = tool_path_strt_idx + layer_tool_path.rows();
     }
 
-    std::cout << "tool_path size: " << tool_path.rows() << std::endl;
+    ROS_INFO("tool_path size: %d", (int)tool_path.rows());
 
     // Convert back to metres
     tool_path.block(0,0,tool_path.rows(),3) = tool_path.block(0,0,tool_path.rows(),3)/1000;
     
     // Apply transformation from ros parameter server
-    std::vector<double> tf;
-    ros::param::get("/cvrg_tf_param/world_T_part",tf);
+    std::vector<double> tf; tf.clear();
+    if(!ros::param::get("/cvrg_tf_param/world_T_part",tf))
+        std::cout<< "Unable to Obtain part tf\n";
     Eigen::VectorXd tf_eigen(6);
     tf_eigen<< tf[0],tf[1],tf[2],tf[3],tf[4],tf[5];
     Eigen::Matrix4d world_T_part = Eigen::Matrix4d::Identity();
@@ -293,3 +297,4 @@ Eigen::MatrixXd gen_cvrg_plan(){
 
     return tool_path;
 }
+#endif

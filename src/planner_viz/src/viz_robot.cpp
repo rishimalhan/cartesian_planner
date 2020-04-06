@@ -19,7 +19,7 @@ int main(int argc, char** argv){
 
     // Fire up all the publisher to publish the joint state values
     ros::Publisher config_publ = rob_handler.advertise<sensor_msgs::JointState>( "joint_states", 1000 );
-    ros::Subscriber wp_sub = rob_handler.subscribe<std_msgs::Bool>("cvrg_plan",1000,cvrg_update);
+    ros::Subscriber wp_sub = rob_handler.subscribe<std_msgs::Bool>("cvrg_status",1000,cvrg_update);
 
     std::string traj_path;
     ros::param::get("/cvrg_file_paths/joint_states",traj_path);
@@ -32,12 +32,18 @@ int main(int argc, char** argv){
     
     joint_config.position.resize(traj.cols());
 
-    ros::Rate loop_rate(100);
+    ros::Rate loop_rate(1000);
+    int frequency;
     while(ros::ok()){
         for (int i=0; i<traj.rows();++i){
+            if(!ros::param::get("/viz_param/rob_speed",frequency))
+                ROS_INFO("Unable to obtain robot rate");
+            loop_rate = ros::Rate(frequency);
             if (doUpdate){
                 ROS_INFO("Updating Trajectory on Display.....");
-                Eigen::MatrixXd traj = file_rw::file_read_mat(traj_path);
+                ros::param::get("/cvrg_file_paths/joint_states",traj_path);
+                traj = file_rw::file_read_mat(traj_path);
+                ROS_INFO("Size of Trajectory: %d", (int)traj.rows());
                 doUpdate = false;
                 break;
             }
