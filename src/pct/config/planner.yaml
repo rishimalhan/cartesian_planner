@@ -42,7 +42,7 @@ cvrg_file_paths:
   {
     cvrg_path: "/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/csv/fender.csv", # Path to save the path
     success_flags: "/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/csv/success_flags.csv", # Path to save the path
-    joint_states: "/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/csv/joint_states.csv", # Path to save the trajectory
+    joint_states: "/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/csv/fender_states.csv", # Path to save the trajectory
     mesh_path: "/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/meshes/fender_bin.stl",
     mesh_viz_path: "package://pct/data/meshes/fender_bin.stl"
   }

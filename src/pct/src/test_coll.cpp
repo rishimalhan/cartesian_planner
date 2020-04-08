@@ -25,14 +25,17 @@ int main(){
                     0,1,0,0,
                     0,0,1,0,
                     0,0,0,1;
-    std::string wp_path = ros::package::getPath("pct") + "/data/meshes/Heli_Blade.stl";
+    std::string wp_path = ros::package::getPath("pct") + "/data/meshes/fender_bin.stl";
     wm.addWorkpiece(wp_path, robot_T_part);
-    Eigen::MatrixXd jt_config(1,6);
+    Eigen::MatrixXd jt_config(6,1);
     jt_config << 0,0,0,0,0,0;
     std::vector<Eigen::MatrixXd> fk = robot.get_robot_FK_all_links( jt_config );
+    wm.prepareSelfCollisionPatch(fk);
+    
     for (int i=0; i<fk.size(); ++i)
         std::cout<< fk[i] << "\n";
-    std::cout<< "Collision Status: " << wm.inCollision(robot.get_robot_FK_all_links( jt_config )) << "\n";
-    std::cout<< "Penetration Depth: " << wm.getDistance(robot.get_robot_FK_all_links( jt_config )) << "\n";
+    std::cout<< "Computing Collision\n";
+    std::cout<< "Collision Status: " << wm.inCollision(fk) << "\n";
+    std::cout<< "Penetration Depth: " << wm.getDistance(fk) << "\n";
     return 0;
 }

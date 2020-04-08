@@ -19,14 +19,15 @@ find_package(catkin REQUIRED COMPONENTS
 ## System dependencies are found with CMake's conventions
 find_package(Boost 1.54.0 REQUIRED COMPONENTS system filesystem)
 
-find_package(CGAL REQUIRED)
-if ( CGAL_FOUND )
-  message(STATUS "CGAL_FOUND")
-else()
-    message(STATUS "This program requires the CGAL library, and will not be compiled.")
-endif()
+# find_package(CGAL REQUIRED)
+# if ( CGAL_FOUND )
+#   message(STATUS "CGAL_FOUND")
+# else()
+#     message(STATUS "This program requires the CGAL library, and will not be compiled.")
+# endif()
+# find_package(GMP REQUIRED)
 
-find_package(GMP REQUIRED)
+
 find_package(orocos_kdl REQUIRED)
 find_package(Boost 1.54.0 REQUIRED COMPONENTS system filesystem)
 find_package(gen_utilities REQUIRED)
@@ -208,18 +209,18 @@ include
   /opt/ros/kinetic/include/kdl
   /opt/ros/kinetic/include/urdf
   /opt/ros/kinetic/include
-#   ${VTK_USE_FILE}
-  CGAL_CreateSingleSourceCGALProgram
-  /opt/gurobi901/linux64/
-  /opt/gurobi901/linux64/include
-  /opt/gurobi901/linux64/bin
+
+#   CGAL_CreateSingleSourceCGALProgram
+#   /opt/gurobi901/linux64/
+#   /opt/gurobi901/linux64/include
+#   /opt/gurobi901/linux64/bin
 )
 
 link_directories(${libnabo_SOURCE_DIR}/include/libnabo/build/libnabo.a
                 ${libigl_SOURCE_DIR}/include/libigl/libigl.a
                 /opt/ros/kinetic/lib
                 /usr/local/lib
-                /opt/gurobi901/linux64/lib/
+#                 /opt/gurobi901/linux64/lib/
                 )
 
 
@@ -234,15 +235,18 @@ set(DEP_LIBS ${catkin_LIBRARIES}
               orocos-kdl kdl_parser urdf
               ${Boost_LIBRARIES}
               ${nlopt_ADDED_LIBS}
-              ${WITH_CGAL_Core} ${WITH_CGAL_ImageIO} ${WITH_CGAL_Qt5}
-              gmp
+#               ${WITH_CGAL_Core} ${WITH_CGAL_ImageIO} ${WITH_CGAL_Qt5}
+#               gmp
               ${Boost_LIBRARIES}
-              /opt/gurobi901/linux64/lib/libgurobi_g++5.2.a
-              /opt/gurobi901/linux64/lib/libgurobi90.so
+#               /opt/gurobi901/linux64/lib/libgurobi_g++5.2.a
+#               /opt/gurobi901/linux64/lib/libgurobi90.so
                       )
 
 add_executable(main src/main.cpp src/numIK.cpp)
 target_link_libraries(main ${DEP_LIBS})
+
+add_executable(test_coll src/test_coll.cpp)
+target_link_libraries(test_coll ${DEP_LIBS})
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}

@@ -427,6 +427,7 @@ namespace WM{
 		// return inCollision(convertEigen2FCLFrames(link_Transforms));
 
 		return inSelfCollision(link_Transforms) || inEnvCollision(link_Transforms)|| inWorkpieceCollision(link_Transforms);
+		// return inWorkpieceCollision(link_Transforms);
 		// std::cout << "# of T: " << link_Transforms.size() << std::endl;
 		// return inEnvCollision(link_Transforms)|| inWorkpieceCollision(link_Transforms);
 		// return false;
@@ -523,7 +524,6 @@ namespace WM{
 		return getDistance( convertEigen2FCLFrames(link_Transforms) );
 	};
 	double WM::getDistance(const std::vector<fcl::Transform3<double>> link_Transforms){
-		
 		// std::cout << "bool coll pairs: " << std::endl;
 		// for (uint i =0; i<RCp->selfCollisionPair[0].size(); ++i){
 		// 	std::cout << RCp->selfCollisionPair[0][i].first << ", " << RCp->selfCollisionPair[0][i].second << std::endl;			
@@ -536,9 +536,12 @@ namespace WM{
 		getEnvDistance(link_Transforms);
 		getWorkpieceDistance(link_Transforms);
 
+		for(int i=0; i<wpDistanceList.size(); ++i)
+			std::cout<< wpDistanceList[i] << " , ";
+		std::cout<< "\n";
+
 		for(int i = 0; i < RCp->robotLinks.size(); ++i)
 		{
-			
 			// if(selfDistanceList.size()){
 			// 	if(selfDistanceList[i].second<0){
 
@@ -558,7 +561,6 @@ namespace WM{
 			// 		}
 			// 	}				
 			// }
-
 			if(envDistanceList.size()){
 				if(envDistanceList[i].second<0){
 					// std::cout << "link: " << i << ", env dist: " << envDistanceList[i] << std::endl;

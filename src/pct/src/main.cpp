@@ -11,13 +11,14 @@
 #include <Eigen/Eigen>
 #include <gen_utilities/Data_Format_Mapping.hpp>
 #include <boost/date_time.hpp>
+#include <gen_utilities/world_manager.hpp>
 #include <pct/ss_searches.hpp>
 
 
 
 int main(int argc, char** argv){
-    double resolution = 10*M_PI / 180;
-    double angle = 100*M_PI / 180;
+    double resolution = 36*M_PI / 180;
+    double angle = 360*M_PI / 180;
 
 
     std::string rob_name = "iiwa7";
@@ -35,13 +36,13 @@ int main(int argc, char** argv){
     ros::NodeHandle main_handler;
     ros::Publisher cvrg_pub = main_handler.advertise<std_msgs::Bool>("cvrg_status",1000);
 
-    // std_msgs::Bool msg;
-    // msg.data = true;
+    // std_msgs::Bool msg1;
+    // msg1.data = true;
     // ROS_INFO("Publishing Message");
-    // ros::Rate loop_rate(100);
-    // for(int i=0; i<100; ++i){
-    //     cvrg_pub.publish(msg);
-    //     loop_rate.sleep();
+    // ros::Rate loop_rate1(1000);
+    // for(int i=0; i<1000; ++i){
+    //     cvrg_pub.publish(msg1);
+    //     loop_rate1.sleep();
     // }
     // return 0;
 
@@ -69,6 +70,11 @@ int main(int argc, char** argv){
     SerialLink_Manipulator::SerialLink_Manipulator robot(urdf_path, base_frame, tcp_frame, rob_base_link, rob_tip_link);
     Eigen::MatrixXd jt_lb = DFMapping::KDLJoints_to_Eigen(robot.Joints_ll);
     Eigen::MatrixXd jt_ub = DFMapping::KDLJoints_to_Eigen(robot.Joints_ul);
+    numIK ik_handler(&robot);
+
+
+    // Create Collision Checker
+
 
 
 
@@ -78,6 +84,11 @@ int main(int argc, char** argv){
     Eigen::MatrixXd path = gen_cvrg_plan();
     removeRow(path,path.rows()-1);
     removeRow(path,path.rows()-2);
+    std::string cvrg_path;
+    ros::param::get("/cvrg_file_paths/cvrg_path",cvrg_path);
+    file_rw::file_write(cvrg_path,path);
+
+
 
     // Obtain all the waypoints with tolerances applied at different depths
     // Note these points will be the transformed points in space
@@ -93,12 +104,19 @@ int main(int argc, char** argv){
     std::string success_flag_path;
     ros::param::get("/cvrg_file_paths/success_flags",success_flag_path);
 
+
+
+
+    // Using Waypoint Tolerance and Search
+    ik_handler.init_guess = init_guess.col(0);
+
+
+
+
     double elapsed;
     boost::posix_time::ptime start_time;
     boost::posix_time::time_duration time_diff;
     start_time = boost::posix_time::microsec_clock::local_time();
-
-    numIK ik_handler(&robot);
 
 
 
@@ -141,51 +159,22 @@ int main(int argc, char** argv){
     //     if (acc_error < min_err)
     //         min_err = acc_error;
     // }
-    // acc_error = min_err;
-
-
-
-
-    // // Using Waypoint Tolerance and Search
-    ik_handler.init_guess = init_guess.col(0);
-
-    // Debugging Checker to make sure atleast one waypoint is reachable across the wpTol
-    bool status;
-    for (int ctr=0; ctr<wpTol.size();++ctr){
-        Eigen::MatrixXd waypoints = wpTol[ctr];
-        Eigen::MatrixXd new_wps;
-        int k = 0;
-        status = false;
-        for (int i=0; i<waypoints.rows();++i){
-            ik_handler.solveIK(waypoints.row(i));
-            if (ik_handler.status){
-                new_wps.conservativeResize(k+1,12);
-                new_wps.row(k) = waypoints.row(i);
-                k++;
-                status = true;
-            }
-        }
-        if (!status){
-            std::cout<< "Some waypoints can't be reached!!\n";
-            break;
-        }
-        else{
-            std::cout<< "Waypoint: " << ctr + 1 << " can be reached.\n";
-            wpTol[ctr].resize(new_wps.rows(),12);
-            wpTol[ctr] = new_wps;
-        }
-    }
-    if (status)
-        std::cout<< "All waypoints reachable!!\n";
+    // acc_error = min_err;    
 
     
 
     double acc_error = 0;
     ss_searches search_handler;
-    Eigen::MatrixXd ret_val = search_handler.djk_v1(&ik_handler, wpTol);
-    trajectory = ret_val.block(0,0,ret_val.rows(),robot.NrOfJoints);
-    success_flags = ret_val.block(0,robot.NrOfJoints,ret_val.rows(),1);
-
+    Eigen::MatrixXd ret_val;
+    if(!search_handler.djk_v1(&ik_handler, wpTol,ret_val)){
+        std::cout<< "Search Failed. No solution found\n";
+        trajectory.resize(1,ik_handler.OptVarDim);
+        trajectory.row(0) << ik_handler.init_guess;
+    }
+    else{
+        trajectory = ret_val.block(0,0,ret_val.rows(),robot.NrOfJoints);
+        success_flags = ret_val.block(0,robot.NrOfJoints,ret_val.rows(),1);
+    }
 
 
 
@@ -203,15 +192,13 @@ int main(int argc, char** argv){
     std_msgs::Bool msg;
     msg.data = true;
     ROS_INFO("Publishing Message");
-    ros::Rate loop_rate(100);
+    ros::Rate loop_rate(1000);
     for(int i=0; i<100; ++i){
         cvrg_pub.publish(msg);
         loop_rate.sleep();
     }
     return 0;
 }
-
-
 
 
 
