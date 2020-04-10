@@ -3,7 +3,7 @@
 
 #include <iostream>
 #include <Eigen/Eigen>
-#include <pct/numIK.hpp>
+#include <gen_utilities/ikHandler.hpp>
 
 
 bool isChild(Eigen::VectorXd wp, Eigen::VectorXd child, double tol){
@@ -20,11 +20,11 @@ bool isChild(Eigen::VectorXd wp, Eigen::VectorXd child, double tol){
     return isChild;
 };
 
-static bool gen_WDG(numIK* ik_handler, const std::vector<Eigen::MatrixXd> wpTol, int config_idx,
+static bool gen_WDG(ikHandler* ik_handler, const std::vector<Eigen::MatrixXd> wpTol, int config_idx,
                        std::vector<std::vector<int>>& node_ids, int& node_cnt, std::vector<std::vector<Eigen::VectorXi>>& WDG,
                        std::vector<Eigen::MatrixXd>& wpTol_filtered){ // output is wpTol_filtered and WDG
     bool status;
-    double max_deviation = 40*M_PI / 180; // All nodes within x degrees of parent are children
+    double max_deviation = 180*M_PI / 180; // All nodes within x degrees of parent are children
 
     wpTol_filtered.clear();
 
@@ -40,8 +40,7 @@ static bool gen_WDG(numIK* ik_handler, const std::vector<Eigen::MatrixXd> wpTol,
             continue;
         }
         for (int i=0; i<waypoints.rows();++i){
-            ik_handler->solveIK(waypoints.row(i));
-            if (ik_handler->status){
+            if (ik_handler->solveIK(waypoints.row(i))) {
                 new_wps.conservativeResize(k+1,12); // Last column is the original index
                 new_wps.row(k) << waypoints.row(i);
                 k++;

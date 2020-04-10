@@ -28,7 +28,7 @@ std::vector<Eigen::MatrixXd> gen_wp_with_tolerance(const Eigen::MatrixXd& tolera
         wp_subset.block(ctr,6,1,3) = path.block(i,6,1,3);
         wp_subset.block(ctr,9,1,3) = path.block(i,9,1,3);
         ctr += 1;
-        for (double angle = 0; angle<=tolerances(i,0)/2; angle+=resolution){
+        for (double angle = resolution; angle<=tolerances(i,0)/2; angle+=resolution){
             // Alternately apply rotation about Z axis
             for(int sign=-1; sign<2; sign+=2){
                 Eigen::Matrix3d rot;

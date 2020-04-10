@@ -6,7 +6,7 @@
 #include <pct/genTolWp.hpp>
 #include <gen_utilities/file_rw.hpp>
 #include <gen_utilities/transformation_utilities.hpp>
-#include <pct/numIK.hpp>
+#include <gen_utilities/ikHandler.hpp>
 #include <gen_utilities/SerialLink_Manipulator.hpp>
 #include <Eigen/Eigen>
 #include <gen_utilities/Data_Format_Mapping.hpp>
@@ -17,20 +17,36 @@
 
 
 int main(int argc, char** argv){
-    double resolution = 36*M_PI / 180;
+    double resolution = 9*M_PI / 180;
     double angle = 360*M_PI / 180;
 
 
+    // ROBOT IIWA
     std::string rob_name = "iiwa7";
     // IIWA 7 and 14
     std::string rob_base_link = "iiwa_link_0";
     std::string rob_tip_link = "iiwa_link_ee";
+    std::string urdf_path = ros::package::getPath("pct") + "/data/urdf/"+rob_name+".urdf";
     // Create a seed for optimizer
     // This will be replaced with more redundant configurations
     Eigen::MatrixXd init_guess(7,1);
     init_guess << 0.31189,0.2209,-0.1785,-1.5357,0.0176,1.3463,0;
 
 
+    // // ROBOT IRB2600
+    // Eigen::MatrixXd init_guess(6,1);
+    // init_guess << 0.31189,0.2209,-0.1785,-1.5357,0.0176,1.3463;
+    // std::string rob_name = "abb_irb_2600";
+    // // IIWA 7 and 14
+    // std::string rob_base_link = "base_link";
+    // std::string rob_tip_link = "tool0";
+    // std::string urdf_path = ros::package::getPath("abb_irb120_support") + "/urdf/"+rob_name+".urdf";
+
+
+
+
+
+    
 
     ros::init(argc,argv,"pct_main");
     ros::NodeHandle main_handler;
@@ -63,30 +79,30 @@ int main(int argc, char** argv){
     // Create the robot
     Eigen::Matrix4d world_T_base = Eigen::Matrix4d::Identity(4,4);
 
-    std::string urdf_path = ros::package::getPath("pct") + "/data/urdf/"+rob_name+".urdf";
     KDL::Frame base_frame = KDL::Frame::Identity();
     KDL::Frame tcp_frame = DFMapping::Eigen_to_KDLFrame(ff_T_tool);
 
     SerialLink_Manipulator::SerialLink_Manipulator robot(urdf_path, base_frame, tcp_frame, rob_base_link, rob_tip_link);
     Eigen::MatrixXd jt_lb = DFMapping::KDLJoints_to_Eigen(robot.Joints_ll);
     Eigen::MatrixXd jt_ub = DFMapping::KDLJoints_to_Eigen(robot.Joints_ul);
-    numIK ik_handler(&robot);
+    ikHandler ik_handler(&robot);
+
 
 
     // Create Collision Checker
 
 
-
-
-
-
-
+    // Generate Path
     Eigen::MatrixXd path = gen_cvrg_plan();
-    removeRow(path,path.rows()-1);
-    removeRow(path,path.rows()-2);
-    std::string cvrg_path;
-    ros::param::get("/cvrg_file_paths/cvrg_path",cvrg_path);
-    file_rw::file_write(cvrg_path,path);
+
+
+
+
+    // removeRow(path,path.rows()-1);
+    // removeRow(path,path.rows()-2);
+    // std::string cvrg_path;
+    // ros::param::get("/cvrg_file_paths/cvrg_path",cvrg_path);
+    // file_rw::file_write(cvrg_path,path);
 
 
 
@@ -125,7 +141,11 @@ int main(int argc, char** argv){
     // ik_handler.init_guess = init_guess.col(0);
     // double acc_error = 0;
     // for (int i=0; i<path.rows(); ++i){
-    //     Eigen::VectorXd jt_config = ik_handler.solveIK(path.row(i));
+    //     Eigen::VectorXd jt_config;
+    //     if (ik_handler.solveIK(path.row(i)))
+    //         jt_config = ik_handler.solution;
+    //     else
+    //         break;
     //     trajectory.conservativeResize(i+1,robot.NrOfJoints);
     //     trajectory.row(i) = jt_config.transpose();
     //     ik_handler.init_guess = jt_config;
@@ -149,7 +169,8 @@ int main(int argc, char** argv){
     //     init_guess << DFMapping::KDLJoints_to_Eigen(randJoints);
     //     std::cout<< "Seed: " << init_guess.transpose() << "\n";
     //     for (int i=0; i<path.rows(); ++i){
-    //         Eigen::VectorXd jt_config = ik_handler.solveIK(path.row(i));
+    //         if (ik_handler.solveIK(path.row(i)))
+    //             Eigen::VectorXd jt_config = ik_handler.solution;
     //         trajectory.conservativeResize(i+1,robot.NrOfJoints);
     //         trajectory.row(i) = jt_config.transpose();
     //         ik_handler.init_guess = jt_config;
@@ -169,7 +190,7 @@ int main(int argc, char** argv){
     if(!search_handler.djk_v1(&ik_handler, wpTol,ret_val)){
         std::cout<< "Search Failed. No solution found\n";
         trajectory.resize(1,ik_handler.OptVarDim);
-        trajectory.row(0) << ik_handler.init_guess;
+        trajectory.row(0) << ik_handler.init_guess.col(0).transpose();
     }
     else{
         trajectory = ret_val.block(0,0,ret_val.rows(),robot.NrOfJoints);
@@ -178,7 +199,17 @@ int main(int argc, char** argv){
 
 
 
-    std::cout<< "Average Error Per WayPoint: " << acc_error/trajectory.rows() << "\n";
+
+
+    // Evaluate trajectory cost
+    double path_cost = 0;
+    for (int i=0; i<trajectory.rows()-1;++i){
+        Eigen::ArrayXd jt_diff = (trajectory.row(i+1) - trajectory.row(i)).transpose();
+        path_cost += jt_diff.abs().maxCoeff();
+    }
+
+
+    std::cout<< "Trajectory Cost: " << path_cost << "\n";
     time_diff = boost::posix_time::microsec_clock::local_time() - start_time;
     elapsed = time_diff.total_nanoseconds() / 1e9;  
     std::cout<< "compute time: " << elapsed << std::endl;
@@ -193,7 +224,7 @@ int main(int argc, char** argv){
     msg.data = true;
     ROS_INFO("Publishing Message");
     ros::Rate loop_rate(1000);
-    for(int i=0; i<100; ++i){
+    for(int i=0; i<1000; ++i){
         cvrg_pub.publish(msg);
         loop_rate.sleep();
     }
@@ -288,7 +319,7 @@ KDL::JntArray solution = DFMapping::Eigen_to_KDLJoints(jt_config);
     // Eigen::MatrixXd wp_path = path;
     // success_flags.resize(wp_path.rows(),1);
     // std::cout<< "Solving IK......\n";
-    // numIK ik_handler(&robot);
+    // ikHandler ik_handler(&robot);
     // ik_handler.init_guess = init_guess.col(0);
     // double acc_error = 0;
     // for (int i=0; i<wp_path.rows(); ++i){
@@ -299,4 +330,53 @@ KDL::JntArray solution = DFMapping::Eigen_to_KDLJoints(jt_config);
     //     success_flags(i,0) = ik_handler.status;
     //     acc_error += ik_handler.f_val;
     // }
+
+// // Debug configs manipulability. Delete later
+    // std::string t_path;
+    // if(!ros::param::get("/cvrg_file_paths/joint_states",t_path))
+    //     ROS_INFO("Unable to obtain robot trajectory");
+    // Eigen::MatrixXd traj = file_rw::file_read_mat(t_path);
+
+    // std::cout<< "Joints: \n" << traj << "\n";
+
+    // for (int i=0; i<traj.rows();++i){
+    //     KDL::Jacobian jac;
+    //     KDL::JntArray jt = DFMapping::Eigen_to_KDLJoints(traj.row(i).transpose());
+    //     robot.Jac_KDL(jt,jac);
+    //     Eigen::MatrixXd jacobian = DFMapping::KDLJacobian_to_Eigen(jac);
+    //     std::cout<< sqrt((jacobian*jacobian.transpose()).determinant()) << "\n";
+    // }
+    // return 0;
+
+    // KDL::JntArray t_config(6);
+    // t_config(0) = 0.00775273;
+    // t_config(1) = 0.112036;
+    // t_config(2) = 0.650733;
+    // t_config(3) = 0.028248;
+    // t_config(4) = 1.05047;
+    // t_config(5) = -0.00839303;
+
+    // t_config(0) = 0;
+    // t_config(1) = 0;
+    // t_config(2) = 0;
+    // t_config(3) = 0;
+    // t_config(4) = 0;
+    // t_config(5) = 0;
+
+    // Eigen::VectorXd target_bxbybz(12);
+    // KDL::Frame kdl_fk;
+    // robot.FK_KDL_TCP(t_config,kdl_fk);
+    // Eigen::MatrixXd target_fk = DFMapping::KDLFrame_to_Eigen(kdl_fk);
+    // std::cout<< "Target: \n" << target_fk << "\n";
+    // target_bxbybz.segment(0,3) = target_fk.block(0,3,3,1);
+    // target_bxbybz.segment(3,3) = target_fk.block(0,0,3,1);
+    // target_bxbybz.segment(6,3) = target_fk.block(0,1,3,1);
+    // target_bxbybz.segment(9,3) = target_fk.block(0,2,3,1);
+
+    // if (ik_handler.solveIK(target_bxbybz)){
+    //     std::cout<< "Success\n";
+    //     Eigen::MatrixXd solution = ik_handler.solution;
+    //     std::cout<< solution << "\n";
+    // }
+    // return 0;
 */

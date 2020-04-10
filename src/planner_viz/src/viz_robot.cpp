@@ -22,7 +22,8 @@ int main(int argc, char** argv){
     ros::Subscriber wp_sub = rob_handler.subscribe<std_msgs::Bool>("cvrg_status",1000,cvrg_update);
 
     std::string traj_path;
-    ros::param::get("/cvrg_file_paths/joint_states",traj_path);
+    if(!ros::param::get("/cvrg_file_paths/joint_states",traj_path))
+        ROS_INFO("Unable to obtain robot Trajectory");
     Eigen::MatrixXd traj = file_rw::file_read_mat(traj_path);
 
     sensor_msgs::JointState joint_config;

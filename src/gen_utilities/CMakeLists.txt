@@ -223,6 +223,7 @@ add_library(${PROJECT_NAME}
   src/priority_queue.cpp
   src/SerialLink_Manipulator.cpp
   src/Data_Format_Mapping.cpp
+  src/ikHandler.cpp
 )
 
 # set_source_files_properties(src/transformation_utilities.cpp PROPERTIES COMPILE_FLAGS -O3)

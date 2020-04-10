@@ -1,4 +1,4 @@
-#include <pct/numIK.hpp>
+#include <gen_utilities/ikHandler.hpp>
 
 // Definitions
 // defualt nlopt fuctions begin
@@ -8,13 +8,13 @@ double err_func_gateway(const std::vector<double>& x, std::vector<double>& grad,
     // Because we wanted a Class
     // without static members, but NLOpt library does not support
     // passing methods of Classes, we use these auxilary functions.
-    numIK *gateway = (numIK *) data;
+    ikHandler *gateway = (ikHandler *) data;
     return gateway->obj_func(x,grad);
 }
 // defualt nlopt fuctions end
 
 
-numIK::numIK(SerialLink_Manipulator::SerialLink_Manipulator* _robot){
+ikHandler::ikHandler(SerialLink_Manipulator::SerialLink_Manipulator* _robot){
     robot = _robot;
     OptVarDim = robot->NrOfJoints;
     init_guess.resize(OptVarDim,1);
@@ -53,11 +53,13 @@ numIK::numIK(SerialLink_Manipulator::SerialLink_Manipulator* _robot){
     optimizer.set_maxeval(2000);
     status = false;
     target.resize(12);
+    std::cout<< "#########################################################################\nikHandler initialization complete\n" <<
+    "#########################################################################\n";
 }
 
-numIK::~numIK() {};
+ikHandler::~ikHandler() {};
 
-double numIK::obj_func(const std::vector<double>& x, std::vector<double>& grad)
+double ikHandler::obj_func(const std::vector<double>& x, std::vector<double>& grad)
 {
     double err = err_func(x);
     if (!grad.empty()) {
@@ -72,7 +74,7 @@ double numIK::obj_func(const std::vector<double>& x, std::vector<double>& grad)
     return err;
 }
 
-double numIK::err_func(const std::vector<double>& x)
+double ikHandler::err_func(const std::vector<double>& x)
 {
     KDL::JntArray joint_config = DFMapping::STDvector_to_KDLJoints(x);
     robot->FK_KDL_TCP(joint_config, FK_tcp);
@@ -87,30 +89,57 @@ double numIK::err_func(const std::vector<double>& x)
 
 
 //////////////////////// MAIN FUNCTION //////////////////////////////////////////////////
-Eigen::MatrixXd numIK::solveIK(const Eigen::VectorXd& _target){
+bool ikHandler::solveIK(const Eigen::VectorXd& _target){
     target = _target;
-    Eigen::MatrixXd solution(OptVarDim,1);
     status = true;
-    
-    std::vector<double> iterator(OptVarDim);
-    for (int i=0; i<OptVarDim; ++i)
-        iterator[i] = init_guess(i,0);
 
-    // NLopt routine
-    bool optSuccess = false;
-    try{
+    // Numerical IK
+    if (OptVarDim > 6 || useNumIK){
+        solution.resize(OptVarDim,1);
         
-        nlopt::result result = optimizer.optimize(iterator, f_val);
-        optSuccess = true;
-    }
-    catch(std::exception &e) {
-        std::cout << "nlopt failed: " << e.what() << std::endl;
-    }
+        std::vector<double> iterator(OptVarDim);
+        for (int i=0; i<OptVarDim; ++i)
+            iterator[i] = init_guess(i,0);
 
-    if (!optSuccess || f_val > 1e-6)
-        status = false;
+        // NLopt routine
+        bool optSuccess = false;
+        try{
+            
+            nlopt::result result = optimizer.optimize(iterator, f_val);
+            optSuccess = true;
+        }
+        catch(std::exception &e) {
+            std::cout << "nlopt failed: " << e.what() << std::endl;
+        }
 
-    for (int i=0; i < OptVarDim; i++)
-        solution(i,0) = iterator[i];
-    return solution;
+        if (!optSuccess || f_val > 1e-6)
+            status = false;
+
+        for (int i=0; i < OptVarDim; i++)
+            solution(i,0) = iterator[i];
+        return status;
+    }
+    // Analytical IK
+    else{
+        solution.resize(OptVarDim,1);
+        Eigen::MatrixXd sol_mat;
+        ik_analytical::compute_IK(target,status,sol_mat);
+        double config_dist = 10000000;
+        for (int i=0; i<sol_mat.rows(); ++i){
+            // Check the Limits
+            if (sol_mat(i,0)>=robot->Joints_ll(0) && sol_mat(i,0)<=robot->Joints_ul(0) &&
+                sol_mat(i,1)>=robot->Joints_ll(1) && sol_mat(i,1)<=robot->Joints_ul(1) &&
+                sol_mat(i,2)>=robot->Joints_ll(2) && sol_mat(i,2)<=robot->Joints_ul(2) &&
+                sol_mat(i,3)>=robot->Joints_ll(3) && sol_mat(i,3)<=robot->Joints_ul(3) &&
+                sol_mat(i,4)>=robot->Joints_ll(4) && sol_mat(i,4)<=robot->Joints_ul(4) &&
+                sol_mat(i,5)>=robot->Joints_ll(5) && sol_mat(i,5)<=robot->Joints_ul(5) ){
+                // Add it to solution. Also check if this is closest to given config
+                if ((sol_mat.row(i).transpose() - init_guess).norm() < config_dist)
+                    solution.col(0) = sol_mat.row(i).transpose();
+                solution.conservativeResize(OptVarDim,solution.cols()+1);
+                solution.col(solution.cols()-1) = sol_mat.row(i).transpose();
+            }
+        }
+        return status;
+    }
 }

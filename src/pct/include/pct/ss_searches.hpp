@@ -8,7 +8,7 @@
 #define __SS_SEARCHES__
 
 #include <iostream>
-#include <pct/numIK.hpp>
+#include <gen_utilities/ikHandler.hpp>
 #include <Eigen/Eigen>
 #include <queue>
 #include <gen_utilities/priority_queue.hpp>
@@ -42,7 +42,7 @@ public:
 
     // djk_v1 (djikstra) uses one matrix to store visited nodes. Nodes are basically a struct.
     // The two matrices are initialized in the constructor when tolerance path and ik_handler is passed
-    bool djk_v1(numIK *ik_handler, std::vector<Eigen::MatrixXd>& wpTol, Eigen::MatrixXd& ret_val){
+    bool djk_v1(ikHandler *ik_handler, std::vector<Eigen::MatrixXd>& wpTol, Eigen::MatrixXd& ret_val){
         Eigen::MatrixXd trajectory(wpTol.size(),ik_handler->OptVarDim);
 
         std::cout<< "\n\n###########################################################\n";
@@ -55,17 +55,18 @@ public:
         Eigen::MatrixXd rob_home = ik_handler->init_guess;
 
         std::cout<< "Number of Initial Configurations: " << wpTol[0].rows() << "\n\n";
-        for (int i=0; i<wpTol[0].rows();++i){
-        // for (int i=0; i<1;++i){
+        // for (int i=0; i<wpTol[0].rows();++i){
+        for (int wp=0, i=wp; i<wp+1; ++i){
             // Check if IK exists for the waypoint. Initial guess can be zero or biased to rob home
             ik_handler->init_guess << 0,0,0,0,0,0,0;
-            ik_handler->init_guess = ik_handler->solveIK(wpTol[0].row(i));
-            if (!ik_handler->status){
+            if (!ik_handler->solveIK(wpTol[0].row(i))){
                 std::cout<< "IK failed for configuration: " << i << "\n";
                 continue;
             }
-            else
+            else{
                 std::cout<< "IK successful for configuration: " << i << " Attempting Trajectory Search\n";
+                ik_handler->init_guess = ik_handler->solution.col(0);
+            }
 
             std::vector<std::vector<Eigen::VectorXi>> WDG; WDG.clear();
             std::vector<std::vector<int>> node_ids; node_ids.clear();
@@ -100,13 +101,12 @@ public:
             node_cnt = 0;
             while (!reach_goal && queue.size()!=0){
                 int parent_id = queue.top();
+                std::cout<< "Parent ID: " << parent_id << "\n";
                 queue.pop();
-
-                int nxt_dpth = node_map[parent_id]->depth+1;
 
                 // Goal Check
                 if (node_map[parent_id]->depth==wpTol_filtered.size()-1){ // Is it the last waypoint
-                    if (node_map[parent_id]->cost<1e7){
+                    if (node_map[parent_id]->cost<1e7){ // If IK was feasible at this goal node
                         std::cout<< "Reached Goal!!" << "\n";
                         std::cout<< "Depth: " << node_map[parent_id]->depth << ", Index: " << node_map[parent_id]->index << "\n"; 
                         reach_goal = true;
@@ -130,18 +130,20 @@ public:
                 Eigen::VectorXi children = WDG[node_map[parent_id]->depth][node_map[parent_id]->index];
                 for (int j=0; j<children.size(); ++j){
                     // Get node id
-                    int child_id = node_ids[nxt_dpth][children(j)];
+                    int child_id = node_ids[node_map[parent_id]->depth+1][children(j)];
                     if (visitedNodes[child_id]){
                         ik_handler->init_guess = node_map[parent_id]->jt_config;
-                        Eigen::MatrixXd solution = ik_handler->solveIK(wpTol_filtered[nxt_dpth].row(children(j)));
                         double g_cost;
-                        if (ik_handler->status){
+                        Eigen::MatrixXd solution;
+                        if (ik_handler->solveIK(wpTol_filtered[node_map[parent_id]->depth+1].row(children(j)))) {
+                            solution = ik_handler->solution;
                             // g_cost = (solution.col(0)-node_map[parent_id]->jt_config).norm();
                             Eigen::ArrayXd jt_diff = (solution.col(0)-node_map[parent_id]->jt_config);
-                            g_cost = jt_diff.abs().maxCoeff();
+                            g_cost = node_map[parent_id]->cost + jt_diff.abs().maxCoeff();
                             if (g_cost - node_map[child_id]->cost < 1e-7){ // If cost from this parent is less.
                                 node_map[child_id]->parent_id = parent_id; // Update Parent
-                                node_map[child_id]->cost = node_map[parent_id]->cost + g_cost; // Update cost
+                                node_map[child_id]->cost = g_cost; // Update cost
+                                node_map[child_id]->jt_config = solution.col(0); // Update Configuration
                                 queue.push(node_map[child_id]->id, 0, node_map[child_id]->cost);
                                 node_cnt++;
                             }
@@ -154,20 +156,23 @@ public:
                     else{
                         djk_node* node = new djk_node;
                         node->id = child_id; // root
-                        node->depth = nxt_dpth;
+                        node->depth = node_map[parent_id]->depth+1;
                         node->index = children(j);
                         node->parent_id = parent_id;
                         // Solve IK
                         ik_handler->init_guess = node_map[parent_id]->jt_config;
-                        Eigen::MatrixXd solution = ik_handler->solveIK(wpTol_filtered[nxt_dpth].row(children(j)));
                         double g_cost;
-                        if (ik_handler->status){
+                        Eigen::MatrixXd solution;
+                        if (ik_handler->solveIK(wpTol_filtered[node_map[parent_id]->depth+1].row(children(j)))){
+                            Eigen::MatrixXd solution = ik_handler->solution;
+                            node->jt_config = solution.col(0);
                             // g_cost = (solution.col(0)-node_map[parent_id]->jt_config).norm();
                             Eigen::ArrayXd jt_diff = (solution.col(0)-node_map[parent_id]->jt_config);
-                            g_cost = jt_diff.abs().maxCoeff();
+                            g_cost = node_map[parent_id]->cost + jt_diff.abs().maxCoeff();
                         }
-                        node->cost = node_map[parent_id]->cost + g_cost;
-                        node->jt_config = solution.col(0);
+                        else
+                            g_cost = std::numeric_limits<double>::infinity();    
+                        node->cost = g_cost;
                         visitedNodes[child_id] = true;
                         node_map[node->id] = node;
                         queue.push(node->id,0,node->cost);
@@ -176,13 +181,18 @@ public:
                 }
 
             }
+            if (queue.size()==0){
+                std::cout<< "Queue Empty. No Path Found.\n";
+                std::cout<< "\n\n";
+                continue;
+            }
+            
             std::cout<< "Number of Nodes Evaluations or IK calls: " << node_cnt << "\n";
-            std::cout<< "Queue Size: " << queue.size() << "\n";
             std::cout<< "Path Cost: " << node_map[goal_id]->cost << "\n";
             // Generate trajectory
             int id = goal_id;
-            for(int i=wpTol.size()-1; i!=0; --i){
-                curr_traj.row(i) = node_map[id]->jt_config;
+            for(int row_no=wpTol.size()-1; row_no!=0; --row_no){
+                curr_traj.row(row_no) = node_map[id]->jt_config;
                 id = node_map[id]->parent_id;
             }
             if (node_map[goal_id]->cost - lowest_cost < 1e-7){
@@ -191,7 +201,7 @@ public:
                 trajectory = curr_traj;
             }
             // file_rw::file_write("/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/csv/" + std::to_string(i+1) + ".csv",curr_traj);
-            std::cout<< "\n\n";           
+            std::cout<< "\n\n";
         }
         std::cout<< "Search Complete. Generating Trajectory.......\n";
         

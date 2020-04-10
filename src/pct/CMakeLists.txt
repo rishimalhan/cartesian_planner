@@ -242,11 +242,14 @@ set(DEP_LIBS ${catkin_LIBRARIES}
 #               /opt/gurobi901/linux64/lib/libgurobi90.so
                       )
 
-add_executable(main src/main.cpp src/numIK.cpp)
+add_executable(main src/main.cpp)
 target_link_libraries(main ${DEP_LIBS})
 
 add_executable(test_coll src/test_coll.cpp)
 target_link_libraries(test_coll ${DEP_LIBS})
+
+# add_executable(test_qp src/test_qp.cpp src/irb2600.cpp)
+# target_link_libraries(test_qp ${DEP_LIBS})
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
