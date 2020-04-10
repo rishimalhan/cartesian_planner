@@ -55,8 +55,8 @@ public:
         Eigen::MatrixXd rob_home = ik_handler->init_guess;
 
         std::cout<< "Number of Initial Configurations: " << wpTol[0].rows() << "\n\n";
-        // for (int i=0; i<wpTol[0].rows();++i){
-        for (int wp=0, i=wp; i<wp+1; ++i){
+        for (int i=0; i<wpTol[0].rows();++i){
+        // for (int wp=0, i=wp; i<wp+1; ++i){
             // Check if IK exists for the waypoint. Initial guess can be zero or biased to rob home
             ik_handler->init_guess << 0,0,0,0,0,0,0;
             if (!ik_handler->solveIK(wpTol[0].row(i))){
@@ -101,7 +101,6 @@ public:
             node_cnt = 0;
             while (!reach_goal && queue.size()!=0){
                 int parent_id = queue.top();
-                std::cout<< "Parent ID: " << parent_id << "\n";
                 queue.pop();
 
                 // Goal Check
@@ -181,7 +180,7 @@ public:
                 }
 
             }
-            if (queue.size()==0){
+            if (queue.size()==0 && !reach_goal){
                 std::cout<< "Queue Empty. No Path Found.\n";
                 std::cout<< "\n\n";
                 continue;
@@ -191,7 +190,7 @@ public:
             std::cout<< "Path Cost: " << node_map[goal_id]->cost << "\n";
             // Generate trajectory
             int id = goal_id;
-            for(int row_no=wpTol.size()-1; row_no!=0; --row_no){
+            for(int row_no=wpTol.size()-1; row_no>-1; --row_no){
                 curr_traj.row(row_no) = node_map[id]->jt_config;
                 id = node_map[id]->parent_id;
             }

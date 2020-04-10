@@ -152,7 +152,7 @@ int main(int argc, char** argv){
     //     success_flags(i,0) = ik_handler.status;
     //     acc_error += ik_handler.f_val;
     // }
-
+    // std::cout<< trajectory << "\n";
 
 
 
@@ -196,7 +196,7 @@ int main(int argc, char** argv){
         trajectory = ret_val.block(0,0,ret_val.rows(),robot.NrOfJoints);
         success_flags = ret_val.block(0,robot.NrOfJoints,ret_val.rows(),1);
     }
-
+    std::cout<< trajectory << "\n";
 
 
 
