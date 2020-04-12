@@ -21,8 +21,8 @@
 #include <ros/package.h>
 #include <gen_utilities/NPAM_utilities.hpp>
 #include <igl/readSTL.h>
-#include <gen_utilities/file_rw.hpp>
-#include <gen_utilities/transformation_utilities.hpp>
+#include <robot_utilities/file_rw.hpp>
+#include <robot_utilities/transformation_utilities.hpp>
 #include <gen_utilities/utilities.hpp>
 
 static void removeRow(Eigen::MatrixXd& matrix, unsigned int rowToRemove)

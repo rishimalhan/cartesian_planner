@@ -214,16 +214,6 @@ add_library(${PROJECT_NAME}
   src/iiwa_IK_solver.cpp
   src/robot_comm.cpp
   src/rosmsg_eigen_exchange.cpp
-  src/RobotCollision.cpp
-  src/STLtoPCL.cpp
-  src/workspace_ball.cpp
-  src/world_manager.cpp
-  src/workspace_ball_manager.cpp
-  src/ReadMesh.cpp
-  src/priority_queue.cpp
-  src/SerialLink_Manipulator.cpp
-  src/Data_Format_Mapping.cpp
-  src/ikHandler.cpp
 )
 
 # set_source_files_properties(src/transformation_utilities.cpp PROPERTIES COMPILE_FLAGS -O3)

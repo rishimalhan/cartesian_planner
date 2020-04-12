@@ -1,6 +1,6 @@
 #include <ros/ros.h>
 #include <iostream>
-#include <gen_utilities/file_rw.hpp>
+#include <robot_utilities/file_rw.hpp>
 #include <Eigen/Eigen>
 #include <sensor_msgs/JointState.h>
 #include <Eigen/Geometry>
@@ -29,7 +29,8 @@ int main(int argc, char** argv){
     sensor_msgs::JointState joint_config;
     joint_config.name.resize(traj.cols());
     for (int i=0; i<traj.cols(); i++)
-        joint_config.name[i] = "iiwa_joint_" + std::to_string(i+1);
+        // joint_config.name[i] = "iiwa_joint_" + std::to_string(i+1);
+        joint_config.name[i] = "joint_" + std::to_string(i+1);
     
     joint_config.position.resize(traj.cols());
 

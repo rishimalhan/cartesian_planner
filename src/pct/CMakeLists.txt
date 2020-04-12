@@ -14,6 +14,7 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   std_msgs
   gen_utilities
+  robot_utilities
 )
 
 ## System dependencies are found with CMake's conventions
@@ -31,6 +32,7 @@ find_package(Boost 1.54.0 REQUIRED COMPONENTS system filesystem)
 find_package(orocos_kdl REQUIRED)
 find_package(Boost 1.54.0 REQUIRED COMPONENTS system filesystem)
 find_package(gen_utilities REQUIRED)
+find_package(robot_utilities REQUIRED)
 find_package(libnlopt REQUIRED COMPONENTS)
 find_package(fcl REQUIRED)
 find_package(CCD REQUIRED)
@@ -247,6 +249,7 @@ target_link_libraries(main ${DEP_LIBS})
 
 add_executable(test_coll src/test_coll.cpp)
 target_link_libraries(test_coll ${DEP_LIBS})
+
 
 # add_executable(test_qp src/test_qp.cpp src/irb2600.cpp)
 # target_link_libraries(test_qp ${DEP_LIBS})

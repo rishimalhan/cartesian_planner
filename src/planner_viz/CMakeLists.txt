@@ -18,12 +18,14 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   sensor_msgs
   trajectory_msgs
+  robot_utilities
 )
 
 ## System dependencies are found with CMake's conventions
 find_package (orocos_kdl REQUIRED)
 find_package(Boost 1.54.0 REQUIRED COMPONENTS system filesystem)
 find_package(gen_utilities REQUIRED)
+find_package(robot_utilities REQUIRED)
 find_package(libnlopt REQUIRED COMPONENTS)
 find_package(fcl REQUIRED)
 find_package(CCD REQUIRED)

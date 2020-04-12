@@ -2,10 +2,10 @@
 #include <Eigen/Eigen>
 #include <ros/ros.h>
 #include <ros/package.h>
-#include <gen_utilities/world_manager.hpp>
-#include <gen_utilities/SerialLink_Manipulator.hpp>
+#include <robot_utilities/world_manager.hpp>
+#include <robot_utilities/SerialLink_Manipulator.hpp>
 #include <kdl/frames.hpp>
-#include <gen_utilities/Data_Format_Mapping.hpp>
+#include <robot_utilities/Data_Format_Mapping.hpp>
 
 int main(){
     WM::WM wm;

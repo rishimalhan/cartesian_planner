@@ -6,16 +6,19 @@
     <node pkg="tf" type="static_transform_publisher" name="map_T_world" args="0 0 0 0 0 0 /map /world 10" />
 
     <!-- robot descriptions and visualizations -->          
+    <!-- <param name="robot_description" -->
+            <!-- command="$(find xacro)/xacro $(find robot_utilities)/urdf/kuka_iiwa7/iiwa7.urdf" />         -->
+    <!-- <param name="robot_description" -->
+            <!-- command="$(find xacro)/xacro $(find robot_utilities)/urdf/abb_irb2600/irb2600_12_165.urdf" />          -->
     <param name="robot_description"
-            command="$(find xacro)/xacro $(find pct)/data/urdf/iiwa7.urdf" />        
-
+            command="$(find xacro)/xacro $(find robot_utilities)/urdf/ur_10e/ur10e.urdf" />
 
     <!-- Sander Tool Plot -->
     <param name="rob_tool" command="$(find xacro)/xacro $(find pct)/data/tools/sander.xacro"/>
     <node pkg="robot_state_publisher" type="robot_state_publisher" name="tool_publ">
         <remap from="robot_description" to="rob_tool" />
     </node>
-    <node pkg="tf" name="rob_T_tool" type="static_transform_publisher" args=" 0 0 0 0 0 0 /iiwa_link_ee /tool_origin 30"/>
+    <node pkg="tf" name="rob_T_tool" type="static_transform_publisher" args=" 0 0 0 0 0 0 /tool0 /tool_origin 30"/>
 
 
 

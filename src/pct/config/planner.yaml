@@ -44,13 +44,15 @@ cvrg_file_paths:
     success_flags: "/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/csv/success_flags.csv", # Path to save the path
     joint_states: "/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/csv/debug_configs.csv", # Path to save the trajectory
     mesh_path: "/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/meshes/fender_bin.stl",
-    mesh_viz_path: "package://pct/data/meshes/fender_bin.stl"
+    mesh_viz_path: "package://pct/data/meshes/fender_bin.stl",
+    tool_stl_path: "/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/meshes/sander_v1.stl",
+    tool_stl_coll_path: "/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/meshes/sander_v1_coll.stl"
   }
 
 cvrg_tf_param:
     {
-        # world_T_part: [ 0.7,-0.65,0,0,0, !!python/object/apply:eval [ 90*3.14/180 ] ], # x,y,z,rx,ry,rz
-        world_T_part: [ 0.9,0,0,0,0, 3.14 ], # x,y,z,rx,ry,rz
+        world_T_part: [ 0.7,-0.65,0,0,0, !!python/object/apply:eval [ 90*3.14/180 ] ], # x,y,z,rx,ry,rz
+        # world_T_part: [ 0.9,0,0,0,0, 3.14 ], # x,y,z,rx,ry,rz
         # ff_T_tool: [-0.0327, -0.0054, 0.1383, 0.0100, -0.0002, 3.1000] #Orbital Sander original
         # ff_T_tool: [0, 0, 0.1383, 0, 0, 3.14] #Orbital Sander
         ff_T_tool: [0, -0.215, 0.2155, 0, 0, 0] #Orbital Sander

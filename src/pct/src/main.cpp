@@ -4,48 +4,52 @@
 #include <std_msgs/Bool.h>
 #include <cmath>
 #include <pct/genTolWp.hpp>
-#include <gen_utilities/file_rw.hpp>
-#include <gen_utilities/transformation_utilities.hpp>
-#include <gen_utilities/ikHandler.hpp>
-#include <gen_utilities/SerialLink_Manipulator.hpp>
+#include <robot_utilities/file_rw.hpp>
+#include <robot_utilities/transformation_utilities.hpp>
+#include <robot_utilities/ikHandler.hpp>
+#include <robot_utilities/SerialLink_Manipulator.hpp>
 #include <Eigen/Eigen>
-#include <gen_utilities/Data_Format_Mapping.hpp>
+#include <robot_utilities/Data_Format_Mapping.hpp>
 #include <boost/date_time.hpp>
-#include <gen_utilities/world_manager.hpp>
+#include <robot_utilities/world_manager.hpp>
 #include <pct/ss_searches.hpp>
 
 
 
 int main(int argc, char** argv){
-    double resolution = 9*M_PI / 180;
+    double resolution = 18*M_PI / 180;
     double angle = 360*M_PI / 180;
 
 
-    // ROBOT IIWA
-    std::string rob_name = "iiwa7";
-    // IIWA 7 and 14
-    std::string rob_base_link = "iiwa_link_0";
-    std::string rob_tip_link = "iiwa_link_ee";
-    std::string urdf_path = ros::package::getPath("pct") + "/data/urdf/"+rob_name+".urdf";
-    // Create a seed for optimizer
-    // This will be replaced with more redundant configurations
-    Eigen::MatrixXd init_guess(7,1);
-    init_guess << 0.31189,0.2209,-0.1785,-1.5357,0.0176,1.3463,0;
+    // // ROBOT IIWA
+    // std::string rob_name = "iiwa7";
+    // // IIWA 7 and 14
+    // std::string rob_base_link = "iiwa_link_0";
+    // std::string rob_tip_link = "iiwa_link_ee";
+    // std::string urdf_path = ros::package::getPath("pct") + "/data/urdf/"+rob_name+".urdf";
+    // // Create a seed for optimizer
+    // // This will be replaced with more redundant configurations
+    // Eigen::MatrixXd init_guess(7,1);
+    // init_guess << 0.31189,0.2209,-0.1785,-1.5357,0.0176,1.3463,0;
 
 
     // // ROBOT IRB2600
     // Eigen::MatrixXd init_guess(6,1);
     // init_guess << 0.31189,0.2209,-0.1785,-1.5357,0.0176,1.3463;
-    // std::string rob_name = "abb_irb_2600";
-    // // IIWA 7 and 14
     // std::string rob_base_link = "base_link";
     // std::string rob_tip_link = "tool0";
-    // std::string urdf_path = ros::package::getPath("abb_irb120_support") + "/urdf/"+rob_name+".urdf";
+    // std::string urdf_path = ros::package::getPath("robot_utilities") + "/urdf/abb_irb2600/irb2600_12_165.urdf";
+    // std::string robot_obj = ros::package::getPath("robot_utilities") + "/rob_objs/abb_irb2600/";
 
 
 
-
-
+    // ROBOT UR10e
+    Eigen::MatrixXd init_guess(6,1);
+    init_guess << 0,0,0,0,0,0;
+    std::string rob_base_link = "base_link";
+    std::string rob_tip_link = "tool0";
+    std::string urdf_path = ros::package::getPath("robot_utilities") + "/urdf/ur_10e/ur10e.urdf";
+    std::string robot_obj = ros::package::getPath("robot_utilities") + "/rob_objs/ur_10e/";
     
 
     ros::init(argc,argv,"pct_main");
@@ -90,6 +94,25 @@ int main(int argc, char** argv){
 
 
     // Create Collision Checker
+    WM::WM wm;
+    wm.addRobot(robot_obj);
+    std::string wp_path;
+    if(!ros::param::get("/cvrg_file_paths/mesh_path",wp_path))
+        std::cout<< "Unable to Obtain mesh path\n";
+    tf.clear();
+    if(!ros::param::get("/cvrg_tf_param/world_T_part",tf))
+        std::cout<< "Unable to Obtain part tf\n";
+    std::string toolstl_path;
+    if(!ros::param::get("/cvrg_file_paths/tool_stl_coll_path",toolstl_path))
+        std::cout<< "Unable to Obtain tool stl path\n";
+    tf_eigen<< tf[0],tf[1],tf[2],tf[3],tf[4],tf[5];
+    Eigen::Matrix4d world_T_part = Eigen::Matrix4d::Identity();
+    world_T_part.block(0,0,3,3) = rtf::eul2rot(tf_eigen.segment(3,3).transpose(),"XYZ");
+    world_T_part.block(0,3,3,1) = tf_eigen.segment(0,3);
+    wm.addWorkpiece(wp_path, world_T_part); // Assumes robot base frame is at world
+    std::vector<Eigen::MatrixXd> zero_fk = robot.get_robot_FK_all_links( Eigen::MatrixXd::Ones(robot.NrOfJoints,1)*0 );
+    wm.prepareSelfCollisionPatch(zero_fk);
+    // wm.addTool(toolstl_path);
 
 
     // Generate Path
@@ -111,6 +134,7 @@ int main(int argc, char** argv){
     std::cout<< "Generating Search Samples....\n";
     Eigen::MatrixXd tolerances = Eigen::MatrixXd::Ones(path.rows(),1)*angle;
     std::vector<Eigen::MatrixXd> wpTol =  gen_wp_with_tolerance(tolerances,resolution, path );
+    std::cout<< "Search Samples Generated....\n";
 
     // Get trajectory path
     std::string traj_path;
@@ -121,12 +145,25 @@ int main(int argc, char** argv){
     ros::param::get("/cvrg_file_paths/success_flags",success_flag_path);
 
 
-
-
-    // Using Waypoint Tolerance and Search
     ik_handler.init_guess = init_guess.col(0);
 
 
+
+
+
+    // // test collision
+    // Eigen::MatrixXd jt_pt(6,1);
+    // // jt_pt << 0.0110905 ,    1.0197,   -0.45436 ,  -0.41917 ,   1.40321 ,   1.81633;
+    // jt_pt << 0, 90, 20, 0, 0, 0;
+    // jt_pt *= (M_PI/180);
+    // KDL::JntArray jt_pt_kdl = DFMapping::Eigen_to_KDLJoints(jt_pt);
+    // KDL::Frame frame; robot.FK_KDL_TCP(jt_pt_kdl,frame);
+    // std::vector<Eigen::MatrixXd> fk_kdl = robot.get_robot_FK_all_links(DFMapping::KDLFrame_to_Eigen(frame));
+    // for (int i=0; i<fk_kdl.size(); ++i)
+    //     std::cout<< fk_kdl[i] << "\n";
+    // std::cout<< "Collision Status: " << wm.inCollision( fk_kdl ) << "\n";
+    // trajectory.resize(1,6);
+    // trajectory.row(0) = jt_pt.col(0).transpose();
 
 
     double elapsed;
@@ -135,24 +172,31 @@ int main(int argc, char** argv){
     start_time = boost::posix_time::microsec_clock::local_time();
 
 
+    // Using Sequential IK
+    std::cout<< "Solving IK......\n";
+    Eigen::VectorXd jt_config;
+    if (ik_handler.solveIK(path.row(0))){ // IK for first row
+        jt_config = ik_handler.solution.col(0); // First solution out of many
+        ik_handler.init_guess.col(0) = jt_config;
+        std::cout<< "The first configuration in degrees is: \n"
+        << ik_handler.init_guess.col(0).transpose()*180/M_PI << "\n\n";
+        double acc_error = 0;
+        for (int i=0; i<path.rows(); ++i){
+            if (ik_handler.solveIK(path.row(i)))
+                jt_config = ik_handler.closest_sol;
+            else
+                break;
+            trajectory.conservativeResize(i+1,robot.NrOfJoints);
+            trajectory.row(i) = jt_config.transpose();
+            ik_handler.init_guess = jt_config;
+            success_flags(i,0) = ik_handler.status;
+            acc_error += ik_handler.f_val;
+        }
+        std::cout<< "Trajectory\n" << trajectory << "\n";
+    }
 
-    // // Using Sequential IK
-    // std::cout<< "Solving IK......\n";
-    // ik_handler.init_guess = init_guess.col(0);
-    // double acc_error = 0;
-    // for (int i=0; i<path.rows(); ++i){
-    //     Eigen::VectorXd jt_config;
-    //     if (ik_handler.solveIK(path.row(i)))
-    //         jt_config = ik_handler.solution;
-    //     else
-    //         break;
-    //     trajectory.conservativeResize(i+1,robot.NrOfJoints);
-    //     trajectory.row(i) = jt_config.transpose();
-    //     ik_handler.init_guess = jt_config;
-    //     success_flags(i,0) = ik_handler.status;
-    //     acc_error += ik_handler.f_val;
-    // }
-    // std::cout<< trajectory << "\n";
+
+
 
 
 
@@ -183,21 +227,40 @@ int main(int argc, char** argv){
     // acc_error = min_err;    
 
     
+    // ik_handler.solveIK(path.row(0));
+    // ik_handler.init_guess = ik_handler.solution.col(1);
+    // double acc_error = 0;
+    // ss_searches search_handler;
+    // Eigen::MatrixXd ret_val;
+    // if(!search_handler.djk_v2(&ik_handler, &wm, wpTol,ret_val)){
+    //     std::cout<< "Search Failed. No solution found\n";
+    //     trajectory.resize(1,ik_handler.OptVarDim);
+    //     trajectory.row(0) << ik_handler.init_guess.col(0).transpose();
+    // }
+    // else{
+    //     trajectory = ret_val.block(0,0,ret_val.rows(),robot.NrOfJoints);
+    //     success_flags = ret_val.block(0,robot.NrOfJoints,ret_val.rows(),1);
+    // }
+    // std::cout<< trajectory << "\n";
 
-    double acc_error = 0;
-    ss_searches search_handler;
-    Eigen::MatrixXd ret_val;
-    if(!search_handler.djk_v1(&ik_handler, wpTol,ret_val)){
-        std::cout<< "Search Failed. No solution found\n";
-        trajectory.resize(1,ik_handler.OptVarDim);
-        trajectory.row(0) << ik_handler.init_guess.col(0).transpose();
-    }
-    else{
-        trajectory = ret_val.block(0,0,ret_val.rows(),robot.NrOfJoints);
-        success_flags = ret_val.block(0,robot.NrOfJoints,ret_val.rows(),1);
-    }
-    std::cout<< trajectory << "\n";
 
+
+    // Delete me
+    // trajectory.resize(1,6);
+    // // trajectory.row(0) << 5.95038, 4.97482, 2.00564, 5.08648, 2.76735, 5.50569;
+    // // trajectory.row(0) << 0,0,0,0,0,0;
+    // trajectory.row(0) << 0,-90,0,-90,0,0;
+    // trajectory.row(0) *= (M_PI/180);
+
+    // Eigen::MatrixXd jt_config(6,1);
+    // jt_config<< trajectory.row(0).transpose();
+    // std::cout<< "KDL FK: \n";
+    // KDL::Frame frame;
+    // KDL::JntArray fuck = DFMapping::Eigen_to_KDLJoints(jt_config);
+    // robot.FK_KDL_Flange(fuck,frame);
+    // std::cout<< DFMapping::KDLFrame_to_Eigen(frame) << "\n\n";
+    // std::cout<< "IKfast FK: \n";
+    // std::cout<< ik_analytical::compute_FK(jt_config) << "\n";
 
 
 
