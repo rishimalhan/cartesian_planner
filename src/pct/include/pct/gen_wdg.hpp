@@ -24,7 +24,7 @@ static bool gen_WDG(ikHandler* ik_handler, const std::vector<Eigen::MatrixXd> wp
                        std::vector<std::vector<int>>& node_ids, int& node_cnt, std::vector<std::vector<Eigen::VectorXi>>& WDG,
                        std::vector<Eigen::MatrixXd>& wpTol_filtered){ // output is wpTol_filtered and WDG
     bool status;
-    double max_deviation = 180*M_PI / 180; // All nodes within x degrees of parent are children
+    double max_deviation = 30*M_PI / 180; // All nodes within x degrees of parent are children
 
     wpTol_filtered.clear();
 

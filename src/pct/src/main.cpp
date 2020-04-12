@@ -172,28 +172,28 @@ int main(int argc, char** argv){
     start_time = boost::posix_time::microsec_clock::local_time();
 
 
-    // Using Sequential IK
-    std::cout<< "Solving IK......\n";
-    Eigen::VectorXd jt_config;
-    if (ik_handler.solveIK(path.row(0))){ // IK for first row
-        jt_config = ik_handler.solution.col(0); // First solution out of many
-        ik_handler.init_guess.col(0) = jt_config;
-        std::cout<< "The first configuration in degrees is: \n"
-        << ik_handler.init_guess.col(0).transpose()*180/M_PI << "\n\n";
-        double acc_error = 0;
-        for (int i=0; i<path.rows(); ++i){
-            if (ik_handler.solveIK(path.row(i)))
-                jt_config = ik_handler.closest_sol;
-            else
-                break;
-            trajectory.conservativeResize(i+1,robot.NrOfJoints);
-            trajectory.row(i) = jt_config.transpose();
-            ik_handler.init_guess = jt_config;
-            success_flags(i,0) = ik_handler.status;
-            acc_error += ik_handler.f_val;
-        }
-        std::cout<< "Trajectory\n" << trajectory << "\n";
-    }
+    // // Using Sequential IK
+    // std::cout<< "Solving IK......\n";
+    // Eigen::VectorXd jt_config;
+    // if (ik_handler.solveIK(path.row(0))){ // IK for first row
+    //     jt_config = ik_handler.solution.col(0); // First solution out of many
+    //     ik_handler.init_guess.col(0) = jt_config;
+        // std::cout<< "The first configuration in degrees is: \n"
+        // << ik_handler.init_guess.col(0).transpose()*180/M_PI << "\n\n";
+    //     double acc_error = 0;
+    //     for (int i=0; i<path.rows(); ++i){
+    //         if (ik_handler.solveIK(path.row(i)))
+    //             jt_config = ik_handler.closest_sol;
+    //         else
+    //             break;
+    //         trajectory.conservativeResize(i+1,robot.NrOfJoints);
+    //         trajectory.row(i) = jt_config.transpose();
+    //         ik_handler.init_guess = jt_config;
+    //         success_flags(i,0) = ik_handler.status;
+    //         acc_error += ik_handler.f_val;
+    //     }
+    //     std::cout<< "Trajectory\n" << trajectory << "\n";
+    // }
 
 
 
@@ -227,40 +227,28 @@ int main(int argc, char** argv){
     // acc_error = min_err;    
 
     
-    // ik_handler.solveIK(path.row(0));
-    // ik_handler.init_guess = ik_handler.solution.col(1);
-    // double acc_error = 0;
-    // ss_searches search_handler;
-    // Eigen::MatrixXd ret_val;
-    // if(!search_handler.djk_v2(&ik_handler, &wm, wpTol,ret_val)){
-    //     std::cout<< "Search Failed. No solution found\n";
-    //     trajectory.resize(1,ik_handler.OptVarDim);
-    //     trajectory.row(0) << ik_handler.init_guess.col(0).transpose();
-    // }
-    // else{
-    //     trajectory = ret_val.block(0,0,ret_val.rows(),robot.NrOfJoints);
-    //     success_flags = ret_val.block(0,robot.NrOfJoints,ret_val.rows(),1);
-    // }
-    // std::cout<< trajectory << "\n";
+    if(ik_handler.solveIK(path.row(0))){
+        ik_handler.init_guess.col(0) = ik_handler.solution.col(0);
+        std::cout<< "The first configuration in degrees is: \n"
+        << ik_handler.init_guess.col(0).transpose()*180/M_PI << "\n\n";
+    }
+
+    double acc_error = 0;
+    ss_searches search_handler;
+    Eigen::MatrixXd ret_val;
+    if(!search_handler.djk_v1(&ik_handler, &wm, wpTol,ret_val)){
+        std::cout<< "Search Failed. No solution found\n";
+        trajectory.resize(1,ik_handler.OptVarDim);
+        trajectory.row(0) << ik_handler.init_guess.col(0).transpose();
+    }
+    else{
+        trajectory = ret_val.block(0,0,ret_val.rows(),robot.NrOfJoints);
+        success_flags = ret_val.block(0,robot.NrOfJoints,ret_val.rows(),1);
+    }
+    std::cout<< trajectory << "\n";
 
 
 
-    // Delete me
-    // trajectory.resize(1,6);
-    // // trajectory.row(0) << 5.95038, 4.97482, 2.00564, 5.08648, 2.76735, 5.50569;
-    // // trajectory.row(0) << 0,0,0,0,0,0;
-    // trajectory.row(0) << 0,-90,0,-90,0,0;
-    // trajectory.row(0) *= (M_PI/180);
-
-    // Eigen::MatrixXd jt_config(6,1);
-    // jt_config<< trajectory.row(0).transpose();
-    // std::cout<< "KDL FK: \n";
-    // KDL::Frame frame;
-    // KDL::JntArray fuck = DFMapping::Eigen_to_KDLJoints(jt_config);
-    // robot.FK_KDL_Flange(fuck,frame);
-    // std::cout<< DFMapping::KDLFrame_to_Eigen(frame) << "\n\n";
-    // std::cout<< "IKfast FK: \n";
-    // std::cout<< ik_analytical::compute_FK(jt_config) << "\n";
 
 
 
