@@ -8,10 +8,12 @@
     <!-- robot descriptions and visualizations -->          
     <!-- <param name="robot_description" -->
             <!-- command="$(find xacro)/xacro $(find robot_utilities)/urdf/kuka_iiwa7/iiwa7.urdf" />         -->
-    <!-- <param name="robot_description" -->
-            <!-- command="$(find xacro)/xacro $(find robot_utilities)/urdf/abb_irb2600/irb2600_12_165.urdf" />          -->
+            
     <param name="robot_description"
-            command="$(find xacro)/xacro $(find robot_utilities)/urdf/ur_10e/ur10e.urdf" />
+            command="$(find xacro)/xacro $(find robot_utilities)/urdf/abb_irb2600/irb2600_12_165.urdf" />
+
+    <!-- <param name="robot_description"
+            command="$(find xacro)/xacro $(find robot_utilities)/urdf/ur_10e/ur10e.urdf" /> -->
 
     <!-- Sander Tool Plot -->
     <param name="rob_tool" command="$(find xacro)/xacro $(find pct)/data/tools/sander.xacro"/>

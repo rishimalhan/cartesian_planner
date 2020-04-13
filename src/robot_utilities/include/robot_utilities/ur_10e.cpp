@@ -57,9 +57,9 @@ bool ComputeIk(const IkReal* eetrans, const IkReal* eerot, const IkReal* v_free,
     tf[14] = 0;
     tf[15] = 1;
 
-    tf[3] = eetrans[0];
-    tf[7] = eetrans[1];
-    tf[11] = eetrans[2];
+    // tf[3] = eetrans[0];
+    // tf[7] = eetrans[1];
+    // tf[11] = eetrans[2];
 
     // tf[0] = eerot[0];
     // tf[1] = eerot[1];
@@ -73,11 +73,13 @@ bool ComputeIk(const IkReal* eetrans, const IkReal* eerot, const IkReal* v_free,
     // tf[9] = eerot[7];
     // tf[10] = eerot[8];
 
-    // tf[3] = eetrans[0];
-    // tf[7] = eetrans[1];
-    // tf[11] = eetrans[2];
+
 
     // Target is wrt tool0 of urdf. We want wrt ee_link for solving IK
+    tf[3] = eetrans[0];
+    tf[7] = eetrans[1];
+    tf[11] = eetrans[2];
+
     tf[0] = eerot[2];
     tf[1] = -eerot[0];
     tf[2] = -eerot[1];
@@ -89,6 +91,8 @@ bool ComputeIk(const IkReal* eetrans, const IkReal* eerot, const IkReal* v_free,
     tf[8] = eerot[8];
     tf[9] = -eerot[6];
     tf[10] = -eerot[7];
+
+
 
 
     double q_sols[16*6];

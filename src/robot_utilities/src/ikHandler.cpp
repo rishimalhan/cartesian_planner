@@ -1,3 +1,12 @@
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// AUTHOR: RISHI MALHAN
+// CENTER FOR ADVANCED MANUFACTURING
+// UNIVERSITY OF SOUTHERN CALIFORNIA
+// EMAIL: rmalhan@usc.edu
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
 #include <robot_utilities/ikHandler.hpp>
 #include <limits>
 
@@ -20,10 +29,10 @@ ikHandler::ikHandler(SerialLink_Manipulator::SerialLink_Manipulator* _robot){
     OptVarDim = robot->NrOfJoints;
     jt_ll.resize(OptVarDim);
     jt_ul.resize(OptVarDim);
-    init_guess.resize(OptVarDim,1);
+    init_guess.resize(OptVarDim);
     // Default initial guess
     for (int i=0; i<OptVarDim; ++i){
-        init_guess(i,0) = 0;
+        init_guess(i) = 0;
         jt_ll(i) = robot->Joints_ll(i);
         jt_ul(i) = robot->Joints_ul(i);
     }
@@ -59,9 +68,27 @@ ikHandler::ikHandler(SerialLink_Manipulator::SerialLink_Manipulator* _robot){
     optimizer.set_maxeval(2000);
     status = false;
     target.resize(12);
+
+    // Inverse of world_T_robot_base
+    world_T_robBase = Eigen::MatrixXd::Identity(4,4);
+    world_T_robBase = DFMapping::KDLFrame_to_Eigen(robot->BaseFrame);
+    world_T_robBase.block(0,0,3,1) /= world_T_robBase.block(0,0,3,1).norm();
+    world_T_robBase.block(0,1,3,1) /= world_T_robBase.block(0,1,3,1).norm();
+    world_T_robBase.block(0,2,3,1) /= world_T_robBase.block(0,2,3,1).norm();
+
+    // std::cout<< "Robot base frame is at: \n" << world_T_robBase << "\n";
+    robBase_T_world = Eigen::MatrixXd::Identity(4,4);
+    robBase_T_world.block(0,0,3,3)  = world_T_robBase.block(0,0,3,3).transpose();
+    robBase_T_world.block(0,3,3,1) = -world_T_robBase.block(0,0,3,3).transpose()*world_T_robBase.block(0,3,3,1);
+
+    robBase_T_world.block(0,0,3,1) /= robBase_T_world.block(0,0,3,1).norm();
+    robBase_T_world.block(0,1,3,1) /= robBase_T_world.block(0,1,3,1).norm();
+    robBase_T_world.block(0,2,3,1) /= robBase_T_world.block(0,2,3,1).norm();
+
     std::cout<< "#########################################################################\nikHandler initialization complete\n" <<
     "#########################################################################\n";
 
+    urIKPatch = false;
 
     // Eigen::MatrixXd jt_config(6,1);
     // jt_config<< 0,-90,0,0,0,0;
@@ -102,8 +129,39 @@ double ikHandler::err_func(const std::vector<double>& x)
                pow( 1 - (target(9)*FK_tcp(0,2) + target(10)*FK_tcp(1,2) + target(11)*FK_tcp(2,2)) , 2 ) ); //bz
 };
 
+void ikHandler::setTcpFrame(const Eigen::MatrixXd& _tcpframe){
+    robot->TCPFrame = DFMapping::Eigen_to_KDLFrame(_tcpframe);
+};
 
 
+void ikHandler::enable_URikPatch(){urIKPatch = true;}
+void ikHandler::disable_URikPatch(){urIKPatch = false;}
+
+void ikHandler::apply_URikPatch(Eigen::MatrixXd &solutions){
+    // std::cout<< "Original Solutions: \n" << solutions << "\n";
+    int ctr = 0;
+    Eigen::MatrixXd new_sols;
+    for (int i=0; i<solutions.rows();++i){
+        for (int j=0; j<6; ++j){
+            // Rotate +360
+            if (solutions(i,j) < 0){
+                new_sols.conservativeResize(ctr+1,6);
+                new_sols.row(ctr) = solutions.row(i); 
+                new_sols(ctr,j) += M_PI*2; ctr++;
+            }
+            // Rotate -360
+            if (solutions(i,j) > 0){
+                new_sols.conservativeResize(ctr+1,6);
+                new_sols.row(ctr) = solutions.row(i); 
+                new_sols(ctr,j) -= M_PI*2; ctr++;
+            }
+        }
+    }
+    // std::cout<< "New Solutions: \n" << solutions << "\n" << new_sols << "\n";
+    int orig_size = solutions.rows();
+    solutions.conservativeResize(orig_size+new_sols.rows(),6);
+    solutions.block(orig_size,0,new_sols.rows(),6) = new_sols;
+};
 
 
 //////////////////////// MAIN FUNCTION //////////////////////////////////////////////////
@@ -111,6 +169,17 @@ bool ikHandler::solveIK(Eigen::VectorXd _target){
     _target.segment(3,3) /= _target.segment(3,3).norm();
     _target.segment(6,3) /= _target.segment(6,3).norm();
     _target.segment(9,3) /= _target.segment(9,3).norm();
+
+    // Find target with respect to robot base
+    Eigen::Matrix4d target_robBase = Eigen::Matrix4d::Identity();
+    target_robBase.block(0,0,3,1) = _target.segment(3,3);
+    target_robBase.block(0,1,3,1) = _target.segment(6,3);
+    target_robBase.block(0,2,3,1) = _target.segment(9,3);
+    target_robBase.block(0,3,3,1) = _target.segment(0,3);
+    target_robBase = robBase_T_world*target_robBase;
+
+
+    // Solve IK for target wrt robot base frame
     status = true;
     // Numerical IK
     if (OptVarDim > 6 || useNumIK){
@@ -119,7 +188,7 @@ bool ikHandler::solveIK(Eigen::VectorXd _target){
         
         std::vector<double> iterator(OptVarDim);
         for (int i=0; i<OptVarDim; ++i)
-            iterator[i] = init_guess(i,0);
+            iterator[i] = init_guess(i);
 
         // NLopt routine
         bool optSuccess = false;
@@ -152,29 +221,21 @@ bool ikHandler::solveIK(Eigen::VectorXd _target){
         tcp_T_ff.block(0,1,3,1) /= tcp_T_ff.block(0,1,3,1).norm();
         tcp_T_ff.block(0,2,3,1) /= tcp_T_ff.block(0,2,3,1).norm();
 
-        // Transform the target to the flange
-        target(0) = _target(3)*tcp_T_ff(0,3) + _target(6)*tcp_T_ff(1,3) + _target(9)*tcp_T_ff(2,3) + _target(0);
-        target(1) = _target(4)*tcp_T_ff(0,3) + _target(7)*tcp_T_ff(1,3) + _target(10)*tcp_T_ff(2,3) + _target(1);
-        target(2) = _target(5)*tcp_T_ff(0,3) + _target(8)*tcp_T_ff(1,3) + _target(11)*tcp_T_ff(2,3) + _target(2);
+        // Transform target to flange
+        target_robBase = target_robBase*tcp_T_ff;
 
-        //bx
-        target(3) = _target(3)*tcp_T_ff(0,0) + _target(6)*tcp_T_ff(1,0) + _target(9)*tcp_T_ff(2,0);
-        target(4) = _target(4)*tcp_T_ff(0,0) + _target(7)*tcp_T_ff(1,0) + _target(10)*tcp_T_ff(2,0);
-        target(5) = _target(5)*tcp_T_ff(0,0) + _target(8)*tcp_T_ff(1,0) + _target(11)*tcp_T_ff(2,0);
+        target.segment(3,3) = target_robBase.block(0,0,3,1);
+        target.segment(6,3) = target_robBase.block(0,1,3,1);
+        target.segment(9,3) = target_robBase.block(0,2,3,1);
+        target.segment(0,3) = target_robBase.block(0,3,3,1);
 
-        //by
-        target(6) = _target(3)*tcp_T_ff(0,1) + _target(6)*tcp_T_ff(1,1) + _target(9)*tcp_T_ff(2,1);
-        target(7) = _target(4)*tcp_T_ff(0,1) + _target(7)*tcp_T_ff(1,1) + _target(10)*tcp_T_ff(2,1);
-        target(8) = _target(5)*tcp_T_ff(0,1) + _target(8)*tcp_T_ff(1,1) + _target(11)*tcp_T_ff(2,1);
 
-        //bz
-        target(9) = _target(3)*tcp_T_ff(0,2) + _target(6)*tcp_T_ff(1,2) + _target(9)*tcp_T_ff(2,2);
-        target(10) = _target(4)*tcp_T_ff(0,2) + _target(7)*tcp_T_ff(1,2) + _target(10)*tcp_T_ff(2,2);
-        target(11) = _target(5)*tcp_T_ff(0,2) + _target(8)*tcp_T_ff(1,2) + _target(11)*tcp_T_ff(2,2);
         Eigen::MatrixXd sol_mat;
         ik_analytical::compute_IK(target,status,sol_mat);
         if (!status)
             return status;
+        if (urIKPatch)
+            apply_URikPatch(sol_mat);
         status = false; // Make status false again so we can check if solutions exist
         double config_dist = std::numeric_limits<double>::infinity();
         int ctr = 0;
@@ -188,7 +249,7 @@ bool ikHandler::solveIK(Eigen::VectorXd _target){
                 (sol_mat(i,5)>=jt_ll(5) && sol_mat(i,5)<=jt_ul(5))) 
             {
                 // Add it to solution. Also check if this is closest to given config
-                double dist = (sol_mat.row(i).transpose() - init_guess.col(0)).norm();
+                double dist = (sol_mat.row(i).transpose() - init_guess).norm();
                 if (dist < config_dist){
                     closest_sol << sol_mat.row(i).transpose();
                     config_dist = dist;

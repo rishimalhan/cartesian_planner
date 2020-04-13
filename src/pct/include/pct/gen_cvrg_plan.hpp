@@ -87,15 +87,14 @@ static Eigen::MatrixXd gen_cvrg_plan(){
     ///////////////////////////////////////////////////////////////////////
 
     // Gap between 2 hatching lines -
+    double pathgap; // mm
     double pathgap_x; // mm
     double pathgap_y; // mm
 
-    if(!ros::param::get("/cvrg_path_parameters/path_gap_x", pathgap_x))
-        ROS_INFO("FAIL TO LOAD PARAMETER: path_gap_x");
-    if(!ros::param::get("/cvrg_path_parameters/path_gap_y", pathgap_y))
-        ROS_INFO("FAIL TO LOAD PARAMETER: path_gap_y");
-    pathgap_x *= 1000;
-    pathgap_y *= 1000;
+    if(!ros::param::get("/cvrg_path_parameters/path_gap", pathgap))
+        ROS_INFO("FAIL TO LOAD PARAMETER: path_gap");
+    pathgap_x = pathgap*1000;
+    pathgap_y = pathgap*1000;
     // grid addition (NOTE: higher number for higher aspect ratio of part in xy plane)
     double grid_addition = 0.2;
     

@@ -267,7 +267,7 @@ Eigen::MatrixXd rtf::eul2bxbybz(Eigen::MatrixXd eul_angles, std::string seq)
     for (unsigned int i=0;i<eul_angles.rows();++i)
     {
         Eigen::Matrix3d R = rtf::eul2rot(eul_angles.row(i),seq);
-        std::cout<< R << "\n";
+        // std::cout<< R << "\n";
         bxbybz.row(i) << R(0,0),R(1,0),R(2,0),R(0,1),R(1,1),R(2,1),R(0,2),R(1,2),R(2,2);
     }
     return bxbybz;

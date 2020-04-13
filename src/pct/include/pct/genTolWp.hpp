@@ -15,7 +15,8 @@
 #include <Eigen/Eigen>
 #include <cmath>
 
-std::vector<Eigen::MatrixXd> gen_wp_with_tolerance(const Eigen::MatrixXd& tolerances, double resolution, const Eigen::MatrixXd& path){
+std::vector<Eigen::MatrixXd> gen_wp_with_tolerance(const Eigen::MatrixXd& tolerances,
+                 double resolution, const Eigen::MatrixXd& path){
     std::vector<Eigen::MatrixXd> tolWP(path.rows());
     tolWP.clear();
     for (int i=0; i<path.rows();++i){
@@ -29,6 +30,7 @@ std::vector<Eigen::MatrixXd> gen_wp_with_tolerance(const Eigen::MatrixXd& tolera
         wp_subset.block(ctr,9,1,3) = path.block(i,9,1,3);
         ctr += 1;
         for (double angle = resolution; angle<=tolerances(i,0)/2; angle+=resolution){
+            Eigen::Matrix4d prev_tf;
             // Alternately apply rotation about Z axis
             for(int sign=-1; sign<2; sign+=2){
                 Eigen::Matrix3d rot;
@@ -38,6 +40,10 @@ std::vector<Eigen::MatrixXd> gen_wp_with_tolerance(const Eigen::MatrixXd& tolera
                 Eigen::Matrix4d p_T_pp = Eigen::Matrix4d::Identity();
                 p_T_pp.block(0,0,3,3) = rtf::rot_z(sign*angle);
                 Eigen::Matrix4d w_T_pp = rtf::hom_T(path.block(i,0,1,3).transpose(),rot) * p_T_pp; // W_T_p' = W_T_p * P_T_p'
+                if(prev_tf.isApprox(w_T_pp,1e-3)){ // If this waypoint is same as before then don't add
+                    continue;
+                }
+                prev_tf = w_T_pp;
                 wp_subset.conservativeResize(ctr+1,12);
                 wp_subset.block(ctr,0,1,3) = w_T_pp.block(0,3,3,1).transpose();
                 wp_subset.block(ctr,3,1,3) = w_T_pp.block(0,0,3,1).transpose();
@@ -47,6 +53,7 @@ std::vector<Eigen::MatrixXd> gen_wp_with_tolerance(const Eigen::MatrixXd& tolera
             }
         }
         tolWP.push_back(wp_subset);
+        // std::cout<< wp_subset << "\n\n";
     }
     return tolWP;
 }

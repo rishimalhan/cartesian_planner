@@ -446,15 +446,27 @@ namespace WM{
 	// 	return inSelfCollision(link_Transforms) || inEnvCollision(link_Transforms)|| inWorkpieceCollision(link_Transforms);
 	// };
 	
+	// bool WM::inSelfCollision(const std::vector<Eigen::MatrixXd>& link_Transforms){
+	// 	// std::cout << " self coll 1" << std::endl;
+	// 	// bool flag = inSelfCollision(convertEigen2FCLFrames(link_Transforms));
+	// 	// std::cout << " self coll 1.1" << std::endl;
+	// 	// return flag;
+	// 	// return inSelfCollision(convertEigen2FCLFrames(link_Transforms));
+
+	// 	return applySelfCollisionPatch(link_Transforms);
+	// };
+
 	bool WM::inSelfCollision(const std::vector<Eigen::MatrixXd>& link_Transforms){
 		// std::cout << " self coll 1" << std::endl;
 		// bool flag = inSelfCollision(convertEigen2FCLFrames(link_Transforms));
 		// std::cout << " self coll 1.1" << std::endl;
 		// return flag;
 		// return inSelfCollision(convertEigen2FCLFrames(link_Transforms));
-
-		return applySelfCollisionPatch(link_Transforms);
+		return RCp->selfCollisionQuery(convertEigen2FCLFrames(link_Transforms));
+		// return applySelfCollisionPatch(link_Transforms);
 	};
+
+
 	// bool WM::inSelfCollision(const std::vector<fcl::Transform3<double>> link_Transforms){
 	// 	// std::cout << " self coll 2" << std::endl;
 	// 	// std::cout << " self coll count: " << RCp->selfCollisionQuery(link_Transforms) << std::endl;

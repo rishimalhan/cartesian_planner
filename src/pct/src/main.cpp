@@ -1,3 +1,16 @@
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// AUTHOR: RISHI MALHAN
+// CENTER FOR ADVANCED MANUFACTURING
+// UNIVERSITY OF SOUTHERN CALIFORNIA
+// EMAIL: rmalhan@usc.edu
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// 
+// E:222600800 Breakdown
+// N:651705 E:125212950 Breakdown
+// N:434470 E:55650200 Works nut 7 GB memory
+// N:347576 E:35616128 Safe limit 4 GB memory
+
 #include <iostream>
 #include <pct/gen_cvrg_plan.hpp>
 #include <ros/ros.h>
@@ -10,14 +23,29 @@
 #include <robot_utilities/SerialLink_Manipulator.hpp>
 #include <Eigen/Eigen>
 #include <robot_utilities/Data_Format_Mapping.hpp>
-#include <boost/date_time.hpp>
 #include <robot_utilities/world_manager.hpp>
 #include <pct/ss_searches.hpp>
-
+#include <pct/node_description.hpp>
+#include <pct/gen_nodes.hpp>
+#include <pct/build_graph.hpp>
+#include <pct/graph_description.hpp>
+#include <pct/graph_searches.hpp>
+#include <pct/timer.hpp>
 
 
 int main(int argc, char** argv){
-    double resolution = 18*M_PI / 180;
+    ros::init(argc,argv,"pct_main");
+    ros::NodeHandle main_handler;
+    ros::Publisher cvrg_pub = main_handler.advertise<std_msgs::Bool>("cvrg_status",1000);
+
+
+
+    double resolution;
+    if(!ros::param::get("/sampling_res",resolution)){
+        std::cout<< "Unable to Obtain Sampling Resolution\n";
+        return 0;
+    }
+    resolution *= (M_PI / 180);
     double angle = 360*M_PI / 180;
 
 
@@ -31,6 +59,7 @@ int main(int argc, char** argv){
     // // This will be replaced with more redundant configurations
     // Eigen::MatrixXd init_guess(7,1);
     // init_guess << 0.31189,0.2209,-0.1785,-1.5357,0.0176,1.3463,0;
+    // KDL::Frame base_frame = KDL::Frame::Identity();
 
 
     // // ROBOT IRB2600
@@ -40,7 +69,7 @@ int main(int argc, char** argv){
     // std::string rob_tip_link = "tool0";
     // std::string urdf_path = ros::package::getPath("robot_utilities") + "/urdf/abb_irb2600/irb2600_12_165.urdf";
     // std::string robot_obj = ros::package::getPath("robot_utilities") + "/rob_objs/abb_irb2600/";
-
+    // KDL::Frame base_frame = KDL::Frame::Identity();
 
 
     // ROBOT UR10e
@@ -50,11 +79,13 @@ int main(int argc, char** argv){
     std::string rob_tip_link = "tool0";
     std::string urdf_path = ros::package::getPath("robot_utilities") + "/urdf/ur_10e/ur10e.urdf";
     std::string robot_obj = ros::package::getPath("robot_utilities") + "/rob_objs/ur_10e/";
-    
+    Eigen::VectorXd w_T_b_eul(3);
+    w_T_b_eul << M_PI,0,0;
+    Eigen::MatrixXd w_T_b = Eigen::MatrixXd::Identity(4,4);
+    w_T_b.block(0,0,3,3) = rtf::eul2rot(w_T_b_eul.transpose(),"ZYX");
+    KDL::Frame base_frame = DFMapping::Eigen_to_KDLFrame(w_T_b);
+    // KDL::Frame base_frame = KDL::Frame::Identity();
 
-    ros::init(argc,argv,"pct_main");
-    ros::NodeHandle main_handler;
-    ros::Publisher cvrg_pub = main_handler.advertise<std_msgs::Bool>("cvrg_status",1000);
 
     // std_msgs::Bool msg1;
     // msg1.data = true;
@@ -82,15 +113,13 @@ int main(int argc, char** argv){
     std::cout<< "Creating Robot\n";
     // Create the robot
     Eigen::Matrix4d world_T_base = Eigen::Matrix4d::Identity(4,4);
-
-    KDL::Frame base_frame = KDL::Frame::Identity();
     KDL::Frame tcp_frame = DFMapping::Eigen_to_KDLFrame(ff_T_tool);
 
     SerialLink_Manipulator::SerialLink_Manipulator robot(urdf_path, base_frame, tcp_frame, rob_base_link, rob_tip_link);
     Eigen::MatrixXd jt_lb = DFMapping::KDLJoints_to_Eigen(robot.Joints_ll);
     Eigen::MatrixXd jt_ub = DFMapping::KDLJoints_to_Eigen(robot.Joints_ul);
     ikHandler ik_handler(&robot);
-
+    ik_handler.init_guess = init_guess.col(0);
 
 
     // Create Collision Checker
@@ -109,10 +138,10 @@ int main(int argc, char** argv){
     Eigen::Matrix4d world_T_part = Eigen::Matrix4d::Identity();
     world_T_part.block(0,0,3,3) = rtf::eul2rot(tf_eigen.segment(3,3).transpose(),"XYZ");
     world_T_part.block(0,3,3,1) = tf_eigen.segment(0,3);
-    wm.addWorkpiece(wp_path, world_T_part); // Assumes robot base frame is at world
     std::vector<Eigen::MatrixXd> zero_fk = robot.get_robot_FK_all_links( Eigen::MatrixXd::Ones(robot.NrOfJoints,1)*0 );
+    wm.addTool(toolstl_path);
     wm.prepareSelfCollisionPatch(zero_fk);
-    // wm.addTool(toolstl_path);
+    wm.addWorkpiece(wp_path, world_T_part);
 
 
     // Generate Path
@@ -145,31 +174,59 @@ int main(int argc, char** argv){
     ros::param::get("/cvrg_file_paths/success_flags",success_flag_path);
 
 
-    ik_handler.init_guess = init_guess.col(0);
+
+
+    // Generate tcp_list
+    double no_tcps;
+    if(!ros::param::get("/no_tcps",no_tcps)){
+        std::cout<< "Unable to Obtain Number of TCPs\n";
+        return 0;
+    }
+    std::cout<< "Number of TCPs: " << no_tcps << "\n";
+    std::vector<Eigen::MatrixXd> tcp_list(no_tcps); // For now only 1 tcp
+    for (int i=0; i<tcp_list.size(); ++i)
+        tcp_list[i] = ff_T_tool;
+
+    
+
+
+// ////////////////////////////////////////////////////////////////////
+//     // test collision
+
+//     std::vector<double> config; config.clear();
+//     Eigen::MatrixXd jt_pt(6,1);
+//     std_msgs::Bool msg1;
+//     msg1.data = true;
+//     ROS_INFO("Publishing Message");
+//     ros::Rate loop_rate1(10);
+//     while(ros::ok()){
+//         ros::param::get("/rob_config",config);
+//         jt_pt << config[0], config[1],config[2],config[3], config[4],config[5];
+//         jt_pt *= (M_PI/180);
+//         std::vector<Eigen::MatrixXd> fk_kdl = robot.get_robot_FK_all_links(jt_pt);
+//         std::cout<< "Collision Status: " << wm.inCollision( fk_kdl ) << "\n";
+//         trajectory.resize(1,6);
+//         trajectory.row(0) = jt_pt.col(0).transpose();
+//         file_rw::file_write(traj_path,trajectory);
+//         cvrg_pub.publish(msg1);
+//         loop_rate1.sleep();
+//     }
+// ////////////////////////////////////////////////////////////////////
 
 
 
 
 
-    // // test collision
-    // Eigen::MatrixXd jt_pt(6,1);
-    // // jt_pt << 0.0110905 ,    1.0197,   -0.45436 ,  -0.41917 ,   1.40321 ,   1.81633;
-    // jt_pt << 0, 90, 20, 0, 0, 0;
-    // jt_pt *= (M_PI/180);
-    // KDL::JntArray jt_pt_kdl = DFMapping::Eigen_to_KDLJoints(jt_pt);
-    // KDL::Frame frame; robot.FK_KDL_TCP(jt_pt_kdl,frame);
-    // std::vector<Eigen::MatrixXd> fk_kdl = robot.get_robot_FK_all_links(DFMapping::KDLFrame_to_Eigen(frame));
-    // for (int i=0; i<fk_kdl.size(); ++i)
-    //     std::cout<< fk_kdl[i] << "\n";
-    // std::cout<< "Collision Status: " << wm.inCollision( fk_kdl ) << "\n";
-    // trajectory.resize(1,6);
-    // trajectory.row(0) = jt_pt.col(0).transpose();
 
 
-    double elapsed;
-    boost::posix_time::ptime start_time;
-    boost::posix_time::time_duration time_diff;
-    start_time = boost::posix_time::microsec_clock::local_time();
+
+    // double elapsed;
+    // boost::posix_time::ptime start_time;
+    // boost::posix_time::time_duration time_diff;
+    // start_time = boost::posix_time::microsec_clock::local_time();
+
+    timer timer;
+    timer.start();
 
 
     // // Using Sequential IK
@@ -177,9 +234,9 @@ int main(int argc, char** argv){
     // Eigen::VectorXd jt_config;
     // if (ik_handler.solveIK(path.row(0))){ // IK for first row
     //     jt_config = ik_handler.solution.col(0); // First solution out of many
-    //     ik_handler.init_guess.col(0) = jt_config;
-        // std::cout<< "The first configuration in degrees is: \n"
-        // << ik_handler.init_guess.col(0).transpose()*180/M_PI << "\n\n";
+    //     ik_handler.init_guess = jt_config;
+    //     std::cout<< "The first configuration in degrees is: \n"
+    //     << ik_handler.init_guess.transpose()*180/M_PI << "\n\n";
     //     double acc_error = 0;
     //     for (int i=0; i<path.rows(); ++i){
     //         if (ik_handler.solveIK(path.row(i)))
@@ -194,9 +251,6 @@ int main(int argc, char** argv){
     //     }
     //     std::cout<< "Trajectory\n" << trajectory << "\n";
     // }
-
-
-
 
 
 
@@ -227,30 +281,91 @@ int main(int argc, char** argv){
     // acc_error = min_err;    
 
     
-    if(ik_handler.solveIK(path.row(0))){
-        ik_handler.init_guess.col(0) = ik_handler.solution.col(0);
-        std::cout<< "The first configuration in degrees is: \n"
-        << ik_handler.init_guess.col(0).transpose()*180/M_PI << "\n\n";
-    }
 
-    double acc_error = 0;
-    ss_searches search_handler;
-    Eigen::MatrixXd ret_val;
-    if(!search_handler.djk_v1(&ik_handler, &wm, wpTol,ret_val)){
-        std::cout<< "Search Failed. No solution found\n";
+    // // Tree Search
+    // if(ik_handler.solveIK(path.row(0))){
+    //     ik_handler.init_guess.col(0) = ik_handler.solution.col(0);
+    //     std::cout<< "The first configuration in degrees is: \n"
+    //     << ik_handler.init_guess.col(0).transpose()*180/M_PI << "\n\n";
+    // }
+
+    // double acc_error = 0;
+    // ss_searches search_handler;
+    // Eigen::MatrixXd ret_val;
+    // if(!search_handler.djk_v1(&ik_handler, &wm, wpTol,ret_val)){
+        // std::cout<< "Search Failed. No solution found\n";
+        // trajectory.resize(1,ik_handler.OptVarDim);
+        // trajectory.row(0) << ik_handler.init_guess.col(0).transpose();
+    // }
+    // else{
+    //     trajectory = ret_val.block(0,0,ret_val.rows(),robot.NrOfJoints);
+    //     success_flags = ret_val.block(0,robot.NrOfJoints,ret_val.rows(),1);
+    // }
+    // std::cout<< trajectory << "\n";
+
+
+
+    // Graph Search
+    std::vector<node*> node_map;
+    std::vector<Eigen::VectorXi> node_list;
+    success_flags = Eigen::MatrixXd::Ones(wpTol.size(),1)*0;
+    if(!gen_nodes(&ik_handler, &wm, wpTol, tcp_list, node_map, node_list)){
+        std::cout<< "Nodes could not be generated. No solution found\n";
         trajectory.resize(1,ik_handler.OptVarDim);
         trajectory.row(0) << ik_handler.init_guess.col(0).transpose();
     }
     else{
-        trajectory = ret_val.block(0,0,ret_val.rows(),robot.NrOfJoints);
-        success_flags = ret_val.block(0,robot.NrOfJoints,ret_val.rows(),1);
+        std::cout<< "Nodes generation compute time: " << timer.elapsed() << std::endl;
+        boost_graph graph;
+        std::vector<bool> root_connectivity;
+        if(!build_graph(node_map,node_list,&graph,root_connectivity)){
+            std::cout<< "Edges could not be created. No solution found\n";
+            trajectory.resize(1,ik_handler.OptVarDim);
+            trajectory.row(0) << ik_handler.init_guess.col(0).transpose();
+        }
+        else{
+            std::cout<< "Graph generation compute time: " << timer.elapsed() << std::endl;
+            Eigen::VectorXi strt_nodes = node_list[0];
+            double lowest_cost = std::numeric_limits<double>::infinity();
+            // Run Search For Multiple Start Configs
+            for (int i=0; i<strt_nodes.size(); ++i){
+                if (!root_connectivity[i])
+                    continue;
+                int root_node = strt_nodes(i);
+                Eigen::VectorXd root_config = node_map[root_node]->jt_config;
+                std::cout<< "Robot Config in Degrees: " << root_config.transpose()*(180/M_PI) << "\n";
+                // Change the start vertex in graph
+                vertex_descriptor s = vertex(root_node, graph.g); graph.s = s;
+                Eigen::VectorXi id_path;
+                if(graph_searches::djikstra(&graph,id_path)){ // Get the shortest path to a leaf node in terms of node ids
+                    // Generate Trajectory
+                    Eigen::MatrixXd curr_traj(wpTol.size(), robot.NrOfJoints);
+                    for(int i=0; i<id_path.size(); ++i)
+                        curr_traj.row(i) = node_map[id_path(i)]->jt_config.transpose();
+                    // Evaluate trajectory cost
+                    double path_cost = 0;
+                    for (int i=0; i<curr_traj.rows()-1;++i){
+                        Eigen::ArrayXd jt_diff = (curr_traj.row(i+1) - curr_traj.row(i)).transpose();
+                        path_cost += jt_diff.abs().maxCoeff();
+                    }
+                    if (path_cost<lowest_cost){
+                        std::cout<< "Found Path With Lower Cost. Current Path Cost: " << path_cost << "\n\n";
+                        lowest_cost = path_cost;
+                        trajectory = curr_traj;
+                    }
+                    success_flags = Eigen::MatrixXd::Ones(wpTol.size(),1);
+                }
+                else
+                    std::cout<< "Discontinuity detected for this configuration\n";
+            }
+
+            std::cout<< "Trajectory: \n" << trajectory << "\n";
+        }
     }
-    std::cout<< trajectory << "\n";
 
 
 
-
-
+    
 
     // Evaluate trajectory cost
     double path_cost = 0;
@@ -259,11 +374,10 @@ int main(int argc, char** argv){
         path_cost += jt_diff.abs().maxCoeff();
     }
 
-
+    std::cout<< "Number of waypoints: " << wpTol.size() << "\n";
+    std::cout<< "Number of TCPs: " << no_tcps << "\n";
     std::cout<< "Trajectory Cost: " << path_cost << "\n";
-    time_diff = boost::posix_time::microsec_clock::local_time() - start_time;
-    elapsed = time_diff.total_nanoseconds() / 1e9;  
-    std::cout<< "compute time: " << elapsed << std::endl;
+    std::cout<< "Total compute time: " << timer.elapsed() << std::endl;
 
     file_rw::file_write(traj_path,trajectory);
     file_rw::file_write(success_flag_path,success_flags);
@@ -286,6 +400,76 @@ int main(int argc, char** argv){
 
 /*
 // CODE NOT REQUIRED FOR NOW
+
+
+
+// ik_handler.enable_URikPatch();
+    // // Check Ariyan's points
+    // std::cout<< "\n\n\n";
+    // Eigen::MatrixXd points(4,6);
+    // points<< -27.96, -309.59, 1487.29, 1.978, 0.103, -5.386,
+    //         -404.92, 386.56, 190.81, 2.559, 0.648, 0.228,
+    //         -120.09, 358.45, 972.77, 0.026, -0.014, -0.162,
+    //         -211.58, 29.11, 1091.52, 1.041, -0.180, -5.663;
+    // points.block(0,0,points.rows(),3) /= 1000;
+    // Eigen::MatrixXd jt_pts(4,6);
+    // jt_pts<< -61.54, -100.26, 5.04, 195.66, -92.28, 0.82,
+    //         -61.46, -79.36, 128.56, 250.54, -92.27, 0.82,
+    //         -99.51, -100.25, 92.53, 96.18, -89.31, -0.01,
+    //         -61.46, -117.34, 92.36, 119.93, -92.27, 0.82;
+    // jt_pts *= (M_PI/180) ;
+
+
+
+
+    // // IK Check
+    // for (int i=0; i<points.rows();++i){
+    //     Eigen::VectorXd target(12);
+    //     target.segment(3,9) = rtf::eul2bxbybz(points.block(i,3,1,3),"ZYX").row(0).transpose();
+    //     target.segment(0,3) = points.block(i,0,1,3).transpose();
+    //     std::cout<< "Target: \n" << target.transpose() << "\n";
+    //     ik_handler.init_guess = jt_pts.row(i).transpose();
+    //     if (ik_handler.solveIK(target)){
+    //         std::cout<< "Closest Solution for point: " << i+1 << "\n";
+    //         std::cout<< ik_handler.closest_sol.transpose()*(180/M_PI) << "\n\n";
+    //         std::cout<< "KDL FK: \n";
+    //         KDL::Frame frame;
+    //         KDL::JntArray fuck = DFMapping::Eigen_to_KDLJoints(ik_handler.closest_sol);
+    //         robot.FK_KDL_Flange(fuck,frame);
+    //         std::cout<< w_T_b*DFMapping::KDLFrame_to_Eigen(frame) << "\n\n";
+    //     }
+    //     else
+    //         std::cout<< "Fucked!\n";
+    // }
+    // std::cout<< "\n\n\n";
+
+
+    // std::cout<< "\n\n\n";
+    // // FK check
+    // for (int i=0; i<jt_pts.rows();++i){
+    //     std::cout<< "KDL FK: \n";
+    //     KDL::Frame frame;
+    //     KDL::JntArray fuck = DFMapping::Eigen_to_KDLJoints(jt_pts.row(i).transpose());
+    //     robot.FK_KDL_Flange(fuck,frame);
+    //     std::cout<< w_T_b*DFMapping::KDLFrame_to_Eigen(frame) << "\n\n";
+    // }
+    // std::cout<< "\n\n\n";
+
+    // trajectory.resize(1,6);
+    // trajectory.row(0) << 0, -90, 0, -90, 0, 0;
+
+
+    // trajectory.row(0) *= (M_PI/180);
+    // Eigen::MatrixXd jt_config = trajectory.row(0).transpose();
+    // std::cout<< "KDL FK: \n";
+    // KDL::Frame frame;
+    // KDL::JntArray fuck = DFMapping::Eigen_to_KDLJoints(jt_config);
+    // robot.FK_KDL_Flange(fuck,frame);
+    // std::cout<< w_T_b*DFMapping::KDLFrame_to_Eigen(frame) << "\n\n";
+
+
+
+
 // init_guess << 0,0,0,0,0,0,0;
 KDL::JntArray theta = DFMapping::Eigen_to_KDLJoints(init_guess); 
 KDL::Frame base_T_tcp;

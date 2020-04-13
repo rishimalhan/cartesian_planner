@@ -67,7 +67,7 @@ public:
             }
             else{
                 std::cout<< "IK successful for configuration: " << i << " Attempting Trajectory Search\n";
-                ik_handler->init_guess.col(0) = ik_handler->closest_sol;
+                ik_handler->init_guess = ik_handler->closest_sol;
             }
 
             std::vector<std::vector<Eigen::VectorXi>> WDG; WDG.clear();
@@ -99,7 +99,7 @@ public:
             queue.push(node->id,0,node->cost);
             visitedNodes[node->id] = true;
             std::cout<< "\nParent Node Initialized for " << i << " configuration\n";
-            std::cout<< "The configuration is: " << ik_handler->init_guess.col(0).transpose()*180/M_PI << "\n\n";
+            std::cout<< "The configuration is: " << ik_handler->init_guess.transpose()*180/M_PI << "\n\n";
             node_cnt = 0;
             while (!reach_goal && queue.size()!=0){
                 int parent_id = queue.top();
