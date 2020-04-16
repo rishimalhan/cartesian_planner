@@ -17,11 +17,15 @@
 
 bool gen_nodes(ikHandler* ik_handler, WM::WM* wm,
                 const std::vector<Eigen::MatrixXd>& wpTol, const std::vector<Eigen::MatrixXd>& tcp_list,
-                std::vector<node*>& node_map, std::vector<Eigen::VectorXi>& node_list){
+                std::vector<node*>& node_map, std::vector<Eigen::VectorXi>& node_list,
+                Eigen::MatrixXd& success_flags){
 
     std::cout<< "\n\n##############################################################\n";
     std::cout<< "Generating nodes\n";
     node_list.clear();
+    success_flags = Eigen::MatrixXd::Ones(wpTol.size(),1)*1; // All reachable. Mark them 0 if they are not
+    bool status = true;
+
     // node_map will carry descriptions of all nodes
     // node_list will carry the structure. i.e node ids at every depth which will be used to build graph
     int id_cnt = 0;
@@ -41,6 +45,7 @@ bool gen_nodes(ikHandler* ik_handler, WM::WM* wm,
                         // Check for collision
                         std::vector<Eigen::MatrixXd> fk_kdl = ik_handler->robot->get_robot_FK_all_links(ik_handler->solution.col(sol_no));
                         if(!wm->inCollision( fk_kdl )){
+                        // if(true){
                             node* curr_node = new node;
                             curr_node->id = id_cnt;
                             curr_node->jt_config = ik_handler->solution.col(sol_no);
@@ -58,9 +63,11 @@ bool gen_nodes(ikHandler* ik_handler, WM::WM* wm,
             }
         }
         if (nodes_at_depth.size()==0){
-            std::cout<< "All waypoints unreachable within tolerances at index: " << i << ". Base index is 0. Terminating\n";
-            std::cout<< "##############################################################\n\n";
-            return false;
+            std::cout<< "All waypoints unreachable within tolerances at index: " << i << ". Base index is 0.\n";
+            success_flags(i) = 0;
+            status = false;
+            // std::cout<< "##############################################################\n\n";
+            // return false;
         }
         else{
             // std::cout<< "Node ids: " << nodes_at_depth.transpose() << "\n\n";
@@ -73,7 +80,7 @@ bool gen_nodes(ikHandler* ik_handler, WM::WM* wm,
 
     std::cout<< "Total Number of Nodes: " << id_cnt << "\n"; 
     std::cout<< "##############################################################\n\n";
-    return true;
+    return status;
 };
 
 

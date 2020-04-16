@@ -10,11 +10,11 @@ EMAIL: rmalhan@usc.edu */
 
 #include <Eigen/Eigen>
 
-#include <robot_utilities/irb2600.cpp>
+// #include <robot_utilities/irb2600.cpp>
 // #include <robot_utilities/ur5.cpp>
 // #include <robot_utilities/gp8.cpp>
 // #include <robot_utilities/irb4600.cpp>
-// #include <robot_utilities/ur_10e.cpp>
+#include <robot_utilities/ur_10e.cpp>
 
 
 using namespace ikfast;

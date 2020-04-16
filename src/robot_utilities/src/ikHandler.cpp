@@ -229,7 +229,6 @@ bool ikHandler::solveIK(Eigen::VectorXd _target){
         target.segment(9,3) = target_robBase.block(0,2,3,1);
         target.segment(0,3) = target_robBase.block(0,3,3,1);
 
-
         Eigen::MatrixXd sol_mat;
         ik_analytical::compute_IK(target,status,sol_mat);
         if (!status)

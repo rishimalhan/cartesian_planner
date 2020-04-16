@@ -25,12 +25,13 @@ bool isEdge(const std::vector<node*>& node_map, const int parent, const int chil
     if( (node_map[child]->jt_config - node_map[parent]->jt_config).array().abs().maxCoeff() < 1.57 ) // Max deviation less than 90 degree
         return true;
     else
-        return false;
+        return true;
 }
 
 
 double computeGCost( const std::vector<node*>& node_map, const int parent, const int child ){
     return (node_map[child]->jt_config - node_map[parent]->jt_config).array().abs().maxCoeff();
+    // return (node_map[child]->jt_config - node_map[parent]->jt_config).norm();
 }
 
 
@@ -46,6 +47,7 @@ bool build_graph(const std::vector<node*>& node_map, const std::vector<Eigen::Ve
     std::vector<Edge> edges; edges.clear();
     std::vector<double> weights; weights.clear();
     root_connectivity.resize(node_list[0].size());
+
     for (int i=0; i<node_list[0].size(); ++i)
         root_connectivity[i] = false;
     std::cout<< "Number of levels in the graph: " << node_list.size() << "\n";

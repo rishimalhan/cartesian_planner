@@ -33,6 +33,16 @@
 #include <pct/timer.hpp>
 
 
+// Parameters to play with:
+// Parameters to check while things are not working out
+// Which robot is enabled. Check urdf, tcp, base frames and links
+// Check for which header is included in ik gateway
+// idedge return true or false for general cases in build graph
+// Is path being generated or loaded
+// Tool transforms and planner.yaml config file
+
+
+
 int main(int argc, char** argv){
     ros::init(argc,argv,"pct_main");
     ros::NodeHandle main_handler;
@@ -47,6 +57,14 @@ int main(int argc, char** argv){
     }
     resolution *= (M_PI / 180);
     double angle = 360*M_PI / 180;
+
+
+    ///////////////// CAUTION ///////////////////////////////////////
+    // WHEN CHANGING A 6DOF ROBOT FOR ANALYTICAL IK, MAKE SURE CHANGES ARE MADE
+    // IN IK GATEWAY HEADER AND APPROPRIATE CPP IS INCLUDED
+    ///////////////// CAUTION ///////////////////////////////////////
+
+
 
 
     // // ROBOT IIWA
@@ -74,7 +92,7 @@ int main(int argc, char** argv){
 
     // ROBOT UR10e
     Eigen::MatrixXd init_guess(6,1);
-    init_guess << 0,0,0,0,0,0;
+    init_guess << 0,-90,0,0,0,0;
     std::string rob_base_link = "base_link";
     std::string rob_tip_link = "tool0";
     std::string urdf_path = ros::package::getPath("robot_utilities") + "/urdf/ur_10e/ur10e.urdf";
@@ -112,7 +130,6 @@ int main(int argc, char** argv){
 
     std::cout<< "Creating Robot\n";
     // Create the robot
-    Eigen::Matrix4d world_T_base = Eigen::Matrix4d::Identity(4,4);
     KDL::Frame tcp_frame = DFMapping::Eigen_to_KDLFrame(ff_T_tool);
 
     SerialLink_Manipulator::SerialLink_Manipulator robot(urdf_path, base_frame, tcp_frame, rob_base_link, rob_tip_link);
@@ -141,20 +158,31 @@ int main(int argc, char** argv){
     std::vector<Eigen::MatrixXd> zero_fk = robot.get_robot_FK_all_links( Eigen::MatrixXd::Ones(robot.NrOfJoints,1)*0 );
     wm.addTool(toolstl_path);
     wm.prepareSelfCollisionPatch(zero_fk);
-    wm.addWorkpiece(wp_path, world_T_part);
+    // wm.addWorkpiece(wp_path, world_T_part);
+    Eigen::MatrixXd world_T_floor = Eigen::MatrixXd::Identity(4,4); world_T_floor(2,3) += -0.05;
+    wm.addWorkpiece("/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/meshes/floor.stl", world_T_floor);
 
+    std::string path_file;
+    ros::param::get("/cvrg_file_paths/path_file",path_file);
 
     // Generate Path
-    Eigen::MatrixXd path = gen_cvrg_plan();
-
-
+    // Eigen::MatrixXd path = gen_cvrg_plan();
+    Eigen::MatrixXd path = load_plan(path_file); // Pre computed path file
 
 
     // removeRow(path,path.rows()-1);
     // removeRow(path,path.rows()-2);
-    // std::string cvrg_path;
-    // ros::param::get("/cvrg_file_paths/cvrg_path",cvrg_path);
     // file_rw::file_write(cvrg_path,path);
+
+
+
+    Eigen::MatrixXd f1(6,1);
+    f1 << 0,0,0,0,0,0;
+    KDL::JntArray f1_kdl = DFMapping::Eigen_to_KDLJoints(f1);
+    KDL::Frame fra;
+    robot.FK_KDL_Flange(f1_kdl,fra);
+    std::cout<< w_T_b * DFMapping::KDLFrame_to_Eigen(fra) << "\n";
+    return 0;
 
 
 
@@ -164,6 +192,7 @@ int main(int argc, char** argv){
     Eigen::MatrixXd tolerances = Eigen::MatrixXd::Ones(path.rows(),1)*angle;
     std::vector<Eigen::MatrixXd> wpTol =  gen_wp_with_tolerance(tolerances,resolution, path );
     std::cout<< "Search Samples Generated....\n";
+
 
     // Get trajectory path
     std::string traj_path;
@@ -309,7 +338,7 @@ int main(int argc, char** argv){
     std::vector<node*> node_map;
     std::vector<Eigen::VectorXi> node_list;
     success_flags = Eigen::MatrixXd::Ones(wpTol.size(),1)*0;
-    if(!gen_nodes(&ik_handler, &wm, wpTol, tcp_list, node_map, node_list)){
+    if(!gen_nodes(&ik_handler, &wm, wpTol, tcp_list, node_map, node_list, success_flags)){
         std::cout<< "Nodes could not be generated. No solution found\n";
         trajectory.resize(1,ik_handler.OptVarDim);
         trajectory.row(0) << ik_handler.init_guess.col(0).transpose();
@@ -359,7 +388,7 @@ int main(int argc, char** argv){
                     std::cout<< "Discontinuity detected for this configuration\n";
             }
 
-            std::cout<< "Trajectory: \n" << trajectory << "\n";
+            // std::cout<< "Trajectory: \n" << trajectory << "\n";
         }
     }
 
@@ -368,12 +397,15 @@ int main(int argc, char** argv){
     
 
     // Evaluate trajectory cost
+    double max_change = -std::numeric_limits<double>::infinity();
     double path_cost = 0;
     for (int i=0; i<trajectory.rows()-1;++i){
         Eigen::ArrayXd jt_diff = (trajectory.row(i+1) - trajectory.row(i)).transpose();
         path_cost += jt_diff.abs().maxCoeff();
+        if (jt_diff.abs().maxCoeff()>max_change)
+            max_change = jt_diff.abs().maxCoeff();
     }
-
+    std::cout<< "Maximum Joint Angle Change in Trajectory: " << max_change*(180/M_PI) << "\n";
     std::cout<< "Number of waypoints: " << wpTol.size() << "\n";
     std::cout<< "Number of TCPs: " << no_tcps << "\n";
     std::cout<< "Trajectory Cost: " << path_cost << "\n";
