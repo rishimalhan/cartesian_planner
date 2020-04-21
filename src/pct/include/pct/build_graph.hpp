@@ -2,7 +2,7 @@
 // AUTHOR: RISHI MALHAN
 // CENTER FOR ADVANCED MANUFACTURING
 // UNIVERSITY OF SOUTHERN CALIFORNIA
-// EMAIL: rmalhan@usc.edu
+// EMAIL: rmalhan0112@gmail.com
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -16,12 +16,14 @@
 #include <Eigen/Eigen>
 
 
-
-
 bool isEdge(const std::vector<node*>& node_map, const int parent, const int child){
     // std::cout<< "Parent ID: " << parent << ". Child ID: " << child << "\n";
     // std::cout<< "Parent Config: " << node_map[parent]->jt_config.transpose() << "\n";
     // std::cout<< "Child Config: " << node_map[child]->jt_config.transpose() << "\n";
+    // double angle_x = acos( node_map[parent]->wp.segment(3,3).transpose()*node_map[child]->wp.segment(3,3) );
+    // if (angle_x > 0.2618 )
+    //     return true;
+
     if( (node_map[child]->jt_config - node_map[parent]->jt_config).array().abs().maxCoeff() < 1.57 ) // Max deviation less than 90 degree
         return true;
     else

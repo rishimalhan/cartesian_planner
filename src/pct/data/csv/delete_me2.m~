@@ -1,0 +1,30 @@
+clear all;
+close all;
+clc;
+
+
+
+cost_map = csvread('cost_map.csv');
+
+sign=1;
+angles(1,1) = 0;
+ctr=1;
+for j=2:1:size(reach_map,2)
+    if (mod(j,2)==0 && j~=2)
+        ctr = ctr + 5;
+    end
+    angles(j,1) = sign*ctr;
+    sign = sign*-1;
+end
+
+for i=1:size(sign=1;
+angles(1,1) = 0;
+ctr=1;
+for j=2:1:size(reach_map,2)
+    if (mod(j,2)==0 && j~=2)
+        ctr = ctr + 5;
+    end
+    angles(j,1) = sign*ctr;
+    sign = sign*-1;
+end)
+scatter( 1:size(cost_map,1),angles,cost_map )

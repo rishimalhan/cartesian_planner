@@ -2,7 +2,7 @@
 // AUTHOR: RISHI MALHAN
 // CENTER FOR ADVANCED MANUFACTURING
 // UNIVERSITY OF SOUTHERN CALIFORNIA
-// EMAIL: rmalhan@usc.edu
+// EMAIL: rmalhan0112@gmail.com
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -29,6 +29,7 @@ bool gen_nodes(ikHandler* ik_handler, WM::WM* wm,
     // node_map will carry descriptions of all nodes
     // node_list will carry the structure. i.e node ids at every depth which will be used to build graph
     int id_cnt = 0;
+    Eigen::MatrixXi noSols_map(wpTol.size(),wpTol[0].rows());
     for (int i=0; i<wpTol.size();++i){ // For all the waypoints
         Eigen::MatrixXd waypoints = wpTol[i];
         Eigen::VectorXi nodes_at_depth;
@@ -39,12 +40,14 @@ bool gen_nodes(ikHandler* ik_handler, WM::WM* wm,
                 ik_handler->setTcpFrame(tcp_list[k]);
                 // Solve IK and check for collision
                 // If valid solution, then create a node out of it
+                int no_sols = 0;
                 if (ik_handler->solveIK(waypoints.row(j).transpose())){
                     // For every solution create a node
                     for (int sol_no=0; sol_no<ik_handler->solution.cols();++sol_no){
                         // Check for collision
                         std::vector<Eigen::MatrixXd> fk_kdl = ik_handler->robot->get_robot_FK_all_links(ik_handler->solution.col(sol_no));
                         if(!wm->inCollision( fk_kdl )){
+                            no_sols ++;
                         // if(true){
                             node* curr_node = new node;
                             curr_node->id = id_cnt;
@@ -52,6 +55,7 @@ bool gen_nodes(ikHandler* ik_handler, WM::WM* wm,
                             curr_node->depth = i;
                             curr_node->index = j;
                             curr_node->tcp_id = k;
+                            curr_node->wp = waypoints.row(j).transpose();
                             node_map.push_back(curr_node);
                             // Add these node ids to the node_list
                             nodes_at_depth.conservativeResize(ctr+1);
@@ -60,6 +64,7 @@ bool gen_nodes(ikHandler* ik_handler, WM::WM* wm,
                         }
                     }
                 }
+                noSols_map(i,j) = no_sols;
             }
         }
         if (nodes_at_depth.size()==0){
@@ -77,7 +82,7 @@ bool gen_nodes(ikHandler* ik_handler, WM::WM* wm,
 
     // for (int i=0; i<node_list.size(); ++i)
     //     std::cout<< node_list[i].transpose() << "\n";
-
+    file_rw::file_write("/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/csv/noSols_map.csv",noSols_map);
     std::cout<< "Total Number of Nodes: " << id_cnt << "\n"; 
     std::cout<< "##############################################################\n\n";
     return status;

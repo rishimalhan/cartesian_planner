@@ -3,7 +3,7 @@
 // CONTRIBUTORS: ANIRUDDHA SHEMBEKAR, BRUAL SHAH
 // CENTER FOR ADVANCED MANUFACTURING
 // UNIVERSITY OF SOUTHERN CALIFORNIA
-// EMAIL: rmalhan@usc.edu
+// EMAIL: rmalhan0112@gmail.com
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -48,8 +48,7 @@ static Eigen::MatrixXd load_plan(std::string file_name){
             ctr++;
         }
     }
-    removeRow(new_path,398);    
-    tool_path = new_path;
+    // tool_path = new_path;
 
     ROS_INFO("tool_path size: %d", (int)tool_path.rows());
 

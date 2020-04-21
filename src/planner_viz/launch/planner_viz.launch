@@ -9,22 +9,18 @@
     <!-- <param name="robot_description" -->
             <!-- command="$(find xacro)/xacro $(find robot_utilities)/urdf/kuka_iiwa7/iiwa7.urdf" />         -->
 
-    <!-- <param name="robot_description"
-            command="$(find xacro)/xacro $(find robot_utilities)/urdf/abb_irb2600/irb2600_12_165.urdf" /> -->
-
     <param name="robot_description"
-            command="$(find xacro)/xacro $(find robot_utilities)/urdf/ur_10e/ur10e.urdf" />
+            command="$(find xacro)/xacro $(find robot_utilities)/urdf/abb_irb2600/irb2600_12_165.urdf" />
+
+    <!-- <param name="robot_description"
+            command="$(find xacro)/xacro $(find robot_utilities)/urdf/ur_10e/ur10e.urdf" /> -->
             
     <node pkg="robot_state_publisher" name="bot_state_pub" type="state_publisher"/>
 
 
     <!-- Tool Plot -->
-    <param name="rob_tool" command="$(find xacro)/xacro $(find pct)/data/tools/kane.xacro"/>
-    <node pkg="robot_state_publisher" type="robot_state_publisher" name="tool_publ">
-        <remap from="robot_description" to="rob_tool" />
-    </node>
-    <node pkg="tf" name="rob_T_tool" type="static_transform_publisher" args=" 0 0 0 0 0 0 /tool0 /tool_origin 30"/>
-
+    <include file="$(arg pkg_path)/launch/sander.launch"/>
+    <!-- <include file="$(arg pkg_path)/launch/kane.launch"/> -->
 
 
     <!-- Robot TF publishers from the joint_states topics -->
