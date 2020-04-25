@@ -1,0 +1,6 @@
+[  6%] [32m[1mLinking CXX executable /workspace/ros_ws/devel/.private/robot_utilities/lib/robot_utilities/test_urFunc[0m
+[ 12%] [32m[1mLinking CXX executable /workspace/ros_ws/devel/.private/robot_utilities/lib/robot_utilities/verify_analytical_ik[0m
+[ 18%] [32m[1mLinking CXX shared library /workspace/ros_ws/devel/.private/robot_utilities/lib/librobot_utilities.so[0m
+[ 25%] Built target test_urFunc
+[ 31%] Built target verify_analytical_ik
+[100%] Built target robot_utilities

@@ -1,0 +1,9 @@
+Symlinking /workspace/ros_ws/devel/lib/librviz_visual_tools_remote_control.so
+Symlinking /workspace/ros_ws/devel/lib/librviz_visual_tools.so
+Symlinking /workspace/ros_ws/devel/lib/librviz_visual_tools_imarker_simple.so
+Symlinking /workspace/ros_ws/devel/lib/librviz_visual_tools_gui.so
+Symlinking /workspace/ros_ws/devel/lib/pkgconfig/rviz_visual_tools.pc
+Symlinking /workspace/ros_ws/devel/lib/rviz_visual_tools/demo
+Symlinking /workspace/ros_ws/devel/lib/rviz_visual_tools/imarker_simple_demo
+Symlinking /workspace/ros_ws/devel/share/rviz_visual_tools/cmake/rviz_visual_toolsConfig-version.cmake
+Symlinking /workspace/ros_ws/devel/share/rviz_visual_tools/cmake/rviz_visual_toolsConfig.cmake

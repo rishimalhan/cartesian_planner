@@ -1,0 +1,5 @@
+[33m[1mCMake Warning[0m at /workspace/ros_ws/src/pct/CMakeLists.txt:51 (message):
+  FCL INCLUDES LOCATED AT
+  /workspace/ros_ws/src/pct/../fcl/build/install/include
+
+

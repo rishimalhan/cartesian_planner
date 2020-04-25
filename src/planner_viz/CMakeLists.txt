@@ -13,25 +13,34 @@ find_package(catkin REQUIRED COMPONENTS
   roslib
   rospy
   std_msgs
-  gen_utilities
   rviz_visual_tools
   geometry_msgs
   sensor_msgs
   trajectory_msgs
+  
+  gen_utilities
   robot_utilities
 )
 
 ## System dependencies are found with CMake's conventions
 find_package (orocos_kdl REQUIRED)
 find_package(Boost 1.54.0 REQUIRED COMPONENTS system filesystem)
-find_package(gen_utilities REQUIRED)
-find_package(robot_utilities REQUIRED)
-find_package(libnlopt REQUIRED COMPONENTS)
-find_package(fcl REQUIRED)
-find_package(CCD REQUIRED)
+# find_package(gen_utilities REQUIRED)
+# find_package(robot_utilities REQUIRED)
+# find_package(libnlopt REQUIRED COMPONENTS)
+# find_package(fcl REQUIRED)
+# find_package(CCD REQUIRED)
 
-find_package(libnabo REQUIRED COMPONENTS)
-find_package(libigl REQUIRED COMPONENTS)
+# find_package(libnabo REQUIRED COMPONENTS)
+# find_package(libigl REQUIRED COMPONENTS)
+
+set(libigl_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../libigl)
+set(libnlopt_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../libnlopt)
+set(libnabo_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../libnabo)
+set(FCL_INCLUDE_DIRS
+${CMAKE_CURRENT_SOURCE_DIR}/../fcl/build/install/include)
+set(FCL_LIB ${CMAKE_CURRENT_SOURCE_DIR}/../fcl/build/install/lib/libfcl.a)
+message(WARNING "FCL INCLUDES LOCATED AT ${FCL_INCLUDE_DIRS}")
 
 # Adding nlopt header file and linking dependancies 
 include_directories(${libnlopt_SOURCE_DIR}/install/include)
@@ -53,17 +62,17 @@ else()
   set(EIGEN3_INCLUDE_DIRS ${EIGEN3_INCLUDE_DIR})
 endif()
 
-if (fcl_FOUND)
-  message("fcl found!")
-  message("${fcl_INCLUDE_DIRS}")
-    include_directories(${fcl_INCLUDE_DIRS})
-endif (fcl_FOUND) 
+# if (fcl_FOUND)
+#   message("fcl found!")
+#   message("${fcl_INCLUDE_DIRS}")
+#     include_directories(${fcl_INCLUDE_DIRS})
+# endif (fcl_FOUND) 
 
-if (CCD_FOUND)
-  message("CCD found!")
-  message("${CCD_INCLUDE_DIRS}")
-  include_directories(${CCD_INCLUDE_DIRS})
-endif (CCD_FOUND)
+# if (CCD_FOUND)
+#   message("CCD found!")
+#   message("${CCD_INCLUDE_DIRS}")
+#   include_directories(${CCD_INCLUDE_DIRS})
+# endif (CCD_FOUND)
 
 
 find_package(libnlopt REQUIRED COMPONENTS)
@@ -190,7 +199,7 @@ link_directories(${libnabo_SOURCE_DIR}/include/libnabo/build/libnabo.a
 
 
 set(DEP_LIBS ${catkin_LIBRARIES}
-              /usr/local/lib/libfcl.so ${CCD_LIBRARIES} ${EIGEN3_LIBRARIES}
+              ${FCL_LIB} ${CCD_LIBRARIES} ${EIGEN3_LIBRARIES}
               /usr/lib/x86_64-linux-gnu/libboost_iostreams.a
 #               /usr/lib/x86_64-linux-gnu/libboost_system.a
 #               /usr/lib/x86_64-linux-gnu/libboost_filesystem.a

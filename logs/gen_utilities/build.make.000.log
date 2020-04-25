@@ -1,0 +1,86 @@
+[35m[1mScanning dependencies of target _gen_utilities_generate_messages_check_deps_KukaJointAnglesSet[0m
+[  0%] Built target _gen_utilities_generate_messages_check_deps_KukaJointAnglesSet
+[35m[1mScanning dependencies of target _gen_utilities_generate_messages_check_deps_GenerateGraspingPath[0m
+[  0%] Built target _gen_utilities_generate_messages_check_deps_GenerateGraspingPath
+[35m[1mScanning dependencies of target _gen_utilities_generate_messages_check_deps_TrajContainerSrv[0m
+[  0%] Built target _gen_utilities_generate_messages_check_deps_TrajContainerSrv
+[35m[1mScanning dependencies of target _gen_utilities_generate_messages_check_deps_IdxGroup[0m
+[  0%] Built target _gen_utilities_generate_messages_check_deps_IdxGroup
+[35m[1mScanning dependencies of target _gen_utilities_generate_messages_check_deps_PTPPathGen[0m
+[  0%] Built target _gen_utilities_generate_messages_check_deps_PTPPathGen
+[35m[1mScanning dependencies of target _gen_utilities_generate_messages_check_deps_KukaJointAngles[0m
+[  0%] Built target _gen_utilities_generate_messages_check_deps_KukaJointAngles
+[35m[1mScanning dependencies of target _gen_utilities_generate_messages_check_deps_MoldPlacementPlan[0m
+[  0%] Built target _gen_utilities_generate_messages_check_deps_MoldPlacementPlan
+[35m[1mScanning dependencies of target _gen_utilities_generate_messages_check_deps_GraspSyncServ[0m
+[  0%] Built target _gen_utilities_generate_messages_check_deps_GraspSyncServ
+[35m[1mScanning dependencies of target _gen_utilities_generate_messages_check_deps_XYZ_bxbybz[0m
+[  0%] Built target _gen_utilities_generate_messages_check_deps_XYZ_bxbybz
+[35m[1mScanning dependencies of target std_msgs_generate_messages_py[0m
+[  0%] Built target std_msgs_generate_messages_py
+[35m[1mScanning dependencies of target _gen_utilities_generate_messages_check_deps_dummyMessage[0m
+[  0%] Built target _gen_utilities_generate_messages_check_deps_dummyMessage
+[35m[1mScanning dependencies of target geometry_msgs_generate_messages_py[0m
+[  0%] Built target geometry_msgs_generate_messages_py
+[35m[1mScanning dependencies of target _gen_utilities_generate_messages_check_deps_XYZ_nxnynz[0m
+[  0%] Built target _gen_utilities_generate_messages_check_deps_XYZ_nxnynz
+[35m[1mScanning dependencies of target _gen_utilities_generate_messages_check_deps_TrajContainer[0m
+[  0%] Built target _gen_utilities_generate_messages_check_deps_TrajContainer
+[35m[1mScanning dependencies of target _gen_utilities_generate_messages_check_deps_Ptcloud2ToPtcloud[0m
+[  0%] Built target _gen_utilities_generate_messages_check_deps_Ptcloud2ToPtcloud
+[35m[1mScanning dependencies of target _gen_utilities_generate_messages_check_deps_XYZ_cba[0m
+[  0%] Built target _gen_utilities_generate_messages_check_deps_XYZ_cba
+[35m[1mScanning dependencies of target _gen_utilities_generate_messages_check_deps_VisionBasedRegICP[0m
+[  0%] Built target _gen_utilities_generate_messages_check_deps_VisionBasedRegICP
+[35m[1mScanning dependencies of target _gen_utilities_generate_messages_check_deps_ContactBasedReg[0m
+[  0%] Built target _gen_utilities_generate_messages_check_deps_ContactBasedReg
+[35m[1mScanning dependencies of target sensor_msgs_generate_messages_py[0m
+[  0%] Built target sensor_msgs_generate_messages_py
+[35m[1mScanning dependencies of target _gen_utilities_generate_messages_check_deps_GenerateDrapingPath[0m
+[  0%] Built target _gen_utilities_generate_messages_check_deps_GenerateDrapingPath
+[35m[1mScanning dependencies of target _gen_utilities_generate_messages_check_deps_DrapingSeqGenerator[0m
+[  0%] Built target _gen_utilities_generate_messages_check_deps_DrapingSeqGenerator
+[35m[1mScanning dependencies of target _gen_utilities_generate_messages_check_deps_Waypoints[0m
+[  0%] Built target _gen_utilities_generate_messages_check_deps_Waypoints
+[35m[1mScanning dependencies of target geometry_msgs_generate_messages_nodejs[0m
+[  0%] Built target geometry_msgs_generate_messages_nodejs
+[35m[1mScanning dependencies of target sensor_msgs_generate_messages_nodejs[0m
+[  0%] Built target sensor_msgs_generate_messages_nodejs
+[35m[1mScanning dependencies of target std_msgs_generate_messages_nodejs[0m
+[  0%] Built target std_msgs_generate_messages_nodejs
+[35m[1mScanning dependencies of target std_msgs_generate_messages_lisp[0m
+[  0%] Built target std_msgs_generate_messages_lisp
+[35m[1mScanning dependencies of target geometry_msgs_generate_messages_lisp[0m
+[  0%] Built target geometry_msgs_generate_messages_lisp
+[35m[1mScanning dependencies of target sensor_msgs_generate_messages_lisp[0m
+[  0%] Built target sensor_msgs_generate_messages_lisp
+[35m[1mScanning dependencies of target sensor_msgs_generate_messages_eus[0m
+[  0%] Built target sensor_msgs_generate_messages_eus
+[35m[1mScanning dependencies of target std_msgs_generate_messages_eus[0m
+[  0%] Built target std_msgs_generate_messages_eus
+[35m[1mScanning dependencies of target geometry_msgs_generate_messages_eus[0m
+[  0%] Built target geometry_msgs_generate_messages_eus
+[35m[1mScanning dependencies of target geometry_msgs_generate_messages_cpp[0m
+[  0%] Built target geometry_msgs_generate_messages_cpp
+[35m[1mScanning dependencies of target sensor_msgs_generate_messages_cpp[0m
+[  0%] Built target sensor_msgs_generate_messages_cpp
+[35m[1mScanning dependencies of target std_msgs_generate_messages_cpp[0m
+[  0%] Built target std_msgs_generate_messages_cpp
+[35m[1mScanning dependencies of target gen_utilities[0m
+[  0%] [32mBuilding CXX object CMakeFiles/gen_utilities.dir/src/file_rw.cpp.o[0m
+[  1%] [32mBuilding CXX object CMakeFiles/gen_utilities.dir/src/NPAM_utilities.cpp.o[0m
+[  2%] [32mBuilding CXX object CMakeFiles/gen_utilities.dir/src/transformation_utilities.cpp.o[0m
+[  3%] [32mBuilding CXX object CMakeFiles/gen_utilities.dir/src/iiwa_utilities.cpp.o[0m
+[  4%] [32mBuilding CXX object CMakeFiles/gen_utilities.dir/src/utilities.cpp.o[0m
+[  5%] [32mBuilding CXX object CMakeFiles/gen_utilities.dir/src/iiwa_IK_solver.cpp.o[0m
+[  5%] [32mBuilding CXX object CMakeFiles/gen_utilities.dir/src/robot_comm.cpp.o[0m
+[  6%] [32mBuilding CXX object CMakeFiles/gen_utilities.dir/src/rosmsg_eigen_exchange.cpp.o[0m
+[01m[K/workspace/ros_ws/src/gen_utilities/src/rosmsg_eigen_exchange.cpp:9:38:[m[K [01;31m[Kfatal error: [m[Kgen_utilities/XYZ_bxbybz.h: No such file or directory
+compilation terminated.
+CMakeFiles/gen_utilities.dir/build.make:230: recipe for target 'CMakeFiles/gen_utilities.dir/src/rosmsg_eigen_exchange.cpp.o' failed
+make[2]: *** [CMakeFiles/gen_utilities.dir/src/rosmsg_eigen_exchange.cpp.o] Error 1
+make[2]: *** Waiting for unfinished jobs....
+CMakeFiles/Makefile2:1909: recipe for target 'CMakeFiles/gen_utilities.dir/all' failed
+Makefile:138: recipe for target 'all' failed
+make[1]: *** [CMakeFiles/gen_utilities.dir/all] Error 2
+make: *** [all] Error 2

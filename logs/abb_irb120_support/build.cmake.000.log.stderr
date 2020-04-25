@@ -1,0 +1,52 @@
+CMake Warning (dev) at /opt/ros/kinetic/share/catkin/cmake/test/tests.cmake:173 (add_dependencies):
+  Policy CMP0046 is not set: Error on non-existent dependency in
+  add_dependencies.  Run "cmake --help-policy CMP0046" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  The dependency target "abb_driver_robot_state" of target
+  "_run_tests_abb_irb120_support_roslaunch-check_tests_roslaunch_test.xml"
+  does not exist.
+[36mCall Stack (most recent call first):[0m
+  /opt/ros/kinetic/share/roslaunch/cmake/roslaunch-extras.cmake:58 (catkin_run_tests_target)
+  CMakeLists.txt:10 (roslaunch_add_file_check)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /opt/ros/kinetic/share/catkin/cmake/test/tests.cmake:173 (add_dependencies):
+  Policy CMP0046 is not set: Error on non-existent dependency in
+  add_dependencies.  Run "cmake --help-policy CMP0046" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  The dependency target "joint_trajectory_action" of target
+  "_run_tests_abb_irb120_support_roslaunch-check_tests_roslaunch_test.xml"
+  does not exist.
+[36mCall Stack (most recent call first):[0m
+  /opt/ros/kinetic/share/roslaunch/cmake/roslaunch-extras.cmake:58 (catkin_run_tests_target)
+  CMakeLists.txt:10 (roslaunch_add_file_check)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /opt/ros/kinetic/share/catkin/cmake/test/tests.cmake:157 (add_dependencies):
+  Policy CMP0046 is not set: Error on non-existent dependency in
+  add_dependencies.  Run "cmake --help-policy CMP0046" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  The dependency target "abb_driver_robot_state" of target
+  "run_tests_abb_irb120_support_roslaunch-check_tests_roslaunch_test.xml"
+  does not exist.
+[36mCall Stack (most recent call first):[0m
+  /opt/ros/kinetic/share/roslaunch/cmake/roslaunch-extras.cmake:58 (catkin_run_tests_target)
+  CMakeLists.txt:10 (roslaunch_add_file_check)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+CMake Warning (dev) at /opt/ros/kinetic/share/catkin/cmake/test/tests.cmake:157 (add_dependencies):
+  Policy CMP0046 is not set: Error on non-existent dependency in
+  add_dependencies.  Run "cmake --help-policy CMP0046" for policy details.
+  Use the cmake_policy command to set the policy and suppress this warning.
+
+  The dependency target "joint_trajectory_action" of target
+  "run_tests_abb_irb120_support_roslaunch-check_tests_roslaunch_test.xml"
+  does not exist.
+[36mCall Stack (most recent call first):[0m
+  /opt/ros/kinetic/share/roslaunch/cmake/roslaunch-extras.cmake:58 (catkin_run_tests_target)
+  CMakeLists.txt:10 (roslaunch_add_file_check)
+This warning is for project developers.  Use -Wno-dev to suppress it.
+

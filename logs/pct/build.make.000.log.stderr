@@ -1,0 +1,12 @@
+In file included from [01m[K/workspace/ros_ws/src/pct/src/test_coll.cpp:13:0[m[K:
+[01m[K/workspace/ros_ws/src/robot_utilities/include/robot_utilities/world_manager.hpp:15:21:[m[K [01;31m[Kfatal error: [m[Kfcl/fcl.h: No such file or directory
+compilation terminated.
+make[2]: *** [CMakeFiles/test_coll.dir/src/test_coll.cpp.o] Error 1
+make[1]: *** [CMakeFiles/test_coll.dir/all] Error 2
+make[1]: *** Waiting for unfinished jobs....
+In file included from [01m[K/workspace/ros_ws/src/pct/src/main.cpp:26:0[m[K:
+[01m[K/workspace/ros_ws/src/robot_utilities/include/robot_utilities/world_manager.hpp:15:21:[m[K [01;31m[Kfatal error: [m[Kfcl/fcl.h: No such file or directory
+compilation terminated.
+make[2]: *** [CMakeFiles/main.dir/src/main.cpp.o] Error 1
+make[1]: *** [CMakeFiles/main.dir/all] Error 2
+make: *** [all] Error 2

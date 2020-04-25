@@ -1,0 +1,4 @@
+[ 25%] [32m[1mLinking CXX executable /workspace/ros_ws/devel/.private/pct/lib/pct/main[0m
+[ 50%] [32m[1mLinking CXX executable /workspace/ros_ws/devel/.private/pct/lib/pct/test_coll[0m
+[ 75%] Built target test_coll
+[100%] Built target main

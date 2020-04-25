@@ -1,0 +1,21 @@
+[33m[1mCMake Warning[0m at /workspace/ros_ws/src/robot_utilities/CMakeLists.txt:32 (message):
+  FCL INCLUDES LOCATED AT
+  /workspace/ros_ws/src/robot_utilities/../fcl/build/install/include
+
+
+[33m[1mCMake Warning[0m at /opt/ros/kinetic/share/catkin/cmake/catkin_package.cmake:166 (message):
+  catkin_package() DEPENDS on 'libnabo' but neither 'libnabo_INCLUDE_DIRS'
+  nor 'libnabo_LIBRARIES' is defined.
+[36mCall Stack (most recent call first):[0m
+  /opt/ros/kinetic/share/catkin/cmake/catkin_package.cmake:102 (_catkin_package)
+  CMakeLists.txt:149 (catkin_package)
+
+
+[33m[1mCMake Warning[0m at /opt/ros/kinetic/share/catkin/cmake/catkin_package.cmake:166 (message):
+  catkin_package() DEPENDS on 'libigl' but neither 'libigl_INCLUDE_DIRS' nor
+  'libigl_LIBRARIES' is defined.
+[36mCall Stack (most recent call first):[0m
+  /opt/ros/kinetic/share/catkin/cmake/catkin_package.cmake:102 (_catkin_package)
+  CMakeLists.txt:149 (catkin_package)
+
+

@@ -1,0 +1,7 @@
+Symlinking /workspace/ros_ws/devel/lib/pkgconfig/planner_viz.pc
+Symlinking /workspace/ros_ws/devel/lib/planner_viz/viz_stl
+Symlinking /workspace/ros_ws/devel/lib/planner_viz/viz_robot
+Symlinking /workspace/ros_ws/devel/lib/planner_viz/viz_path
+Symlinking /workspace/ros_ws/devel/lib/planner_viz/viz_wp
+Symlinking /workspace/ros_ws/devel/share/planner_viz/cmake/planner_vizConfig.cmake
+Symlinking /workspace/ros_ws/devel/share/planner_viz/cmake/planner_vizConfig-version.cmake

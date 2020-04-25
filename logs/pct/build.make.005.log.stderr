@@ -1,0 +1,26 @@
+/workspace/ros_ws/devel/.private/robot_utilities/lib/librobot_utilities.so: undefined reference to `octomap::Pointcloud::Pointcloud()'
+/workspace/ros_ws/devel/.private/robot_utilities/lib/librobot_utilities.so: undefined reference to `octomap::OcTree::OcTree(double)'
+/workspace/ros_ws/devel/.private/robot_utilities/lib/librobot_utilities.so: undefined reference to `octomap::Pointcloud::~Pointcloud()'
+/workspace/ros_ws/devel/.private/robot_utilities/lib/librobot_utilities.so: undefined reference to `octomap::OcTreeNode::addValue(float const&)'
+/workspace/ros_ws/devel/.private/robot_utilities/lib/librobot_utilities.so: undefined reference to `octomap::Pointcloud::Pointcloud(octomap::Pointcloud const&)'
+/workspace/ros_ws/devel/.private/robot_utilities/lib/librobot_utilities.so: undefined reference to `octomap::OcTreeNode::getMaxChildLogOdds() const'
+/workspace/ros_ws/devel/.private/robot_utilities/lib/librobot_utilities.so: undefined reference to `octomap::OcTreeNode::OcTreeNode()'
+/workspace/ros_ws/devel/.private/robot_utilities/lib/librobot_utilities.so: undefined reference to `octomap::OcTreeNode::~OcTreeNode()'
+/workspace/ros_ws/devel/.private/robot_utilities/lib/librobot_utilities.so: undefined reference to `octomap::Pointcloud::transform(octomath::Pose6D)'
+collect2: error: ld returned 1 exit status
+make[2]: *** [/workspace/ros_ws/devel/.private/pct/lib/pct/test_coll] Error 1
+make[1]: *** [CMakeFiles/test_coll.dir/all] Error 2
+make[1]: *** Waiting for unfinished jobs....
+/workspace/ros_ws/devel/.private/robot_utilities/lib/librobot_utilities.so: undefined reference to `octomap::Pointcloud::Pointcloud()'
+/workspace/ros_ws/devel/.private/robot_utilities/lib/librobot_utilities.so: undefined reference to `octomap::OcTree::OcTree(double)'
+/workspace/ros_ws/devel/.private/robot_utilities/lib/librobot_utilities.so: undefined reference to `octomap::Pointcloud::~Pointcloud()'
+/workspace/ros_ws/devel/.private/robot_utilities/lib/librobot_utilities.so: undefined reference to `octomap::OcTreeNode::addValue(float const&)'
+/workspace/ros_ws/devel/.private/robot_utilities/lib/librobot_utilities.so: undefined reference to `octomap::Pointcloud::Pointcloud(octomap::Pointcloud const&)'
+/workspace/ros_ws/devel/.private/robot_utilities/lib/librobot_utilities.so: undefined reference to `octomap::OcTreeNode::getMaxChildLogOdds() const'
+/workspace/ros_ws/devel/.private/robot_utilities/lib/librobot_utilities.so: undefined reference to `octomap::OcTreeNode::OcTreeNode()'
+/workspace/ros_ws/devel/.private/robot_utilities/lib/librobot_utilities.so: undefined reference to `octomap::OcTreeNode::~OcTreeNode()'
+/workspace/ros_ws/devel/.private/robot_utilities/lib/librobot_utilities.so: undefined reference to `octomap::Pointcloud::transform(octomath::Pose6D)'
+collect2: error: ld returned 1 exit status
+make[2]: *** [/workspace/ros_ws/devel/.private/pct/lib/pct/main] Error 1
+make[1]: *** [CMakeFiles/main.dir/all] Error 2
+make: *** [all] Error 2

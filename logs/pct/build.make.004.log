@@ -1,0 +1,37 @@
+[ 25%] [32m[1mLinking CXX executable /workspace/ros_ws/devel/.private/pct/lib/pct/main[0m
+[ 50%] [32m[1mLinking CXX executable /workspace/ros_ws/devel/.private/pct/lib/pct/test_coll[0m
+/workspace/ros_ws/devel/.private/robot_utilities/lib/librobot_utilities.so: undefined reference to `octomath::Pose6D::~Pose6D()'
+/workspace/ros_ws/devel/.private/robot_utilities/lib/librobot_utilities.so: undefined reference to `octomath::Pose6D::inv() const'
+/workspace/ros_ws/devel/.private/robot_utilities/lib/librobot_utilities.so: undefined reference to `octomath::operator<<(std::ostream&, octomath::Vector3 const&)'
+/workspace/ros_ws/devel/.private/robot_utilities/lib/librobot_utilities.so: undefined reference to `octomath::Pose6D::operator=(octomath::Pose6D const&)'
+/workspace/ros_ws/devel/.private/robot_utilities/lib/librobot_utilities.so: undefined reference to `octomath::Pose6D::transform(octomath::Vector3 const&) const'
+/workspace/ros_ws/devel/.private/robot_utilities/lib/librobot_utilities.so: undefined reference to `octomath::Pose6D::operator*(octomath::Pose6D const&) const'
+/workspace/ros_ws/devel/.private/robot_utilities/lib/librobot_utilities.so: undefined reference to `octomath::Quaternion::Quaternion(octomath::Quaternion const&)'
+/workspace/ros_ws/devel/.private/robot_utilities/lib/librobot_utilities.so: undefined reference to `octomath::Pose6D::Pose6D()'
+/workspace/ros_ws/devel/.private/robot_utilities/lib/librobot_utilities.so: undefined reference to `octomath::Vector3::readBinary(std::istream&)'
+/workspace/ros_ws/devel/.private/robot_utilities/lib/librobot_utilities.so: undefined reference to `octomath::Vector3::writeBinary(std::ostream&) const'
+/workspace/ros_ws/devel/.private/robot_utilities/lib/librobot_utilities.so: undefined reference to `octomath::Vector3::rotate_IP(double, double, double)'
+collect2: error: ld returned 1 exit status
+CMakeFiles/main.dir/build.make:158: recipe for target '/workspace/ros_ws/devel/.private/pct/lib/pct/main' failed
+make[2]: *** [/workspace/ros_ws/devel/.private/pct/lib/pct/main] Error 1
+CMakeFiles/Makefile2:99: recipe for target 'CMakeFiles/main.dir/all' failed
+make[1]: *** [CMakeFiles/main.dir/all] Error 2
+make[1]: *** Waiting for unfinished jobs....
+/workspace/ros_ws/devel/.private/robot_utilities/lib/librobot_utilities.so: undefined reference to `octomath::Pose6D::~Pose6D()'
+/workspace/ros_ws/devel/.private/robot_utilities/lib/librobot_utilities.so: undefined reference to `octomath::Pose6D::inv() const'
+/workspace/ros_ws/devel/.private/robot_utilities/lib/librobot_utilities.so: undefined reference to `octomath::operator<<(std::ostream&, octomath::Vector3 const&)'
+/workspace/ros_ws/devel/.private/robot_utilities/lib/librobot_utilities.so: undefined reference to `octomath::Pose6D::operator=(octomath::Pose6D const&)'
+/workspace/ros_ws/devel/.private/robot_utilities/lib/librobot_utilities.so: undefined reference to `octomath::Pose6D::transform(octomath::Vector3 const&) const'
+/workspace/ros_ws/devel/.private/robot_utilities/lib/librobot_utilities.so: undefined reference to `octomath::Pose6D::operator*(octomath::Pose6D const&) const'
+/workspace/ros_ws/devel/.private/robot_utilities/lib/librobot_utilities.so: undefined reference to `octomath::Quaternion::Quaternion(octomath::Quaternion const&)'
+/workspace/ros_ws/devel/.private/robot_utilities/lib/librobot_utilities.so: undefined reference to `octomath::Pose6D::Pose6D()'
+/workspace/ros_ws/devel/.private/robot_utilities/lib/librobot_utilities.so: undefined reference to `octomath::Vector3::readBinary(std::istream&)'
+/workspace/ros_ws/devel/.private/robot_utilities/lib/librobot_utilities.so: undefined reference to `octomath::Vector3::writeBinary(std::ostream&) const'
+/workspace/ros_ws/devel/.private/robot_utilities/lib/librobot_utilities.so: undefined reference to `octomath::Vector3::rotate_IP(double, double, double)'
+collect2: error: ld returned 1 exit status
+CMakeFiles/test_coll.dir/build.make:158: recipe for target '/workspace/ros_ws/devel/.private/pct/lib/pct/test_coll' failed
+CMakeFiles/Makefile2:360: recipe for target 'CMakeFiles/test_coll.dir/all' failed
+Makefile:138: recipe for target 'all' failed
+make[2]: *** [/workspace/ros_ws/devel/.private/pct/lib/pct/test_coll] Error 1
+make[1]: *** [CMakeFiles/test_coll.dir/all] Error 2
+make: *** [all] Error 2

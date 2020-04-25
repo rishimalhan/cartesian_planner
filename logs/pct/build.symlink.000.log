@@ -1,0 +1,5 @@
+Symlinking /workspace/ros_ws/devel/lib/pct/test_coll
+Symlinking /workspace/ros_ws/devel/lib/pct/main
+Symlinking /workspace/ros_ws/devel/lib/pkgconfig/pct.pc
+Symlinking /workspace/ros_ws/devel/share/pct/cmake/pctConfig-version.cmake
+Symlinking /workspace/ros_ws/devel/share/pct/cmake/pctConfig.cmake

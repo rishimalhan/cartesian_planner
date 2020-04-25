@@ -1,0 +1,8 @@
+[ 12%] [32m[1mLinking CXX executable /workspace/ros_ws/devel/.private/planner_viz/lib/planner_viz/viz_path[0m
+[ 25%] [32m[1mLinking CXX executable /workspace/ros_ws/devel/.private/planner_viz/lib/planner_viz/viz_robot[0m
+[ 37%] [32m[1mLinking CXX executable /workspace/ros_ws/devel/.private/planner_viz/lib/planner_viz/viz_stl[0m
+[ 50%] [32m[1mLinking CXX executable /workspace/ros_ws/devel/.private/planner_viz/lib/planner_viz/viz_wp[0m
+[ 62%] Built target viz_robot
+[ 75%] Built target viz_wp
+[ 87%] Built target viz_stl
+[100%] Built target viz_path
