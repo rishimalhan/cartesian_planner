@@ -56,7 +56,7 @@ int main(int argc, char** argv){
         return 0;
     }
     resolution *= (M_PI / 180);
-    double angle = 360*M_PI / 180; // Total angle is 200. 100 each side
+    double angle = 0*M_PI / 180; // Total angle is 200. 100 each side
 
 
     ///////////////// CAUTION ///////////////////////////////////////
@@ -205,8 +205,18 @@ int main(int argc, char** argv){
     }
     std::cout<< "Number of TCPs: " << no_tcps << "\n";
     std::vector<Eigen::MatrixXd> tcp_list(no_tcps); // For now only 1 tcp
-    for (int i=0; i<tcp_list.size(); ++i)
-        tcp_list[i] = ff_T_tool;
+    for (int i=0; i<tcp_list.size(); ++i){
+        if (i==0)
+            tcp_list[i] = ff_T_tool;
+        else if(i<6){
+            tcp_list[i] = ff_T_tool;
+            tcp_list[i](0,3) += i*0.01;
+        }
+        else{
+            tcp_list[i] = ff_T_tool;
+            tcp_list[i](0,3) += -i*0.01;
+        }
+    }
 
     
 
@@ -327,9 +337,12 @@ int main(int argc, char** argv){
 
     // Graph Search
     Eigen::MatrixXi path_idx(wpTol.size(),1);
+    Eigen::MatrixXi tcp_idx(wpTol.size(),1);
     std::vector<node*> node_map;
     std::vector<Eigen::VectorXi> node_list;
     success_flags = Eigen::MatrixXd::Ones(wpTol.size(),1)*0;
+    boost_graph graph;
+
     if(!gen_nodes(&ik_handler, &wm, wpTol, tcp_list, node_map, node_list, success_flags)){
         std::cout<< "Nodes could not be generated. No solution found\n";
         trajectory.resize(1,ik_handler.OptVarDim);
@@ -344,10 +357,8 @@ int main(int argc, char** argv){
             reach_map(node_map[i]->depth,node_map[i]->index) = 1;
         file_rw::file_write("/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/csv/reach_map.csv",reach_map);
 
-
-        boost_graph graph;
         std::vector<bool> root_connectivity;
-        if(!build_graph(node_map,node_list,&graph,root_connectivity)){
+        if(!build_graph(&ik_handler, node_map,node_list,&graph,root_connectivity)){
             std::cout<< "Edges could not be created. No solution found\n";
             trajectory.resize(1,ik_handler.OptVarDim);
             trajectory.row(0) << ik_handler.init_guess.col(0).transpose();
@@ -370,9 +381,11 @@ int main(int argc, char** argv){
                     // Generate Trajectory
                     Eigen::MatrixXd curr_traj(wpTol.size(), robot.NrOfJoints);
                     Eigen::MatrixXi curr_idx(wpTol.size(),1);
+                    Eigen::MatrixXi curr_tcp_idx(wpTol.size(),1);
                     for(int k=0; k<id_path.size(); ++k){
                         curr_traj.row(k) = node_map[id_path(k)]->jt_config.transpose();
                         curr_idx(k,0) = node_map[id_path(k)]->index;
+                        curr_tcp_idx(k,0) = node_map[id_path(k)]->tcp_id;
                     }
                     // Evaluate trajectory cost
                     double path_cost = 0;
@@ -385,6 +398,7 @@ int main(int argc, char** argv){
                         lowest_cost = path_cost;
                         trajectory = curr_traj;
                         path_idx = curr_idx;
+                        tcp_idx = curr_tcp_idx;
 
                         // Extras for research
                         Eigen::MatrixXd path_cost_mat(1,1);
@@ -395,6 +409,7 @@ int main(int argc, char** argv){
                             for (int l=0; l<graph.paths.cols(); ++l)
                                 pathsToleaf(k,l) = node_map[graph.paths(k,l)]->index;
                         file_rw::file_write("/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/csv/path_idx.csv",path_idx);
+                        file_rw::file_write("/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/csv/tcp_idx.csv",tcp_idx);
                         file_rw::file_write("/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/csv/path_cost.csv",path_cost_mat);
                         file_rw::file_write("/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/csv/pathsToLeaf.csv",pathsToleaf);
                         // char x;
@@ -422,6 +437,8 @@ int main(int argc, char** argv){
         if (jt_diff.abs().maxCoeff()>max_change)
             max_change = jt_diff.abs().maxCoeff();
     }
+    std::cout<< "Total number of edges in graph: " << graph.no_edges << std::endl;
+    std::cout<< "Total number of nodes in graph: " << graph.no_nodes << std::endl;
     std::cout<< "Maximum Joint Angle Change in Trajectory: " << max_change*(180/M_PI) << "\n";
     std::cout<< "Number of waypoints: " << wpTol.size() << "\n";
     std::cout<< "Number of TCPs: " << no_tcps << "\n";

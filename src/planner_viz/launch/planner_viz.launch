@@ -20,7 +20,7 @@
 
     <!-- Tool Plot -->
     <include file="$(arg pkg_path)/launch/sander.launch"/>
-    <!-- <include file="$(arg pkg_path)/launch/kane.launch"/> -->
+    <!-- <include file="$(arg pkg_path)/launch/ferro_sander.launch"/> -->
 
 
     <!-- Robot TF publishers from the joint_states topics -->

@@ -39,6 +39,8 @@ static void removeRow(Eigen::MatrixXd& matrix, unsigned int rowToRemove)
 static Eigen::MatrixXd load_plan(std::string file_name){
     Eigen::MatrixXd tool_path = file_rw::file_read_mat(file_name); // Pre computed path file
 
+
+    // new path is to keep alternate
     Eigen::MatrixXd new_path;
     int ctr=0;
     for (int i=0; i<tool_path.rows(); ++i){
