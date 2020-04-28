@@ -26,6 +26,7 @@ cvrg_path_parameters:
 
     # outer_boundary_subtraction_x_dir: 0.2, # IN METERS
     # outer_boundary_subtraction_y_dir: 0.03, # IN METERS
+    
     # parameter to offset the complete path in Z direction from the surface
     z_height_offset_all_waypoints: 0, # IN METERS
 
