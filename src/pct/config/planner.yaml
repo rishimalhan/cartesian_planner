@@ -15,7 +15,7 @@ cvrg_path_parameters:
 
     ## THESE PARAMS WILL CHANGE THE SPACING OF THE POINTS OF THE PATH
     # this param skips the hatching lines, it needs to be tweaked based on the sanding tool diameter
-    skip_hatching_lines: &skip_hatching_lines 50, # UNIT LESS (ROUGH ESTIMATE - 1 UNIT IS 1 centimeter)
+    skip_hatching_lines: &skip_hatching_lines 0, # UNIT LESS (ROUGH ESTIMATE - 1 UNIT IS 1 centimeter)
      # this param skips points along the hatching direction - DEFAULT VALUE 0
     skip_points_hatching_lines: 0, # UNIT LESS (ROUGH ESTIMATE - 1 UNIT IS 1 centimeter)
     # this param skips points orthogonal to the hatching direction - DEFAULT VALUE 0

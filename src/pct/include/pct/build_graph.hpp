@@ -18,16 +18,7 @@
 
 
 bool isEdge(ikHandler* ik_handler, const std::vector<node*>& node_map, const int parent, const int child){
-    // std::cout<< "Parent ID: " << parent << ". Child ID: " << child << "\n";
-    // std::cout<< "Parent Config: " << node_map[parent]->jt_config.transpose() << "\n";
-    // std::cout<< "Child Config: " << node_map[child]->jt_config.transpose() << "\n";
-    // double angle_x = acos( node_map[parent]->wp.segment(3,3).transpose()*node_map[child]->wp.segment(3,3) );
-    // if (angle_x > 0.2618 )
-    //     return true;
-    // std::cout<< "Max angle: " << (node_map[child]->jt_config-node_map[parent]->jt_config).array().abs().maxCoeff()*(180/M_PI) << 
-    // "  Area: " << ( (node_map[child]->wp_eul-node_map[parent]->wp_eul)
-    //     -node_map[parent]->jacobian*(node_map[child]->jt_config-node_map[parent]->jt_config) ).norm() << "\n";
-
+    // Path-Consistency Constraint
     // std::vector<Eigen::VectorXd> seg(4); // x1,q1,x2,q2
     // seg[0] = node_map[parent]->wp;
     // seg[1] = node_map[parent]->jt_config;
@@ -36,10 +27,6 @@ bool isEdge(ikHandler* ik_handler, const std::vector<node*>& node_map, const int
 
     // if (!path_consistency(seg, ik_handler, 0, get_dist(seg, ik_handler))) // Returns true if jt configs are path consistent
     //     return false;
-
-    // if( (node_map[child]->jt_config - node_map[parent]->jt_config).array().abs().maxCoeff() > 1.57 ) // Max deviation less than 90 degree
-    //     return true;
-
     return true;
 }
 
