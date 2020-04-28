@@ -56,7 +56,7 @@ int main(int argc, char** argv){
         return 0;
     }
     resolution *= (M_PI / 180);
-    double angle = 0*M_PI / 180; // Total angle is 200. 100 each side
+    double angle = 360*M_PI / 180; // Total angle is 200. 100 each side
 
 
     ///////////////// CAUTION ///////////////////////////////////////
