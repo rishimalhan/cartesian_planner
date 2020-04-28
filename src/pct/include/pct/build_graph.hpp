@@ -82,10 +82,6 @@ bool build_graph(ikHandler* ik_handler, const std::vector<node*>& node_map, cons
         // For each node at current level, build edges for each node at next level
         for (int j=0; j<curr_level.size(); ++j){
             for (int k=0; k<next_level.size(); ++k){
-                if (i==20){
-                    std::cout<< "Config-1 " << node_map[curr_level(j)]->jt_config.transpose()*(180/M_PI) << "\n";
-                    std::cout<< "Config-2 " << node_map[next_level(k)]->jt_config.transpose()*(180/M_PI) << "\n\n";
-                }
                 if ( isEdge(ik_handler, node_map, curr_level(j), next_level(k)) ){
                     if (i==0) // Mark this root to be connected to graph
                         root_connectivity[j] = true;
