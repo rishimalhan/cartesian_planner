@@ -14,6 +14,8 @@
 #include <pct/node_description.hpp>
 #include <robot_utilities/world_manager.hpp>
 #include <robot_utilities/Data_Format_Mapping.hpp>
+#include <robot_utilities/transformation_utilities.hpp>
+
 
 bool gen_nodes(ikHandler* ik_handler, WM::WM* wm,
                 const std::vector<Eigen::MatrixXd>& wpTol, const std::vector<Eigen::MatrixXd>& tcp_list,
@@ -29,6 +31,10 @@ bool gen_nodes(ikHandler* ik_handler, WM::WM* wm,
     // node_map will carry descriptions of all nodes
     // node_list will carry the structure. i.e node ids at every depth which will be used to build graph
     int id_cnt = 0;
+    KDL::JntArray theta;
+    KDL::Jacobian jac_kdl;
+    Eigen::MatrixXd jac;
+
     Eigen::MatrixXi noSols_map(wpTol.size(),wpTol[0].rows());
     for (int i=0; i<wpTol.size();++i){ // For all the waypoints
         Eigen::MatrixXd waypoints = wpTol[i];
@@ -47,8 +53,11 @@ bool gen_nodes(ikHandler* ik_handler, WM::WM* wm,
                         // Check for collision
                         std::vector<Eigen::MatrixXd> fk_kdl = ik_handler->robot->get_robot_FK_all_links(ik_handler->solution.col(sol_no));
                         if(!wm->inCollision( fk_kdl )){
-                            no_sols ++;
                         // if(true){
+                            theta = DFMapping::Eigen_to_KDLJoints(ik_handler->solution.col(sol_no));
+                            ik_handler->robot->Jac_KDL(theta,jac_kdl);
+                            jac = DFMapping::KDLJacobian_to_Eigen(jac_kdl);
+                            no_sols ++;
                             node* curr_node = new node;
                             curr_node->id = id_cnt;
                             curr_node->jt_config = ik_handler->solution.col(sol_no);
@@ -56,6 +65,13 @@ bool gen_nodes(ikHandler* ik_handler, WM::WM* wm,
                             curr_node->index = j;
                             curr_node->tcp_id = k;
                             curr_node->wp = waypoints.row(j).transpose();
+                            curr_node->jacobian = jac;
+
+                            // bxbybz to euler waypoint
+                            curr_node->wp_eul.resize(6);
+                            curr_node->wp_eul.segment(0,3) = waypoints.block(j,0,1,3).transpose(); 
+                            curr_node->wp_eul.segment(3,3) = rtf::bxbybz2eul(waypoints.block(j,3,1,9),"XYZ").row(0).transpose();
+
                             node_map.push_back(curr_node);
                             // Add these node ids to the node_list
                             nodes_at_depth.conservativeResize(ctr+1);

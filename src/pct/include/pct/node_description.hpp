@@ -21,7 +21,9 @@ struct node{
     // Optional depth and index corresponding to original wpTol
     int depth; 
     int index;
-    Eigen::VectorXd wp;
+    Eigen::VectorXd wp; // xyzbxbybz
+    Eigen::VectorXd wp_eul; //xyzrxryrz
+    Eigen::MatrixXd jacobian;
 };
 
 

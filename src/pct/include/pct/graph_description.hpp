@@ -35,6 +35,8 @@ struct boost_graph{
     vertex_descriptor s;
     Eigen::VectorXi leaf_nodes;
     int no_levels;
+    int no_edges;
+    int no_nodes;
     Eigen::MatrixXi paths; // Each column represents a path. Might not be lowest cost
 };
 
