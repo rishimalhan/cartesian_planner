@@ -205,18 +205,8 @@ int main(int argc, char** argv){
     }
     std::cout<< "Number of TCPs: " << no_tcps << "\n";
     std::vector<Eigen::MatrixXd> tcp_list(no_tcps); // For now only 1 tcp
-    for (int i=0; i<tcp_list.size(); ++i){
-        if (i==0)
-            tcp_list[i] = ff_T_tool;
-        else if(i<6){
-            tcp_list[i] = ff_T_tool;
-            tcp_list[i](0,3) += i*0.01;
-        }
-        else{
-            tcp_list[i] = ff_T_tool;
-            tcp_list[i](0,3) += -i*0.01;
-        }
-    }
+    for (int i=0; i<tcp_list.size(); ++i)
+        tcp_list[i] = ff_T_tool;
 
     
 
