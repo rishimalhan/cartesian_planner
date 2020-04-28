@@ -27,10 +27,6 @@ cvrg_path_parameters:
     skip_points_orthogonal_lines: *skip_hatching_lines, # UNIT LESS (ROUGH ESTIMATE - 1 UNIT IS 1 centimeter)
     
     #outer boundary box points to avoid. Basically shrinking the boundary by given values
-    # outer_boundary_subtraction_x_dir: 0.115, # IN METERS
-    # outer_boundary_subtraction_y_dir: 0.03, # IN METERS
-
-
     # Parameter not reachable by sequential IK
     # outer_boundary_subtraction_x_dir: 0.05, # IN METERS
     # outer_boundary_subtraction_y_dir: 0.1, # IN METERS
