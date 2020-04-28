@@ -15,36 +15,24 @@ cvrg_path_parameters:
 
     ## THESE PARAMS WILL CHANGE THE SPACING OF THE POINTS OF THE PATH
     # this param skips the hatching lines, it needs to be tweaked based on the sanding tool diameter
-<<<<<<< HEAD
-    # skip_hatching_lines: &skip_hatching_lines 1000, # UNIT LESS (ROUGH ESTIMATE - 1 UNIT IS 1 centimeter)
-    skip_hatching_lines: &skip_hatching_lines 6, # UNIT LESS (ROUGH ESTIMATE - 1 UNIT IS 1 centimeter)
-     # this param skips points along the hatching direction - DEFAULT VALUE 0
     skip_points_hatching_lines: 0, # UNIT LESS (ROUGH ESTIMATE - 1 UNIT IS 1 centimeter)
-=======
-    skip_hatching_lines: &skip_hatching_lines 50, # UNIT LESS (ROUGH ESTIMATE - 1 UNIT IS 1 centimeter)
->>>>>>> rmalhan
     # this param skips points orthogonal to the hatching direction - DEFAULT VALUE 0
     skip_points_orthogonal_lines: *skip_hatching_lines, # UNIT LESS (ROUGH ESTIMATE - 1 UNIT IS 1 centimeter)
     
     #outer boundary box points to avoid. Basically shrinking the boundary by given values
     # Parameter not reachable by sequential IK
-    # outer_boundary_subtraction_x_dir: 0.05, # IN METERS
-    # outer_boundary_subtraction_y_dir: 0.1, # IN METERS
+    outer_boundary_subtraction_x_dir: 0.05, # IN METERS
+    outer_boundary_subtraction_y_dir: 0.1, # IN METERS
 
-    outer_boundary_subtraction_x_dir: 0.2, # IN METERS
-    outer_boundary_subtraction_y_dir: 0.03, # IN METERS
+    # outer_boundary_subtraction_x_dir: 0.2, # IN METERS
+    # outer_boundary_subtraction_y_dir: 0.03, # IN METERS
 
     # parameter to offset the complete path in Z direction from the surface
     z_height_offset_all_waypoints: 0, # IN METERS
 
     # Resolution at which initial points are spaced in x and y
-<<<<<<< HEAD
-    path_gap: 0.01, #mm
-    # path_gap: 0.03, #mm
-=======
-    # path_gap: 0.005, #mm
+    # path_gap: 0.01, #mm
     path_gap: 0.03, #mm
->>>>>>> rmalhan
   }
 
 cvrg_file_paths:
