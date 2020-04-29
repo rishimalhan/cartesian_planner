@@ -1,4 +1,7 @@
-[ 25%] Built target viz_path
+[35m[1mScanning dependencies of target viz_path[0m
 [ 50%] Built target viz_robot
-[ 75%] Built target viz_wp
-[100%] Built target viz_stl
+[ 50%] Built target viz_wp
+[ 75%] Built target viz_stl
+[ 87%] [32mBuilding CXX object CMakeFiles/viz_path.dir/src/viz_path.cpp.o[0m
+[100%] [32m[1mLinking CXX executable /workspace/ros_ws/devel/.private/planner_viz/lib/planner_viz/viz_path[0m
+[100%] Built target viz_path

@@ -63,28 +63,27 @@ int main(int argc, char** argv){
 
 
     // // ROBOT IRB2600
-    // Eigen::MatrixXd init_guess(6,1);
-    // init_guess << 0.31189,0.2209,-0.1785,-1.5357,0.0176,1.3463;
-    // std::string rob_base_link = "base_link";
-    // std::string rob_tip_link = "tool0";
-    // std::string urdf_path = ros::package::getPath("robot_utilities") + "/urdf/abb_irb2600/irb2600_12_165.urdf";
-    // std::string robot_obj = ros::package::getPath("robot_utilities") + "/rob_objs/abb_irb2600/";
-    // KDL::Frame base_frame = KDL::Frame::Identity();
+    Eigen::MatrixXd init_guess(6,1);
+    init_guess << 0.31189,0.2209,-0.1785,-1.5357,0.0176,1.3463;
+    std::string rob_base_link = "base_link";
+    std::string rob_tip_link = "tool0";
+    std::string urdf_path = ros::package::getPath("robot_utilities") + "/urdf/abb_irb2600/irb2600_12_165.urdf";
+    std::string robot_obj = ros::package::getPath("robot_utilities") + "/rob_objs/abb_irb2600/";
+    KDL::Frame base_frame = KDL::Frame::Identity();
 
 
     // ROBOT UR10e
-    Eigen::MatrixXd init_guess(6,1);
-    init_guess << 0,0,0,0,0,0;
-    std::string rob_base_link = "base_link";
-    std::string rob_tip_link = "tool0";
-    std::string urdf_path = ros::package::getPath("robot_utilities") + "/urdf/ur_10e/ur10e.urdf";
-    std::string robot_obj = ros::package::getPath("robot_utilities") + "/rob_objs/ur_10e/";
-    Eigen::VectorXd w_T_b_eul(3);
-    w_T_b_eul << M_PI,0,0;
-    Eigen::MatrixXd w_T_b = Eigen::MatrixXd::Identity(4,4);
-    w_T_b.block(0,0,3,3) = rtf::eul2rot(w_T_b_eul.transpose(),"ZYX");
-    KDL::Frame base_frame = DFMapping::Eigen_to_KDLFrame(w_T_b);
-    // KDL::Frame base_frame = KDL::Frame::Identity();
+    // Eigen::MatrixXd init_guess(6,1);
+    // init_guess << 0,0,0,0,0,0;
+    // std::string rob_base_link = "base_link";
+    // std::string rob_tip_link = "tool0";
+    // std::string urdf_path = ros::package::getPath("robot_utilities") + "/urdf/ur_10e/ur10e.urdf";
+    // std::string robot_obj = ros::package::getPath("robot_utilities") + "/rob_objs/ur_10e/";
+    // Eigen::VectorXd w_T_b_eul(3);
+    // w_T_b_eul << M_PI,0,0;
+    // Eigen::MatrixXd w_T_b = Eigen::MatrixXd::Identity(4,4);
+    // w_T_b.block(0,0,3,3) = rtf::eul2rot(w_T_b_eul.transpose(),"ZYX");
+    // KDL::Frame base_frame = DFMapping::Eigen_to_KDLFrame(w_T_b);
 
 
     // std_msgs::Bool msg1;
