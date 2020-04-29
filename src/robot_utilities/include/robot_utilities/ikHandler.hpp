@@ -2,7 +2,7 @@
 // AUTHOR: RISHI MALHAN
 // CENTER FOR ADVANCED MANUFACTURING
 // UNIVERSITY OF SOUTHERN CALIFORNIA
-// EMAIL: rmalhan@usc.edu
+// EMAIL: rmalhan0112@gmail.com
 // /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // Function is an implementation of a quadratic program for finding an inverse kinematics solution for a given target,
@@ -33,6 +33,7 @@ private:
     Eigen::VectorXd target;
     Eigen::MatrixXd world_T_robBase;
     Eigen::MatrixXd robBase_T_world;
+    Eigen::MatrixXd permutations;
 public:
     bool urIKPatch;
     Eigen::VectorXd closest_sol;
@@ -49,12 +50,15 @@ public:
     ~ikHandler();
     void tf_target(Eigen::VectorXd&, const Eigen::MatrixXd&);
     double obj_func(const std::vector<double>&, std::vector<double>&);
-    void apply_URikPatch(Eigen::MatrixXd &);
     double err_func(const std::vector<double>&);
     bool solveIK(Eigen::VectorXd);
+    void setTcpFrame(const Eigen::MatrixXd&);
+    // For UR series
+    void apply_URikPatch(Eigen::MatrixXd &);
     void enable_URikPatch();
     void disable_URikPatch();
-    void setTcpFrame(const Eigen::MatrixXd&);
+    bool isPresent(Eigen::MatrixXi, Eigen::MatrixXi);
+    void genPerm(int);
 };
 
 

@@ -2,7 +2,7 @@
 // AUTHOR: RISHI MALHAN
 // CENTER FOR ADVANCED MANUFACTURING
 // UNIVERSITY OF SOUTHERN CALIFORNIA
-// EMAIL: rmalhan@usc.edu
+// EMAIL: rmalhan0112@gmail.com
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -14,23 +14,26 @@
 #include <pct/node_description.hpp>
 #include <pct/graph_description.hpp>
 #include <Eigen/Eigen>
+#include <pct/path_consistency.hpp>
 
 
+bool isEdge(ikHandler* ik_handler, const std::vector<node*>& node_map, const int parent, const int child){
+    // Path-Consistency Constraint
+    // std::vector<Eigen::VectorXd> seg(4); // x1,q1,x2,q2
+    // seg[0] = node_map[parent]->wp;
+    // seg[1] = node_map[parent]->jt_config;
+    // seg[2] = node_map[child]->wp;
+    // seg[3] = node_map[child]->jt_config;
 
-
-bool isEdge(const std::vector<node*>& node_map, const int parent, const int child){
-    // std::cout<< "Parent ID: " << parent << ". Child ID: " << child << "\n";
-    // std::cout<< "Parent Config: " << node_map[parent]->jt_config.transpose() << "\n";
-    // std::cout<< "Child Config: " << node_map[child]->jt_config.transpose() << "\n";
-    if( (node_map[child]->jt_config - node_map[parent]->jt_config).array().abs().maxCoeff() < 1.57 ) // Max deviation less than 90 degree
-        return true;
-    else
-        return false;
+    // if (!path_consistency(seg, ik_handler, 0, get_dist(seg, ik_handler))) // Returns true if jt configs are path consistent
+    //     return false;
+    return true;
 }
 
 
 double computeGCost( const std::vector<node*>& node_map, const int parent, const int child ){
     return (node_map[child]->jt_config - node_map[parent]->jt_config).array().abs().maxCoeff();
+    // return (node_map[child]->jt_config - node_map[parent]->jt_config).norm();
 }
 
 
@@ -38,14 +41,16 @@ double computeGCost( const std::vector<node*>& node_map, const int parent, const
 // Graphs equal to the number of root nodes are generated
 // CAUTION: root_id is the node id which is used to access node_map.
 // This code assumes that all nodes are valid within joint limits of robot
-bool build_graph(const std::vector<node*>& node_map, const std::vector<Eigen::VectorXi>& node_list,
+bool build_graph(ikHandler* ik_handler, const std::vector<node*>& node_map, const std::vector<Eigen::VectorXi>& node_list,
                     boost_graph* boost_graph, std::vector<bool>& root_connectivity){
+    boost_graph->no_nodes = node_map.size();
     std::cout<< "\n##############################################################\n";
     std::cout<< "Generating Graph\n";
 
     std::vector<Edge> edges; edges.clear();
     std::vector<double> weights; weights.clear();
     root_connectivity.resize(node_list[0].size());
+
     for (int i=0; i<node_list[0].size(); ++i)
         root_connectivity[i] = false;
     std::cout<< "Number of levels in the graph: " << node_list.size() << "\n";
@@ -64,7 +69,7 @@ bool build_graph(const std::vector<node*>& node_map, const std::vector<Eigen::Ve
         // For each node at current level, build edges for each node at next level
         for (int j=0; j<curr_level.size(); ++j){
             for (int k=0; k<next_level.size(); ++k){
-                if ( isEdge(node_map, curr_level(j), next_level(k)) ){
+                if ( isEdge(ik_handler, node_map, curr_level(j), next_level(k)) ){
                     if (i==0) // Mark this root to be connected to graph
                         root_connectivity[j] = true;
                     edges.push_back( Edge(curr_level(j),next_level(k)) );
@@ -88,7 +93,8 @@ bool build_graph(const std::vector<node*>& node_map, const std::vector<Eigen::Ve
         }
     }   
     std::cout<< "Total Number of Edges: " << edges.size() << "\n";
-    
+    boost_graph->no_edges = edges.size();
+
     const int num_nodes = node_map.size();
     int num_arcs = edges.size();
     graph_t g(edges.begin(), edges.end(), weights.begin(), num_nodes); boost_graph->g = g;

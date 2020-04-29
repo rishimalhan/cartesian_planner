@@ -2,7 +2,7 @@
 // AUTHOR: RISHI MALHAN
 // CENTER FOR ADVANCED MANUFACTURING
 // UNIVERSITY OF SOUTHERN CALIFORNIA
-// EMAIL: rmalhan@usc.edu
+// EMAIL: rmalhan0112@gmail.com
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -21,6 +21,9 @@ struct node{
     // Optional depth and index corresponding to original wpTol
     int depth; 
     int index;
+    Eigen::VectorXd wp; // xyzbxbybz
+    Eigen::VectorXd wp_eul; //xyzrxryrz
+    Eigen::MatrixXd jacobian;
 };
 
 

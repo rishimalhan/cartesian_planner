@@ -128,10 +128,16 @@
   <link name="tool0"/>
   
   
-  <joint name="world_joint" type="fixed">
+  <!-- <joint name="world_joint" type="fixed">
     <parent link="world" />
     <child link = "base_link" />
     <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 0" />
+  </joint>    -->
+
+  <joint name="world_joint" type="fixed">
+    <parent link="world" />
+    <child link = "base_link" />
+    <origin xyz="0.0 0.0 0.0" rpy="0.0 0.0 3.141592" />
   </joint>   
 
 <!--   <joint name="base_link-base_fixed_joint" type="fixed">

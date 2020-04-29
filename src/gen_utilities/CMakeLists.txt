@@ -98,49 +98,49 @@ set(nlopt_ADDED_LIBS ${libnlopt_SOURCE_DIR}/install/lib/libnlopt.so)
 ##   * uncomment the generate_messages entry below
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
-## Generate messages in the 'msg' folder
-add_message_files(
-  FILES
-  Waypoints.msg
-  XYZ_bxbybz.msg
-  XYZ_cba.msg
-  XYZ_nxnynz.msg
-  dummyMessage.msg
-  KukaJointAngles.msg
-  KukaJointAnglesSet.msg
-  IdxGroup.msg
-  TrajContainer.msg
-)
-
-## Generate services in the 'srv' folder
-add_service_files(
-  FILES
-  DrapingSeqGenerator.srv
-  GenerateDrapingPath.srv
-  GenerateGraspingPath.srv
-  MoldPlacementPlan.srv
-  PTPPathGen.srv
-  ContactBasedReg.srv
-  VisionBasedRegICP.srv
-  Ptcloud2ToPtcloud.srv
-  TrajContainerSrv.srv
-  GraspSyncServ.srv
-)
-
-## Generate actions in the 'action' folder
-# add_action_files(
+# ## Generate messages in the 'msg' folder
+# add_message_files(
 #   FILES
-#   Action1.action
-#   Action2.action
+#   Waypoints.msg
+#   XYZ_bxbybz.msg
+#   XYZ_cba.msg
+#   XYZ_nxnynz.msg
+#   dummyMessage.msg
+#   KukaJointAngles.msg
+#   KukaJointAnglesSet.msg
+#   IdxGroup.msg
+#   TrajContainer.msg
 # )
 
-## Generate added messages and services with any dependencies listed here
-generate_messages(
-  DEPENDENCIES
-  geometry_msgs   
-  sensor_msgs   
-  std_msgs
-)
+# ## Generate services in the 'srv' folder
+# add_service_files(
+#   FILES
+#   DrapingSeqGenerator.srv
+#   GenerateDrapingPath.srv
+#   GenerateGraspingPath.srv
+#   MoldPlacementPlan.srv
+#   PTPPathGen.srv
+#   ContactBasedReg.srv
+#   VisionBasedRegICP.srv
+#   Ptcloud2ToPtcloud.srv
+#   TrajContainerSrv.srv
+#   GraspSyncServ.srv
+# )
+
+# ## Generate actions in the 'action' folder
+# # add_action_files(
+# #   FILES
+# #   Action1.action
+# #   Action2.action
+# # )
+
+# ## Generate added messages and services with any dependencies listed here
+# generate_messages(
+#   DEPENDENCIES
+#   geometry_msgs   
+#   sensor_msgs   
+#   std_msgs
+# )
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -211,11 +211,7 @@ add_library(${PROJECT_NAME}
   src/file_rw.cpp
   src/NPAM_utilities.cpp
   src/transformation_utilities.cpp
-  src/iiwa_utilities.cpp
   src/utilities.cpp
-  src/iiwa_IK_solver.cpp
-  src/robot_comm.cpp
-  src/rosmsg_eigen_exchange.cpp
 )
 
 # set_source_files_properties(src/transformation_utilities.cpp PROPERTIES COMPILE_FLAGS -O3)

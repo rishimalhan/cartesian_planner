@@ -2,7 +2,7 @@
 // AUTHOR: RISHI MALHAN
 // CENTER FOR ADVANCED MANUFACTURING
 // UNIVERSITY OF SOUTHERN CALIFORNIA
-// EMAIL: rmalhan@usc.edu
+// EMAIL: rmalhan0112@gmail.com
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // 
@@ -33,6 +33,16 @@
 #include <pct/timer.hpp>
 
 
+// Parameters to play with:
+// Parameters to check while things are not working out
+// Which robot is enabled. Check urdf, tcp, base frames and links
+// Check for which header is included in ik gateway
+// idedge return true or false for general cases in build graph
+// Is path being generated or loaded
+// Tool transforms and planner.yaml config file
+// Remember to switch useNumIK back to false if done using it
+
+
 int main(int argc, char** argv){
     ros::init(argc,argv,"pct_main");
     ros::NodeHandle main_handler;
@@ -46,7 +56,15 @@ int main(int argc, char** argv){
         return 0;
     }
     resolution *= (M_PI / 180);
-    double angle = 360*M_PI / 180;
+    double angle = 0*M_PI / 180; // Total angle is 200. 100 each side
+
+
+    ///////////////// CAUTION ///////////////////////////////////////
+    // WHEN CHANGING A 6DOF ROBOT FOR ANALYTICAL IK, MAKE SURE CHANGES ARE MADE
+    // IN IK GATEWAY HEADER AND APPROPRIATE CPP IS INCLUDED
+    ///////////////// CAUTION ///////////////////////////////////////
+
+
 
 
     // // ROBOT IIWA
@@ -62,7 +80,8 @@ int main(int argc, char** argv){
     // KDL::Frame base_frame = KDL::Frame::Identity();
 
 
-    // // ROBOT IRB2600
+
+    // ROBOT IRB2600
     Eigen::MatrixXd init_guess(6,1);
     init_guess << 0.31189,0.2209,-0.1785,-1.5357,0.0176,1.3463;
     std::string rob_base_link = "base_link";
@@ -72,9 +91,11 @@ int main(int argc, char** argv){
     KDL::Frame base_frame = KDL::Frame::Identity();
 
 
-    // ROBOT UR10e
+
+
+    // // ROBOT UR10e
     // Eigen::MatrixXd init_guess(6,1);
-    // init_guess << 0,0,0,0,0,0;
+    // init_guess << 0,-90,0,0,0,0;
     // std::string rob_base_link = "base_link";
     // std::string rob_tip_link = "tool0";
     // std::string urdf_path = ros::package::getPath("robot_utilities") + "/urdf/ur_10e/ur10e.urdf";
@@ -84,6 +105,8 @@ int main(int argc, char** argv){
     // Eigen::MatrixXd w_T_b = Eigen::MatrixXd::Identity(4,4);
     // w_T_b.block(0,0,3,3) = rtf::eul2rot(w_T_b_eul.transpose(),"ZYX");
     // KDL::Frame base_frame = DFMapping::Eigen_to_KDLFrame(w_T_b);
+    // // KDL::Frame base_frame = KDL::Frame::Identity();
+    bool urPatch = false;
 
 
     // std_msgs::Bool msg1;
@@ -111,7 +134,6 @@ int main(int argc, char** argv){
 
     std::cout<< "Creating Robot\n";
     // Create the robot
-    Eigen::Matrix4d world_T_base = Eigen::Matrix4d::Identity(4,4);
     KDL::Frame tcp_frame = DFMapping::Eigen_to_KDLFrame(ff_T_tool);
 
     SerialLink_Manipulator::SerialLink_Manipulator robot(urdf_path, base_frame, tcp_frame, rob_base_link, rob_tip_link);
@@ -119,7 +141,9 @@ int main(int argc, char** argv){
     Eigen::MatrixXd jt_ub = DFMapping::KDLJoints_to_Eigen(robot.Joints_ul);
     ikHandler ik_handler(&robot);
     ik_handler.init_guess = init_guess.col(0);
-
+    if (urPatch)
+        ik_handler.enable_URikPatch();
+    
 
     // Create Collision Checker
     WM::WM wm;
@@ -143,17 +167,14 @@ int main(int argc, char** argv){
     wm.addWorkpiece(wp_path, world_T_part);
 
 
+    std::string path_file;
+    ros::param::get("/cvrg_file_paths/path_file",path_file);
+
     // Generate Path
     Eigen::MatrixXd path = gen_cvrg_plan();
+    // Eigen::MatrixXd path = load_plan(path_file); // Pre computed path file
 
 
-
-
-    // removeRow(path,path.rows()-1);
-    // removeRow(path,path.rows()-2);
-    // std::string cvrg_path;
-    // ros::param::get("/cvrg_file_paths/cvrg_path",cvrg_path);
-    // file_rw::file_write(cvrg_path,path);
 
 
 
@@ -163,6 +184,7 @@ int main(int argc, char** argv){
     Eigen::MatrixXd tolerances = Eigen::MatrixXd::Ones(path.rows(),1)*angle;
     std::vector<Eigen::MatrixXd> wpTol =  gen_wp_with_tolerance(tolerances,resolution, path );
     std::cout<< "Search Samples Generated....\n";
+
 
     // Get trajectory path
     std::string traj_path;
@@ -229,57 +251,56 @@ int main(int argc, char** argv){
 
 
     // // Using Sequential IK
-    // std::cout<< "Solving IK......\n";
+    // std::cout<< "Solving sequential IK for multiple start points......\n";
     // Eigen::VectorXd jt_config;
     // if (ik_handler.solveIK(path.row(0))){ // IK for first row
-    //     jt_config = ik_handler.solution.col(0); // First solution out of many
-    //     ik_handler.init_guess = jt_config;
-    //     std::cout<< "The first configuration in degrees is: \n"
-    //     << ik_handler.init_guess.transpose()*180/M_PI << "\n\n";
-    //     double acc_error = 0;
-    //     for (int i=0; i<path.rows(); ++i){
-    //         if (ik_handler.solveIK(path.row(i)))
-    //             jt_config = ik_handler.closest_sol;
+    //     ik_handler.useNumIK = true;
+    //     Eigen::MatrixXd strt_solutions = ik_handler.solution;
+    //     // Eigen::MatrixXd strt_solutions = ik_handler.closest_sol;
+    //     std::cout<< "No of solutions for first point: " << ik_handler.solution.cols() << "\n";
+    //     std::cout<< "Number of starting points: " << strt_solutions.cols() << "\n";
+    //     for (int i=0; i<strt_solutions.cols();++i){
+    //         std::vector<Eigen::MatrixXd> fk_kdl = ik_handler.robot->get_robot_FK_all_links(strt_solutions.col(i));
+    //         if(wm.inCollision( fk_kdl )){
+    //             std::cout<< "In collision. Point index: " << i << "\n";
+    //             continue;
+    //         }
+    //         ik_handler.init_guess = strt_solutions.col(i); // Initial guess as first point
+    //         for (int j=0; j<path.rows(); ++j){
+    //             if (ik_handler.solveIK(path.row(j))){
+    //                 jt_config = ik_handler.closest_sol;
+    //                 std::vector<Eigen::MatrixXd> fk_kdl = ik_handler.robot->get_robot_FK_all_links(jt_config);
+    //                 if(!wm.inCollision( fk_kdl )){
+    //                     ik_handler.init_guess = jt_config;
+    //                     trajectory.conservativeResize(j+1,robot.NrOfJoints);
+    //                     trajectory.row(j) = jt_config.transpose();
+    //                     ik_handler.init_guess = jt_config;
+    //                     success_flags(j,0) = 1;
+    //                 }
+    //                 else{
+    //                     std::cout<< "IK not feasible. Point index: " << i << "\n";
+    //                     break;
+    //                     trajectory.conservativeResize(j+1,robot.NrOfJoints);
+    //                     trajectory.row(j) = jt_config.transpose();
+    //                     ik_handler.init_guess = jt_config;
+    //                     success_flags(j,0) = 0;
+    //                 }
+    //             }
+    //         }
+    //         if (trajectory.rows()==path.rows())
+    //             std::cout<< "Trajectory successfully found for sequential IK. Point Index: " << i <<"\n";
     //         else
-    //             break;
-    //         trajectory.conservativeResize(i+1,robot.NrOfJoints);
-    //         trajectory.row(i) = jt_config.transpose();
-    //         ik_handler.init_guess = jt_config;
-    //         success_flags(i,0) = ik_handler.status;
-    //         acc_error += ik_handler.f_val;
+    //             std::cout<< "Trajectory failure for sequential IK. Point Index: " << i <<"\n";
+    //         file_rw::file_write("/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/csv/"+std::to_string(i)+".csv", trajectory);
     //     }
-    //     std::cout<< "Trajectory\n" << trajectory << "\n";
     // }
-
-
-
-    // // Using Random Initial Seeds
-    // // Using Sequential IK
-    // std::cout<< "Solving IK......\n";
-    // ik_handler.init_guess = init_guess.col(0);
-    // double min_err = 100000;
-    // double acc_error;
-    // for (int ctr=0; ctr<30; ++ctr){
-    //     acc_error = 0;
-    //     KDL::JntArray randJoints(robot.NrOfJoints);
-    //     robot.getRandJointArray(randJoints);
-    //     init_guess << DFMapping::KDLJoints_to_Eigen(randJoints);
-    //     std::cout<< "Seed: " << init_guess.transpose() << "\n";
-    //     for (int i=0; i<path.rows(); ++i){
-    //         if (ik_handler.solveIK(path.row(i)))
-    //             Eigen::VectorXd jt_config = ik_handler.solution;
-    //         trajectory.conservativeResize(i+1,robot.NrOfJoints);
-    //         trajectory.row(i) = jt_config.transpose();
-    //         ik_handler.init_guess = jt_config;
-    //         success_flags(i,0) = ik_handler.status;
-    //         acc_error += ik_handler.f_val;
-    //     }
-    //     if (acc_error < min_err)
-    //         min_err = acc_error;
+    // else{
+    //     std::cout<< "First point not reachable\n";
     // }
-    // acc_error = min_err;    
-
+    // ik_handler.useNumIK = false;
     
+
+
 
     // // Tree Search
     // if(ik_handler.solveIK(path.row(0))){
@@ -305,19 +326,29 @@ int main(int argc, char** argv){
 
 
     // Graph Search
+    Eigen::MatrixXi path_idx(wpTol.size(),1);
+    Eigen::MatrixXi tcp_idx(wpTol.size(),1);
     std::vector<node*> node_map;
     std::vector<Eigen::VectorXi> node_list;
     success_flags = Eigen::MatrixXd::Ones(wpTol.size(),1)*0;
-    if(!gen_nodes(&ik_handler, &wm, wpTol, tcp_list, node_map, node_list)){
+    boost_graph graph;
+
+    if(!gen_nodes(&ik_handler, &wm, wpTol, tcp_list, node_map, node_list, success_flags)){
         std::cout<< "Nodes could not be generated. No solution found\n";
         trajectory.resize(1,ik_handler.OptVarDim);
         trajectory.row(0) << ik_handler.init_guess.col(0).transpose();
     }
     else{
         std::cout<< "Nodes generation compute time: " << timer.elapsed() << std::endl;
-        boost_graph graph;
+
+
+        Eigen::MatrixXi reach_map = Eigen::MatrixXi::Ones(path.rows(),wpTol[0].rows())*0;
+        for (int i=0; i<node_map.size(); ++i)
+            reach_map(node_map[i]->depth,node_map[i]->index) = 1;
+        file_rw::file_write("/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/csv/reach_map.csv",reach_map);
+
         std::vector<bool> root_connectivity;
-        if(!build_graph(node_map,node_list,&graph,root_connectivity)){
+        if(!build_graph(&ik_handler, node_map,node_list,&graph,root_connectivity)){
             std::cout<< "Edges could not be created. No solution found\n";
             trajectory.resize(1,ik_handler.OptVarDim);
             trajectory.row(0) << ik_handler.init_guess.col(0).transpose();
@@ -339,18 +370,41 @@ int main(int argc, char** argv){
                 if(graph_searches::djikstra(&graph,id_path)){ // Get the shortest path to a leaf node in terms of node ids
                     // Generate Trajectory
                     Eigen::MatrixXd curr_traj(wpTol.size(), robot.NrOfJoints);
-                    for(int i=0; i<id_path.size(); ++i)
-                        curr_traj.row(i) = node_map[id_path(i)]->jt_config.transpose();
+                    Eigen::MatrixXi curr_idx(wpTol.size(),1);
+                    Eigen::MatrixXi curr_tcp_idx(wpTol.size(),1);
+                    for(int k=0; k<id_path.size(); ++k){
+                        curr_traj.row(k) = node_map[id_path(k)]->jt_config.transpose();
+                        curr_idx(k,0) = node_map[id_path(k)]->index;
+                        curr_tcp_idx(k,0) = node_map[id_path(k)]->tcp_id;
+                    }
                     // Evaluate trajectory cost
                     double path_cost = 0;
-                    for (int i=0; i<curr_traj.rows()-1;++i){
-                        Eigen::ArrayXd jt_diff = (curr_traj.row(i+1) - curr_traj.row(i)).transpose();
+                    for (int k=0; k<curr_traj.rows()-1;++k){
+                        Eigen::ArrayXd jt_diff = (curr_traj.row(k+1) - curr_traj.row(k)).transpose();
                         path_cost += jt_diff.abs().maxCoeff();
                     }
                     if (path_cost<lowest_cost){
                         std::cout<< "Found Path With Lower Cost. Current Path Cost: " << path_cost << "\n\n";
                         lowest_cost = path_cost;
                         trajectory = curr_traj;
+                        path_idx = curr_idx;
+                        tcp_idx = curr_tcp_idx;
+
+                        // Extras for research
+                        Eigen::MatrixXd path_cost_mat(1,1);
+                        path_cost_mat<< path_cost;
+                        // Convert all pathsToleaf to node indexes
+                        Eigen::MatrixXi pathsToleaf(graph.paths.rows(),graph.paths.cols());
+                        for (int k=0; k<graph.paths.rows(); ++k)
+                            for (int l=0; l<graph.paths.cols(); ++l)
+                                pathsToleaf(k,l) = node_map[graph.paths(k,l)]->index;
+                        file_rw::file_write("/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/csv/path_idx.csv",path_idx);
+                        file_rw::file_write("/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/csv/tcp_idx.csv",tcp_idx);
+                        file_rw::file_write("/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/csv/path_cost.csv",path_cost_mat);
+                        file_rw::file_write("/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/csv/pathsToLeaf.csv",pathsToleaf);
+                        // char x;
+                        // std::cin>> x;
+                        //
                     }
                     success_flags = Eigen::MatrixXd::Ones(wpTol.size(),1);
                 }
@@ -358,21 +412,24 @@ int main(int argc, char** argv){
                     std::cout<< "Discontinuity detected for this configuration\n";
             }
 
-            std::cout<< "Trajectory: \n" << trajectory << "\n";
+            // std::cout<< "Trajectory: \n" << trajectory << "\n";
         }
     }
-
-
 
     
 
     // Evaluate trajectory cost
+    double max_change = -std::numeric_limits<double>::infinity();
     double path_cost = 0;
     for (int i=0; i<trajectory.rows()-1;++i){
         Eigen::ArrayXd jt_diff = (trajectory.row(i+1) - trajectory.row(i)).transpose();
         path_cost += jt_diff.abs().maxCoeff();
+        if (jt_diff.abs().maxCoeff()>max_change)
+            max_change = jt_diff.abs().maxCoeff();
     }
-
+    std::cout<< "Total number of edges in graph: " << graph.no_edges << std::endl;
+    std::cout<< "Total number of nodes in graph: " << graph.no_nodes << std::endl;
+    std::cout<< "Maximum Joint Angle Change in Trajectory: " << max_change*(180/M_PI) << "\n";
     std::cout<< "Number of waypoints: " << wpTol.size() << "\n";
     std::cout<< "Number of TCPs: " << no_tcps << "\n";
     std::cout<< "Trajectory Cost: " << path_cost << "\n";

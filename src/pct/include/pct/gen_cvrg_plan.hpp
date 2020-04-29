@@ -3,7 +3,7 @@
 // CONTRIBUTORS: ANIRUDDHA SHEMBEKAR, BRUAL SHAH
 // CENTER FOR ADVANCED MANUFACTURING
 // UNIVERSITY OF SOUTHERN CALIFORNIA
-// EMAIL: rmalhan@usc.edu
+// EMAIL: rmalhan0112@gmail.com
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -36,6 +36,51 @@ static void removeRow(Eigen::MatrixXd& matrix, unsigned int rowToRemove)
     matrix.conservativeResize(numRows,numCols);
 }
 
+static Eigen::MatrixXd load_plan(std::string file_name){
+    Eigen::MatrixXd tool_path = file_rw::file_read_mat(file_name); // Pre computed path file
+
+
+    // new path is to keep alternate
+    Eigen::MatrixXd new_path;
+    int ctr=0;
+    for (int i=0; i<tool_path.rows(); ++i){
+        if (i%2==0){
+            new_path.conservativeResize(ctr+1,12);
+            new_path.row(ctr) = tool_path.row(i);
+            ctr++;
+        }
+    }
+    // tool_path = new_path;
+
+    ROS_INFO("tool_path size: %d", (int)tool_path.rows());
+
+    // Apply transformation from ros parameter server
+    std::vector<double> tf; tf.clear();
+    if(!ros::param::get("/cvrg_tf_param/world_T_part",tf))
+        std::cout<< "Unable to Obtain part tf\n";
+    Eigen::VectorXd tf_eigen(6);
+    tf_eigen<< tf[0],tf[1],tf[2],tf[3],tf[4],tf[5];
+    Eigen::Matrix4d world_T_part = Eigen::Matrix4d::Identity();
+    world_T_part.block(0,0,3,3) = rtf::eul2rot(tf_eigen.segment(3,3).transpose(),"XYZ");
+    world_T_part.block(0,3,3,1) = tf_eigen.segment(0,3);
+    tool_path = rtf::apply_transformation_to_waypoints(tool_path,world_T_part);
+
+    // Compute Average distance between each point
+    double avg_dist = 0;
+    for(int i=0; i<tool_path.rows()-1;++i){
+        avg_dist += (tool_path.row(i+1).block(0,0,1,3)-tool_path.row(i).block(0,0,1,3)).norm();
+    }
+    avg_dist /= tool_path.rows()-1;
+    std::cout<< "Avg Distance between Points is: " << avg_dist*1000 << "mm\n";
+
+    std::string cvrg_path;
+    if(!ros::param::get("/cvrg_file_paths/cvrg_path",cvrg_path))
+        ROS_INFO("Could not find path file to save the waypoints");
+    file_rw::file_write(cvrg_path,tool_path);
+
+    return tool_path;
+
+}
 
 // STANDARD FOR WAYPOINT: Z AXIS IS NORMAL. X AXIS IS DIRECTION OF HEADING OF TOOL. Y AXIS IS COMPUTED.
 static Eigen::MatrixXd gen_cvrg_plan(){

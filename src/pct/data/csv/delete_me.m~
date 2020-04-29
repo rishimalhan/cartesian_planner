@@ -1,0 +1,30 @@
+clear all;
+close all;
+clc;
+
+reach_map = csvread('reach_map.csv');
+
+sign=1;
+angles(1,1) = 0;
+ctr=1;
+for j=2:1:size(reach_map,2)
+    if (mod(j,2)==0 && j~=2)
+        ctr = ctr + 5;
+    end
+    angles(j,1) = sign*ctr;
+    sign = sign*-1;
+end
+
+reds = [];
+greens = [];
+figure(1); hold on; daspect([1,1,1]);
+for i=1:size(reach_map,1)
+    for j=1:1:size(reach_map,2)
+        if (reach_map(i,j)==1)
+            greens = [greens; ];
+        else
+            scatter( i,angles(j),50,'r','*','filled' );
+        end
+    end
+end
+scatter( i,angles(j),50,'g','*','filled' );

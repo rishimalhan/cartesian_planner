@@ -2,7 +2,7 @@
 // AUTHOR: RISHI MALHAN
 // CENTER FOR ADVANCED MANUFACTURING
 // UNIVERSITY OF SOUTHERN CALIFORNIA
-// EMAIL: rmalhan@usc.edu
+// EMAIL: rmalhan0112@gmail.com
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -24,25 +24,36 @@ namespace graph_searches{
                   distance_map(boost::make_iterator_property_map(graph->d.begin(), get(boost::vertex_index, graph->g))));
 
 
-        // for (int i=0; i<878; ++i){
-        //     std::cout << "distance(" << i << ") = " << graph->d[i] << ", ";
-        //     std::cout << "parent(" << i << ") = " << graph->p[i] << std::endl;
-        // }
         // Check which leaf node has the lowest cost path
         double lowest_cost = std::numeric_limits<double>::infinity();
         int index;
         Eigen::VectorXi leaf_nodes = graph->leaf_nodes;
         bool leaf_connected = false;
+        Eigen::VectorXi curr_path(graph->no_levels);
+        graph->paths.resize(graph->no_levels,1);
+        std::cout<< "Cost:\n";
         for (int i=0; i<leaf_nodes.size(); ++i){
-            // std::cout<< "Cost: " << graph->d[ leaf_nodes(i) ] << "\n";
-            if ( leaf_nodes(i)!=graph->p[leaf_nodes(i)] ) // if this node is not equal to its parent (terminal node)
+            std::cout<< graph->d[ leaf_nodes(i) ] << ", ";
+            if ( leaf_nodes(i)!=graph->p[leaf_nodes(i)] ){ // if this node is not equal to its parent (terminal node)
                 if (graph->d[ leaf_nodes(i) ] < lowest_cost){
                     index = i;
                     lowest_cost = graph->d[ leaf_nodes(i) ];
                     leaf_connected = true;
+                }
+
+                // Extras for research
+                int id = leaf_nodes(i);
+                for(int row_no=graph->no_levels - 1; row_no>-1; --row_no){
+                    curr_path(row_no) = id;
+                    id = graph->p[ id ];
+                }
+                graph->paths.col(graph->paths.cols()-1) = curr_path;
+                graph->paths.conservativeResize(graph->no_levels,graph->paths.cols()+1);
+                //
             }
         }
-
+        graph->paths.conservativeResize(graph->no_levels,graph->paths.cols()-1); // Kill the last col
+        std::cout<< "\n";
         if (!leaf_connected)
             return false;
 

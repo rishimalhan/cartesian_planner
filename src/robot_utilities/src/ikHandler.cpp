@@ -2,7 +2,7 @@
 // AUTHOR: RISHI MALHAN
 // CENTER FOR ADVANCED MANUFACTURING
 // UNIVERSITY OF SOUTHERN CALIFORNIA
-// EMAIL: rmalhan@usc.edu
+// EMAIL: rmalhan0112@gmail.com
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -36,7 +36,7 @@ ikHandler::ikHandler(SerialLink_Manipulator::SerialLink_Manipulator* _robot){
         jt_ll(i) = robot->Joints_ll(i);
         jt_ul(i) = robot->Joints_ul(i);
     }
-    closest_sol.resize(6);
+    closest_sol.resize(OptVarDim);
     //choose optimizer
     // alg_type = nlopt::LN_NEWUOA;
     // alg_type = nlopt::LN_NEWUOA_BOUND;
@@ -89,7 +89,8 @@ ikHandler::ikHandler(SerialLink_Manipulator::SerialLink_Manipulator* _robot){
     "#########################################################################\n";
 
     urIKPatch = false;
-
+    if (OptVarDim<7)
+        genPerm(OptVarDim);
     // Eigen::MatrixXd jt_config(6,1);
     // jt_config<< 0,-90,0,0,0,0;
     // jt_config *= (M_PI/180);
@@ -134,34 +135,62 @@ void ikHandler::setTcpFrame(const Eigen::MatrixXd& _tcpframe){
 };
 
 
-void ikHandler::enable_URikPatch(){urIKPatch = true;}
-void ikHandler::disable_URikPatch(){urIKPatch = false;}
+bool ikHandler::isPresent(Eigen::MatrixXi perm_mat, Eigen::MatrixXi row_vec){
+    for (int i=0; i<perm_mat.rows(); ++i)
+        if (perm_mat.row(i)==row_vec)
+            return true;
+    return false;
+}
+void ikHandler::genPerm(int dof){
+    Eigen::MatrixXi perm_mat;
+    perm_mat.conservativeResize(2,dof);
+    for (int i=0; i<dof; ++i){
+        perm_mat(0,i) = 0;
+        perm_mat(1,i) = 1;
+    }
 
-void ikHandler::apply_URikPatch(Eigen::MatrixXd &solutions){
-    // std::cout<< "Original Solutions: \n" << solutions << "\n";
-    int ctr = 0;
-    Eigen::MatrixXd new_sols;
-    for (int i=0; i<solutions.rows();++i){
-        for (int j=0; j<6; ++j){
-            // Rotate +360
-            if (solutions(i,j) < 0){
-                new_sols.conservativeResize(ctr+1,6);
-                new_sols.row(ctr) = solutions.row(i); 
-                new_sols(ctr,j) += M_PI*2; ctr++;
+    for (int i=1; i<perm_mat.rows(); ++i){
+        for (int j=0; j<dof; ++j){
+            Eigen::MatrixXi row_vec;
+
+            row_vec = perm_mat.row(i);
+            row_vec(0,j) *= 0;
+            if (!isPresent(perm_mat,row_vec)){
+                // Add this as a new permutation
+                perm_mat.conservativeResize(perm_mat.rows()+1,dof);
+                perm_mat.row(perm_mat.rows()-1) = row_vec;
             }
-            // Rotate -360
-            if (solutions(i,j) > 0){
-                new_sols.conservativeResize(ctr+1,6);
-                new_sols.row(ctr) = solutions.row(i); 
-                new_sols(ctr,j) -= M_PI*2; ctr++;
+
+            row_vec = perm_mat.row(i);
+            row_vec(0,j) *= 1;
+            if (!isPresent(perm_mat,row_vec)){
+                // Add this as a new permutation
+                perm_mat.conservativeResize(perm_mat.rows()+1,dof);
+                perm_mat.row(perm_mat.rows()-1) = row_vec;
+            }
+
+            row_vec = perm_mat.row(i);
+            row_vec(0,j) *= -1;
+            if (!isPresent(perm_mat,row_vec)){
+                // Add this as a new permutation
+                perm_mat.conservativeResize(perm_mat.rows()+1,dof);
+                perm_mat.row(perm_mat.rows()-1) = row_vec;
             }
         }
     }
-    // std::cout<< "New Solutions: \n" << solutions << "\n" << new_sols << "\n";
-    int orig_size = solutions.rows();
-    solutions.conservativeResize(orig_size+new_sols.rows(),6);
-    solutions.block(orig_size,0,new_sols.rows(),6) = new_sols;
-};
+    permutations = 2*M_PI*perm_mat.cast<double>();
+}
+void ikHandler::enable_URikPatch(){urIKPatch = true;}
+void ikHandler::disable_URikPatch(){urIKPatch = false;}
+void ikHandler::apply_URikPatch(Eigen::MatrixXd &solutions){
+    int perm_rows = permutations.rows();
+    int sol_cols = solutions.cols();
+    int sol_rols = solutions.rows();
+    Eigen::MatrixXd new_sols(perm_rows*sol_rols, sol_cols);
+    for (int i=0; i<solutions.rows(); ++i)
+        new_sols.block(i*perm_rows,0,perm_rows,sol_cols) = solutions.row(i).replicate(perm_rows,1) + permutations;
+    solutions = new_sols;
+}
 
 
 //////////////////////// MAIN FUNCTION //////////////////////////////////////////////////
@@ -206,6 +235,7 @@ bool ikHandler::solveIK(Eigen::VectorXd _target){
 
         for (int i=0; i < OptVarDim; i++)
             solution(i,0) = iterator[i];
+        closest_sol = solution.col(0);
         return status;
     }
     // Analytical IK
@@ -229,13 +259,14 @@ bool ikHandler::solveIK(Eigen::VectorXd _target){
         target.segment(9,3) = target_robBase.block(0,2,3,1);
         target.segment(0,3) = target_robBase.block(0,3,3,1);
 
-
         Eigen::MatrixXd sol_mat;
         ik_analytical::compute_IK(target,status,sol_mat);
         if (!status)
             return status;
         if (urIKPatch)
             apply_URikPatch(sol_mat);
+        
+        // std::cout<< "\n\n" << sol_mat << "\n\n";
         status = false; // Make status false again so we can check if solutions exist
         double config_dist = std::numeric_limits<double>::infinity();
         int ctr = 0;

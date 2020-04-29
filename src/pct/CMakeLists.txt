@@ -249,8 +249,14 @@ set(DEP_LIBS ${catkin_LIBRARIES}
 add_executable(main src/main.cpp)
 target_link_libraries(main ${DEP_LIBS})
 
+add_executable(analysis src/analysis.cpp)
+target_link_libraries(analysis ${DEP_LIBS})
+
 add_executable(test_coll src/test_coll.cpp)
 target_link_libraries(test_coll ${DEP_LIBS})
+
+add_executable(path_T_traj src/path_T_traj.cpp)
+target_link_libraries(path_T_traj ${DEP_LIBS})
 
 
 # add_executable(test_qp src/test_qp.cpp src/irb2600.cpp)
