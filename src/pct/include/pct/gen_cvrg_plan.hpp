@@ -50,7 +50,17 @@ static Eigen::MatrixXd load_plan(std::string file_name){
             ctr++;
         }
     }
-    // tool_path = new_path;
+    tool_path = new_path;
+
+    // Normalizing bxbybz and Evaluating by = bz x bx
+    for (int i=0; i<tool_path.rows(); ++i){
+        tool_path.block(i,3,1,3) /= tool_path.block(i,3,1,3).norm();
+        tool_path.block(i,9,1,3) /= tool_path.block(i,9,1,3).norm();
+        Eigen::Vector3d bz = tool_path.block(i,9,1,3).transpose();
+        Eigen::Vector3d bx = tool_path.block(i,3,1,3).transpose();
+        tool_path.block(i,6,1,3) = bz.cross(bx).transpose();
+        tool_path.block(i,6,1,3) /= tool_path.block(i,6,1,3).norm();
+    }
 
     ROS_INFO("tool_path size: %d", (int)tool_path.rows());
 
@@ -315,6 +325,16 @@ static Eigen::MatrixXd gen_cvrg_plan(){
 
     // Convert back to metres
     tool_path.block(0,0,tool_path.rows(),3) = tool_path.block(0,0,tool_path.rows(),3)/1000;
+    
+    // Normalizing bxbybz and Evaluating by = bz x bx
+    for (int i=0; i<tool_path.rows(); ++i){
+        tool_path.block(i,3,1,3) /= tool_path.block(i,3,1,3).norm();
+        tool_path.block(i,9,1,3) /= tool_path.block(i,9,1,3).norm();
+        Eigen::Vector3d bz = tool_path.block(i,9,1,3).transpose();
+        Eigen::Vector3d bx = tool_path.block(i,3,1,3).transpose();
+        tool_path.block(i,6,1,3) = bz.cross(bx).transpose();
+        tool_path.block(i,6,1,3) /= tool_path.block(i,6,1,3).norm();
+    }
     
     // Apply transformation from ros parameter server
     std::vector<double> tf; tf.clear();
