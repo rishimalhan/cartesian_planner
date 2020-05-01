@@ -1,5 +1,0 @@
-[33m[1mCMake Warning[0m at /workspace/ros_ws/src/planner_viz/CMakeLists.txt:43 (message):
-  FCL INCLUDES LOCATED AT
-  /workspace/ros_ws/src/planner_viz/../fcl/build/install/include
-
-

@@ -1,6 +1,0 @@
-[01m[K/workspace/ros_ws/src/gen_utilities/src/rosmsg_eigen_exchange.cpp:9:38:[m[K [01;31m[Kfatal error: [m[Kgen_utilities/XYZ_bxbybz.h: No such file or directory
-compilation terminated.
-make[2]: *** [CMakeFiles/gen_utilities.dir/src/rosmsg_eigen_exchange.cpp.o] Error 1
-make[2]: *** Waiting for unfinished jobs....
-make[1]: *** [CMakeFiles/gen_utilities.dir/all] Error 2
-make: *** [all] Error 2

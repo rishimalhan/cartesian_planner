@@ -1,8 +1,0 @@
-[ 12%] Built target test_urFunc
-[ 25%] Built target verify_analytical_ik
-[35m[1mScanning dependencies of target robot_utilities[0m
-[ 31%] [32mBuilding CXX object CMakeFiles/robot_utilities.dir/src/STLtoPCL.cpp.o[0m
-[ 37%] [32mBuilding CXX object CMakeFiles/robot_utilities.dir/src/ikHandler.cpp.o[0m
-[ 43%] [32mBuilding CXX object CMakeFiles/robot_utilities.dir/src/transformation_utilities.cpp.o[0m
-[ 50%] [32m[1mLinking CXX shared library /workspace/ros_ws/devel/.private/robot_utilities/lib/librobot_utilities.so[0m
-[100%] Built target robot_utilities
