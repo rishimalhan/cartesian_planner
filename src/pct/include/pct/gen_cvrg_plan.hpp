@@ -350,10 +350,9 @@ static Eigen::MatrixXd gen_cvrg_plan(){
     // Convert back to metres
     tool_path.block(0,0,tool_path.rows(),3) = tool_path.block(0,0,tool_path.rows(),3)/1000;
     
-
+    // // Linearly interpolate more points within waypoints
     // Eigen::MatrixXd new_path;
     // int no_samples = 10;
-    // // Linearly interpolate more points within waypoints
     // int ctr = 0;
     // for (int i=0; i<tool_path.rows()-1; ++i){
     //     Eigen::VectorXd curr_pt = tool_path.row(i).transpose();

@@ -47,7 +47,7 @@ ikHandler::ikHandler(SerialLink_Manipulator::SerialLink_Manipulator* _robot){
     alg_type = nlopt::LD_SLSQP;
     // alg_type = nlopt::LD_LBFGS;
     // alg_type = nlopt::GN_ISRES;
-    optXtolRel = 1e-24;
+    optXtolRel = 1e-4;
     gradH = 1e-8;
     // Lower and Upper Bounds for joints
     OptVarlb.resize(OptVarDim);
@@ -64,7 +64,7 @@ ikHandler::ikHandler(SerialLink_Manipulator::SerialLink_Manipulator* _robot){
     optimizer.set_min_objective(err_func_gateway, this);
     optimizer.set_lower_bounds(OptVarlb);
     optimizer.set_upper_bounds(OptVarub);
-    optimizer.set_ftol_rel(1e-24);   // Tolerance in objective function change.
+    optimizer.set_ftol_rel(1e-8);   // Tolerance in objective function change.
     optimizer.set_maxeval(2000);
     status = false;
     target.resize(12);
@@ -126,7 +126,7 @@ double ikHandler::err_func(const std::vector<double>& x)
     KDL::JntArray joint_config = DFMapping::STDvector_to_KDLJoints(x);
     // robot->FK_KDL_TCP(joint_config, FK_tcp);
     robot->FK_KDL_Flange(joint_config, FK_tcp);
-    return  ((pow(target(0)-FK_tcp(0,3),2) + pow(target(1)-FK_tcp(1,3),2) + pow(target(2)-FK_tcp(2,3),2)) + // Translation Error
+    return  (sqrt(pow(target(0)-FK_tcp(0,3),2) + pow(target(1)-FK_tcp(1,3),2) + pow(target(2)-FK_tcp(2,3),2)) + // Translation Error
               pow( 1 - (target(3)*FK_tcp(0,0) + target(4)*FK_tcp(1,0) + target(5)*FK_tcp(2,0)) , 2 ) + //bx
                pow( 1 - (target(6)*FK_tcp(0,1) + target(7)*FK_tcp(1,1) + target(8)*FK_tcp(2,1)) , 2 ) +    //by
                pow( 1 - (target(9)*FK_tcp(0,2) + target(10)*FK_tcp(1,2) + target(11)*FK_tcp(2,2)) , 2 ) ); //bz
