@@ -53,8 +53,8 @@ ikHandler::ikHandler(SerialLink_Manipulator::SerialLink_Manipulator* _robot){
     OptVarlb.resize(OptVarDim);
     OptVarub.resize(OptVarDim);
     for (int i=0; i<OptVarDim; ++i){
-        OptVarlb[i] = robot->Joints_ll(i);
-        OptVarub[i] = robot->Joints_ul(i);
+        OptVarlb[i] = jt_ll(i);
+        OptVarub[i] = jt_ul(i);
     }
     // Determine dimension of all the constraints. If constraints are applied successively,
     // Set this to max dimension and keep flag in constr_func which will keep 
@@ -126,7 +126,7 @@ double ikHandler::err_func(const std::vector<double>& x)
     KDL::JntArray joint_config = DFMapping::STDvector_to_KDLJoints(x);
     // robot->FK_KDL_TCP(joint_config, FK_tcp);
     robot->FK_KDL_Flange(joint_config, FK_tcp);
-    return 0.5*( pow(target(0)-FK_tcp(0,3),2) + pow(target(1)-FK_tcp(1,3),2) + pow(target(2)-FK_tcp(2,3),2) + // Translation Error
+    return  ((pow(target(0)-FK_tcp(0,3),2) + pow(target(1)-FK_tcp(1,3),2) + pow(target(2)-FK_tcp(2,3),2)) + // Translation Error
               pow( 1 - (target(3)*FK_tcp(0,0) + target(4)*FK_tcp(1,0) + target(5)*FK_tcp(2,0)) , 2 ) + //bx
                pow( 1 - (target(6)*FK_tcp(0,1) + target(7)*FK_tcp(1,1) + target(8)*FK_tcp(2,1)) , 2 ) +    //by
                pow( 1 - (target(9)*FK_tcp(0,2) + target(10)*FK_tcp(1,2) + target(11)*FK_tcp(2,2)) , 2 ) ); //bz
@@ -238,13 +238,18 @@ bool ikHandler::solveIK(Eigen::VectorXd _target){
         target.segment(9,3) = target_robBase.block(0,2,3,1);
         target.segment(0,3) = target_robBase.block(0,3,3,1);
 
-        target.segment(3,3) /= target.segment(3,3).norm(); //bx
-        target.segment(9,3) /= target.segment(9,3).norm(); //by
-        // Make the Cartesian Axes Perpendicular. Evaluate // by = bz x bx
+        // Make the Cartesian Axes Perpendicular. Evaluate // by = bz x bx and // bx = by x bz
+        // by
         target(6) = (target(10)*target(5)) - (target(11)*target(4));
         target(7) = (target(11)*target(3)) - (target(9)*target(5));
         target(8) = (target(9)*target(4)) - (target(10)*target(3));
-        target.segment(6,3) /= target.segment(6,3).norm();
+        // bx
+        target(3) = (target(7)*target(11)) - (target(8)*target(10));
+        target(4) = (target(8)*target(9)) - (target(6)*target(11));
+        target(5) = (target(6)*target(10)) - (target(7)*target(9));
+        target.segment(3,3) /= target.segment(3,3).norm(); //bx
+        target.segment(9,3) /= target.segment(9,3).norm(); //by
+        target.segment(6,3) /= target.segment(6,3).norm(); //bz
 
         solution.resize(OptVarDim,1);
         
@@ -263,7 +268,7 @@ bool ikHandler::solveIK(Eigen::VectorXd _target){
             std::cout << "nlopt failed: " << e.what() << std::endl;
         }
 
-        if (!optSuccess || f_val > 1e-12)
+        if (!optSuccess || f_val > 1e-6)
             status = false;
 
         for (int i=0; i < OptVarDim; i++)
@@ -292,13 +297,18 @@ bool ikHandler::solveIK(Eigen::VectorXd _target){
         target.segment(9,3) = target_robBase.block(0,2,3,1);
         target.segment(0,3) = target_robBase.block(0,3,3,1);
 
-        target.segment(3,3) /= target.segment(3,3).norm(); //bx
-        target.segment(9,3) /= target.segment(9,3).norm(); //by
-        // Make the Cartesian Axes Perpendicular. Evaluate // by = bz x bx
+        // Make the Cartesian Axes Perpendicular. Evaluate // by = bz x bx and // bx = by x bz
+        // by
         target(6) = (target(10)*target(5)) - (target(11)*target(4));
         target(7) = (target(11)*target(3)) - (target(9)*target(5));
         target(8) = (target(9)*target(4)) - (target(10)*target(3));
-        target.segment(6,3) /= target.segment(6,3).norm();
+        // bx
+        target(3) = (target(7)*target(11)) - (target(8)*target(10));
+        target(4) = (target(8)*target(9)) - (target(6)*target(11));
+        target(5) = (target(6)*target(10)) - (target(7)*target(9));
+        target.segment(3,3) /= target.segment(3,3).norm(); //bx
+        target.segment(9,3) /= target.segment(9,3).norm(); //by
+        target.segment(6,3) /= target.segment(6,3).norm(); //bz
 
         Eigen::MatrixXd sol_mat;
         ik_analytical::compute_IK(target,status,sol_mat);
