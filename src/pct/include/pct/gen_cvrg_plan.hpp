@@ -40,17 +40,51 @@ static Eigen::MatrixXd load_plan(std::string file_name){
     Eigen::MatrixXd tool_path = file_rw::file_read_mat(file_name); // Pre computed path file
 
 
-    // new path is to keep alternate
-    Eigen::MatrixXd new_path;
-    int ctr=0;
-    for (int i=0; i<tool_path.rows(); ++i){
-        if (i%2==0){
-            new_path.conservativeResize(ctr+1,12);
-            new_path.row(ctr) = tool_path.row(i);
-            ctr++;
-        }
-    }
+    // // new path is to keep alternate
+    // Eigen::MatrixXd new_path;
+    // int ctr=0;
+    // for (int i=0; i<tool_path.rows(); ++i){
+    //     if (i%2==0){
+    //         new_path.conservativeResize(ctr+1,12);
+    //         new_path.row(ctr) = tool_path.row(i);
+    //         ctr++;
+    //     }
+    // }
     // tool_path = new_path;
+
+
+    // // Linearly interpolate more points within waypoints
+    // Eigen::MatrixXd new_path;
+    // int no_samples = 10;
+    // int ctr = 0;
+    // for (int i=0; i<tool_path.rows()-1; ++i){
+    //     Eigen::VectorXd curr_pt = tool_path.row(i).transpose();
+    //     Eigen::VectorXd nxt_pt = tool_path.row(i+1).transpose();
+    //     Eigen::VectorXd dx = (nxt_pt-curr_pt)/no_samples;
+    //     for (int j=0; j<=no_samples; ++j){
+    //         new_path.conservativeResize(ctr+1,12);
+    //         new_path.row(ctr) = tool_path.row(i) + j*dx.transpose();
+    //         ctr++;
+    //     }
+    // }
+    // tool_path = new_path;
+
+
+
+    // Normalizing bxbybz and Evaluating by = bz x bx and bx = by x bz
+    for (int i=0; i<tool_path.rows(); ++i){
+        // Find by
+        Eigen::Vector3d bz = tool_path.block(i,9,1,3).transpose();
+        Eigen::Vector3d bx = tool_path.block(i,3,1,3).transpose();
+        tool_path.block(i,6,1,3) = bz.cross(bx).transpose();
+        // Find bx
+        Eigen::Vector3d by = tool_path.block(i,6,1,3).transpose();
+        tool_path.block(i,3,1,3) = by.cross(bz).transpose();
+        // Normalize
+        tool_path.block(i,3,1,3) /= tool_path.block(i,3,1,3).norm();
+        tool_path.block(i,9,1,3) /= tool_path.block(i,9,1,3).norm();
+        tool_path.block(i,6,1,3) /= tool_path.block(i,6,1,3).norm();
+    }
 
     ROS_INFO("tool_path size: %d", (int)tool_path.rows());
 
@@ -315,6 +349,38 @@ static Eigen::MatrixXd gen_cvrg_plan(){
 
     // Convert back to metres
     tool_path.block(0,0,tool_path.rows(),3) = tool_path.block(0,0,tool_path.rows(),3)/1000;
+    
+    // // Linearly interpolate more points within waypoints
+    // Eigen::MatrixXd new_path;
+    // int no_samples = 10;
+    // int ctr = 0;
+    // for (int i=0; i<tool_path.rows()-1; ++i){
+    //     Eigen::VectorXd curr_pt = tool_path.row(i).transpose();
+    //     Eigen::VectorXd nxt_pt = tool_path.row(i+1).transpose();
+    //     Eigen::VectorXd dx = (nxt_pt-curr_pt)/no_samples;
+    //     for (int j=0; j<=no_samples; ++j){
+    //         new_path.conservativeResize(ctr+1,12);
+    //         new_path.row(ctr) = tool_path.row(i) + j*dx.transpose();
+    //         ctr++;
+    //     }
+    // }
+    // tool_path = new_path;
+
+
+    // Normalizing bxbybz and Evaluating by = bz x bx and bx = by x bz
+    for (int i=0; i<tool_path.rows(); ++i){
+        // Find by
+        Eigen::Vector3d bz = tool_path.block(i,9,1,3).transpose();
+        Eigen::Vector3d bx = tool_path.block(i,3,1,3).transpose();
+        tool_path.block(i,6,1,3) = bz.cross(bx).transpose();
+        // Find bx
+        Eigen::Vector3d by = tool_path.block(i,6,1,3).transpose();
+        tool_path.block(i,3,1,3) = by.cross(bz).transpose();
+        // Normalize
+        tool_path.block(i,3,1,3) /= tool_path.block(i,3,1,3).norm();
+        tool_path.block(i,9,1,3) /= tool_path.block(i,9,1,3).norm();
+        tool_path.block(i,6,1,3) /= tool_path.block(i,6,1,3).norm();
+    }
     
     // Apply transformation from ros parameter server
     std::vector<double> tf; tf.clear();
