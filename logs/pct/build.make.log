@@ -1,2 +1,16 @@
-[ 50%] Built target test_coll
-[100%] Built target main
+[35m[1mScanning dependencies of target path_T_traj[0m
+[35m[1mScanning dependencies of target analysis[0m
+[35m[1mScanning dependencies of target test_coll[0m
+[35m[1mScanning dependencies of target main[0m
+[ 12%] [32mBuilding CXX object CMakeFiles/test_coll.dir/src/test_coll.cpp.o[0m
+[ 25%] [32mBuilding CXX object CMakeFiles/main.dir/src/main.cpp.o[0m
+[ 37%] [32mBuilding CXX object CMakeFiles/path_T_traj.dir/src/path_T_traj.cpp.o[0m
+[ 50%] [32mBuilding CXX object CMakeFiles/analysis.dir/src/analysis.cpp.o[0m
+[ 62%] [32m[1mLinking CXX executable /workspace/ros_ws/devel/.private/pct/lib/pct/test_coll[0m
+[ 62%] Built target test_coll
+[ 75%] [32m[1mLinking CXX executable /workspace/ros_ws/devel/.private/pct/lib/pct/path_T_traj[0m
+[ 75%] Built target path_T_traj
+[ 87%] [32m[1mLinking CXX executable /workspace/ros_ws/devel/.private/pct/lib/pct/main[0m
+[ 87%] Built target main
+[100%] [32m[1mLinking CXX executable /workspace/ros_ws/devel/.private/pct/lib/pct/analysis[0m
+[100%] Built target analysis

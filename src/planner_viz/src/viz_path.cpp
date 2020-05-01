@@ -41,7 +41,7 @@ int main(int argc, char** argv){
             geometry_msgs::Point curr_pt;
             geometry_msgs::Pose sphere_pose;
             for (int i=0; i< path.rows();++i){
-                            ROS_WARN_STREAM("i: " << i);
+                            // ROS_WARN_STREAM("i: " << i);
 
                 curr_pt.x = path(i,0);
                 curr_pt.y = path(i,1);
