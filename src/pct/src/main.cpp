@@ -11,6 +11,9 @@
 // N:434470 E:55650200 Works nut 7 GB memory
 // N:347576 E:35616128 Safe limit 4 GB memory
 
+
+#define DEBUG_MODE
+
 #include <iostream>
 #include <pct/gen_cvrg_plan.hpp>
 #include <ros/ros.h>
@@ -185,10 +188,14 @@ int main(int argc, char** argv){
     std::vector<Eigen::MatrixXd> wpTol =  gen_wp_with_tolerance(tolerances,resolution, path );
     std::cout<< "Search Samples Generated....\n";
 
+    // wpTol[0] --> has a list of samples around that point
 
+
+
+    // sets output file path
     // Get trajectory path
     std::string traj_path;
-    ros::param::get("/cvrg_file_paths/joint_states",traj_path);
+    ros::param::get("/cvrg_file_paths/joint_states",traj_path); 
     Eigen::MatrixXd trajectory;
     Eigen::MatrixXd success_flags = Eigen::MatrixXd::Ones(path.rows(),1)*0;
     std::string success_flag_path;
@@ -326,13 +333,14 @@ int main(int argc, char** argv){
 
 
     // Graph Search
-    Eigen::MatrixXi path_idx(wpTol.size(),1);
-    Eigen::MatrixXi tcp_idx(wpTol.size(),1);
-    std::vector<node*> node_map;
-    std::vector<Eigen::VectorXi> node_list;
+    Eigen::MatrixXi path_idx(wpTol.size(),1); // for debugging
+    Eigen::MatrixXi tcp_idx(wpTol.size(),1); // for debugging
+    std::vector<node*> node_map; // -----------------------------> node data type 
+    std::vector<Eigen::VectorXi> node_list; // ------------------> sibling ids per id
     success_flags = Eigen::MatrixXd::Ones(wpTol.size(),1)*0;
     boost_graph graph;
 
+    // changes node_map, node_list, success_flags
     if(!gen_nodes(&ik_handler, &wm, wpTol, tcp_list, node_map, node_list, success_flags)){
         std::cout<< "Nodes could not be generated. No solution found\n";
         trajectory.resize(1,ik_handler.OptVarDim);
@@ -341,11 +349,12 @@ int main(int argc, char** argv){
     else{
         std::cout<< "Nodes generation compute time: " << timer.elapsed() << std::endl;
 
-
+        #ifdef DEBUG_MODE
         Eigen::MatrixXi reach_map = Eigen::MatrixXi::Ones(path.rows(),wpTol[0].rows())*0;
         for (int i=0; i<node_map.size(); ++i)
             reach_map(node_map[i]->depth,node_map[i]->index) = 1;
         file_rw::file_write("/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/csv/reach_map.csv",reach_map);
+        #endif
 
         std::vector<bool> root_connectivity;
         if(!build_graph(&ik_handler, node_map,node_list,&graph,root_connectivity)){
