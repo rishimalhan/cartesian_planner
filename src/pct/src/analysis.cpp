@@ -85,7 +85,7 @@ int main(int argc, char** argv){
     // w_T_b.block(0,0,3,3) = rtf::eul2rot(w_T_b_eul.transpose(),"ZYX");
     // KDL::Frame base_frame = DFMapping::Eigen_to_KDLFrame(w_T_b);
     // // KDL::Frame base_frame = KDL::Frame::Identity();
-
+    bool urPatch = false;
 
     // std_msgs::Bool msg1;
     // msg1.data = true;
@@ -146,69 +146,72 @@ int main(int argc, char** argv){
 
 
 
+
     // Eigen::MatrixXd path = gen_cvrg_plan();
 
     std::string file_path = "/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/csv/backup/";
     Eigen::MatrixXd traj1 = file_rw::file_read_mat(file_path+"0.csv");
     Eigen::MatrixXd traj2 = file_rw::file_read_mat(file_path+"joint_states.csv");
 
-    // Manipulability analysis
-    std::cout<< "\nMANIPULABILITY,  Distance to Upper,  Distance to Lower\n";
-    double manip1 = 0;
-    double manip2 = 0;
-    double sum_1 = 0;
-    double sum_2 = 0;
-    double dist_ub = 0;
-    double dist_lb = 0;
-    Eigen::MatrixXd ub = DFMapping::KDLJoints_to_Eigen(robot.Joints_ul);
-    Eigen::MatrixXd lb = DFMapping::KDLJoints_to_Eigen(robot.Joints_ll);
-    Eigen::MatrixXd data(traj2.rows(),6);
+    // // Manipulability analysis
+    // std::cout<< "\nMANIPULABILITY,  Distance to Upper,  Distance to Lower\n";
+    // double manip1 = 0;
+    // double manip2 = 0;
+    // double sum_1 = 0;
+    // double sum_2 = 0;
+    // double dist_ub = 0;
+    // double dist_lb = 0;
+    // Eigen::MatrixXd ub = DFMapping::KDLJoints_to_Eigen(robot.Joints_ul);
+    // Eigen::MatrixXd lb = DFMapping::KDLJoints_to_Eigen(robot.Joints_ll);
+    // Eigen::MatrixXd data(traj2.rows(),6);
     KDL::Jacobian jac_kdl;
     KDL::JntArray theta;
     Eigen::MatrixXd jac;
 
 
-    for(int i=0; i<traj2.rows(); ++i){
-        if (i<traj1.rows()){
-            theta = DFMapping::Eigen_to_KDLJoints(traj1.row(i).transpose());
-            robot.Jac_KDL(theta,jac_kdl);
-            jac = DFMapping::KDLJacobian_to_Eigen(jac_kdl);
-            manip1 = sqrt(( jac*jac.transpose() ).determinant());
+    // for(int i=0; i<traj2.rows(); ++i){
+    //     if (i<traj1.rows()){
+    //         theta = DFMapping::Eigen_to_KDLJoints(traj1.row(i).transpose());
+    //         robot.Jac_KDL(theta,jac_kdl);
+    //         jac = DFMapping::KDLJacobian_to_Eigen(jac_kdl);
+    //         manip1 = sqrt(( jac*jac.transpose() ).determinant());
 
-            data(i,0) = manip1;
-            data(i,1) = (ub.array() - traj1.row(i).transpose().array()).abs().minCoeff()*(180/M_PI);
-            data(i,2) = (lb.array() - traj1.row(i).transpose().array()).abs().minCoeff()*(180/M_PI);
-            std::cout<< manip1 << "\t\t";
-            std::cout<< (ub.array() - traj1.row(i).transpose().array()).abs().minCoeff()*(180/M_PI) << "\t\t";
-            std::cout<< (lb.array() - traj1.row(i).transpose().array()).abs().minCoeff()*(180/M_PI) << "\t\t\t";
-        }
-        else{
-            data(i,0) = 0;
-            data(i,1) = 0;
-            data(i,2) = 0;
-            std::cout<< "NA\t\t" << "NA\t\t" << "NA\t\t" << "\t";
-        }
+    //         data(i,0) = manip1;
+    //         data(i,1) = (ub.array() - traj1.row(i).transpose().array()).abs().minCoeff()*(180/M_PI);
+    //         data(i,2) = (lb.array() - traj1.row(i).transpose().array()).abs().minCoeff()*(180/M_PI);
+    //         std::cout<< manip1 << "\t\t";
+    //         std::cout<< (ub.array() - traj1.row(i).transpose().array()).abs().minCoeff()*(180/M_PI) << "\t\t";
+    //         std::cout<< (lb.array() - traj1.row(i).transpose().array()).abs().minCoeff()*(180/M_PI) << "\t\t\t";
+    //     }
+    //     else{
+    //         data(i,0) = 0;
+    //         data(i,1) = 0;
+    //         data(i,2) = 0;
+    //         std::cout<< "NA\t\t" << "NA\t\t" << "NA\t\t" << "\t";
+    //     }
 
-        theta = DFMapping::Eigen_to_KDLJoints(traj2.row(i).transpose());
-        robot.Jac_KDL(theta,jac_kdl);
-        jac = DFMapping::KDLJacobian_to_Eigen(jac_kdl);
-        manip2 = sqrt(( jac*jac.transpose() ).determinant());
+    //     theta = DFMapping::Eigen_to_KDLJoints(traj2.row(i).transpose());
+    //     robot.Jac_KDL(theta,jac_kdl);
+    //     jac = DFMapping::KDLJacobian_to_Eigen(jac_kdl);
+    //     manip2 = sqrt(( jac*jac.transpose() ).determinant());
 
-        data(i,3) = manip2;
-        data(i,4) = (ub.array() - traj2.row(i).transpose().array()).abs().minCoeff()*(180/M_PI);
-        data(i,5) = (lb.array() - traj2.row(i).transpose().array()).abs().minCoeff()*(180/M_PI);
+    //     data(i,3) = manip2;
+    //     data(i,4) = (ub.array() - traj2.row(i).transpose().array()).abs().minCoeff()*(180/M_PI);
+    //     data(i,5) = (lb.array() - traj2.row(i).transpose().array()).abs().minCoeff()*(180/M_PI);
 
-        std::cout<< manip2 << "\t";
-        std::cout<< (ub.array() - traj2.row(i).transpose().array()).abs().minCoeff()*(180/M_PI) << "\t\t";
-        std::cout<< (lb.array() - traj2.row(i).transpose().array()).abs().minCoeff()*(180/M_PI) << "\n";
+    //     std::cout<< manip2 << "\t";
+    //     std::cout<< (ub.array() - traj2.row(i).transpose().array()).abs().minCoeff()*(180/M_PI) << "\t\t";
+    //     std::cout<< (lb.array() - traj2.row(i).transpose().array()).abs().minCoeff()*(180/M_PI) << "\n";
 
-        if (i<traj1.rows()){
-            sum_1 += manip1;
-            sum_2 += manip2;
-        }
-    }
-    std::cout<< "Sum of manipulabilities: " << sum_1 << "\t" << sum_2 << "\n";
-    file_rw::file_write("/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/csv/data.csv",data);
+    //     if (i<traj1.rows()){
+    //         sum_1 += manip1;
+    //         sum_2 += manip2;
+    //     }
+    // }
+    // std::cout<< "Sum of manipulabilities: " << sum_1 << "\t" << sum_2 << "\n";
+    // file_rw::file_write("/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/csv/data.csv",data);
+
+
 
 
 
@@ -217,15 +220,53 @@ int main(int argc, char** argv){
     Eigen::VectorXd target1(12);
     Eigen::VectorXd target2(12);
 
-    target1<< 0.33857,-0.189353,0.337679,0.999886,-0.00159247,
-    -0.0150355,-0.00163258,-0.999995,-0.0026558,-0.0150312,0.00268005,-0.999883;
+    // target1<< 0.33857,-0.189353,0.337679,0.999886,-0.00159247,
+    // -0.0150355,-0.00163258,-0.999995,-0.0026558,-0.0150312,0.00268005,-0.999883;
+
+    // target2 = target1;
+    // target2(0) += 0.1;
+    // target2(1) += 0.1;
+    // target2(2) += 0.1;
+    
+
+    // target1 << 0.97553 ,  0.0160197 ,   0.236795, 0.000609452,    0.765329,   -0.643639 ,   0.945616,   -0.209807,   -0.248578 ,  -0.325284,   -0.608484 ,  -0.723835;
+    // target2 << 0.975506,  -0.0139803,    0.258972, 0.000670697,    0.842239,   -0.539105,     0.95532,   -0.159884,   -0.248597,   -0.295572 ,  -0.514851,   -0.804715;
 
 
-    target2 = target1;
-    target2(0) += 0.1;
-    target2(1) += 0.1;
-    target2(2) += 0.1;
- 
+    // // Test Case-1
+    // target1 << 0.975546,0.0360197,0.21907,-0.00058108,-0.729701,0.683766,-0.949522,0.2149,0.22853,-0.3137,-0.649118,-0.692992;
+    // target2 << 0.975538,0.0260197,0.228244,-0.00060237,-0.756436,0.654068,-0.954525,0.195432,0.225139,-0.298129,-0.624189,-0.722155;
+
+    // Test Case-2
+    target1 << 0.975268,-0.31398,0.3204,-0.000781082,-0.980856,-0.194732,-0.940122,-0.0656515,0.334455,-0.340836,0.183333,-0.922074;
+    target2 << 0.97526,-0.32398,0.318245,-0.000776739,-0.975402,-0.220432,-0.955684,-0.06417,0.287317,-0.294395,0.210887,-0.932126;
+
+    // int i=0; 
+    // int no_samples = 100;
+    // // ik_handler.useNumIK = true;
+    // // ik_handler.init_guess << 17.7609,  20.9944,  37.9902,  -33.721,  70.2479, -41.8573;
+    // // ik_handler.init_guess *= (M_PI/180);
+    // Eigen::VectorXd dx = (target2-target1)/no_samples;
+    // while (i<no_samples){
+    //     Eigen::VectorXd target = target1+i*dx;
+    //     if (ik_handler.solveIK(target)){
+    //         theta = DFMapping::Eigen_to_KDLJoints(ik_handler.solution.col(0));
+    //         KDL::Frame fk_kdl;
+    //         robot.FK_KDL_TCP(theta,fk_kdl);
+    //         Eigen::MatrixXd fk = DFMapping::KDLFrame_to_Eigen(fk_kdl);
+    //         // std::cout<< fk.block(0,3,3,1).transpose() << " " << fk.block(0,0,3,1).transpose()
+    //         // << " " << fk.block(0,1,3,1).transpose()
+    //         // << " " << fk.block(0,2,3,1).transpose() << "\n";
+    //         robot.Jac_KDL(theta,jac_kdl);
+    //         jac = DFMapping::KDLJacobian_to_Eigen(jac_kdl);
+    //         std::cout<< "Config: "<< i << ": " << ik_handler.solution.col(0).transpose()*(180/M_PI) << " Manip: " <<
+    //         sqrt(( jac*jac.transpose() ).determinant()) << "\n";
+    //     }
+    //     i++;
+    // }
+
+    // return 0;
+
     std::vector<Eigen::VectorXd> seg(4);
     seg[0] = target1;
     seg[2] = target2;
@@ -235,7 +276,7 @@ int main(int argc, char** argv){
     else
         return 0;
     if (ik_handler.solveIK(target2))
-        seg[3] = ik_handler.solution.col(0);
+        seg[3] = ik_handler.solution.col(1);
     else
         return 0;
 
@@ -244,7 +285,7 @@ int main(int argc, char** argv){
     std::cout<< "Config-2: " << seg[3].transpose()*(180/M_PI) << "\n";
 
     std::cout<< "Consistency Status: "<< 
-    path_consistency(seg, &ik_handler, 0, get_dist(seg, &ik_handler)) << "\n";
+    path_consistency(seg, &ik_handler, get_dist(seg, &ik_handler)) << "\n";
     return 0;
 
 
@@ -255,73 +296,73 @@ int main(int argc, char** argv){
 
 
 
-    std::vector<Eigen::VectorXd> segment(4);
+    // std::vector<Eigen::VectorXd> segment(4);
 
-    ik_handler.solveIK(target1);
-    Eigen::VectorXd config1 = ik_handler.solution.col(0);
-    ik_handler.solveIK(target2);    
-    Eigen::VectorXd config2 = ik_handler.solution.col(0);
+    // ik_handler.solveIK(target1);
+    // Eigen::VectorXd config1 = ik_handler.solution.col(0);
+    // ik_handler.solveIK(target2);    
+    // Eigen::VectorXd config2 = ik_handler.solution.col(0);
 
-    Eigen::VectorXd dq = (config2-config1)/100;
-    for (int i=0; i<100; ++i){
-        theta = DFMapping::Eigen_to_KDLJoints(config1+i*dq);
-        KDL::Frame fk_kdl;
-        robot.FK_KDL_TCP(theta,fk_kdl);
-        Eigen::MatrixXd fk = DFMapping::KDLFrame_to_Eigen(fk_kdl);   
-        // std::cout<< fk.block(0,3,3,1).transpose() << "\n";
-    }
+    // Eigen::VectorXd dq = (config2-config1)/100;
+    // for (int i=0; i<100; ++i){
+    //     theta = DFMapping::Eigen_to_KDLJoints(config1+i*dq);
+    //     KDL::Frame fk_kdl;
+    //     robot.FK_KDL_TCP(theta,fk_kdl);
+    //     Eigen::MatrixXd fk = DFMapping::KDLFrame_to_Eigen(fk_kdl);   
+    //     // std::cout<< fk.block(0,3,3,1).transpose() << "\n";
+    // }
 
-    // Analyzing Path Consistency
-
-
+    // // Analyzing Path Consistency
 
 
-    ik_handler.solveIK(target1);
-    config1 = ik_handler.solution.col(0);
 
-    for (int j=1; j<100; j++){
-        double i = 100;
-        target2 = target1;
-        target2(0) += (double)i/1000;
-        target2(1) += (double)i/1000;
-        target2(2) += (double)i/1000;
 
-        // Eigen::MatrixXd eul_angle = rtf::bxbybz2eul(target2.segment(3,9).transpose(),"XYZ");
-        // eul_angle.row(0) += Eigen::MatrixXd::Ones(1,3)*(double)i/100;
-        // target2.segment(3,9) = rtf::eul2bxbybz(eul_angle,"XYZ").row(0).transpose();
+    // ik_handler.solveIK(target1);
+    // config1 = ik_handler.solution.col(0);
 
-        Eigen::VectorXd x1(6);
-        x1.segment(0,3) = target1.segment(0,3); 
-        x1.segment(3,3) = rtf::bxbybz2eul(target1.segment(3,9).transpose(),"XYZ").row(0).transpose();
+    // for (int j=1; j<100; j++){
+    //     double i = 100;
+    //     target2 = target1;
+    //     target2(0) += (double)i/1000;
+    //     target2(1) += (double)i/1000;
+    //     target2(2) += (double)i/1000;
 
-        Eigen::VectorXd x2(6);
-        x2.segment(0,3) = target2.segment(0,3); 
-        x2.segment(3,3) = rtf::bxbybz2eul(target2.segment(3,9).transpose(),"XYZ").row(0).transpose();
+    //     // Eigen::MatrixXd eul_angle = rtf::bxbybz2eul(target2.segment(3,9).transpose(),"XYZ");
+    //     // eul_angle.row(0) += Eigen::MatrixXd::Ones(1,3)*(double)i/100;
+    //     // target2.segment(3,9) = rtf::eul2bxbybz(eul_angle,"XYZ").row(0).transpose();
 
-        if(!ik_handler.solveIK(target2))
-            break;
-        Eigen::MatrixXd sol2 = ik_handler.solution;
-        Eigen::VectorXd config2;
+    //     Eigen::VectorXd x1(6);
+    //     x1.segment(0,3) = target1.segment(0,3); 
+    //     x1.segment(3,3) = rtf::bxbybz2eul(target1.segment(3,9).transpose(),"XYZ").row(0).transpose();
 
-        if (j<5){
-            config2 = sol2.col(0).transpose();
-        }
-        else{
-            config2 = sol2.col(1).transpose();
-        }
+    //     Eigen::VectorXd x2(6);
+    //     x2.segment(0,3) = target2.segment(0,3); 
+    //     x2.segment(3,3) = rtf::bxbybz2eul(target2.segment(3,9).transpose(),"XYZ").row(0).transpose();
 
-        // std::cout<< "Config-1: " << config1.transpose()*(180/M_PI) << "\n";
-        // std::cout<< "Config-2: " << config2.transpose()*(180/M_PI) << "\n";
-        // std::cout<< "Joint Difference Norm: " << (config2-config1).norm()*(180/M_PI) << "\n"; 
+    //     if(!ik_handler.solveIK(target2))
+    //         break;
+    //     Eigen::MatrixXd sol2 = ik_handler.solution;
+    //     Eigen::VectorXd config2;
 
-        theta = DFMapping::Eigen_to_KDLJoints(config1);
-        robot.Jac_KDL(theta,jac_kdl);
-        jac = DFMapping::KDLJacobian_to_Eigen(jac_kdl);
+    //     if (j<5){
+    //         config2 = sol2.col(0).transpose();
+    //     }
+    //     else{
+    //         config2 = sol2.col(1).transpose();
+    //     }
 
-        // std::cout<< "Distance: " << j*5 << " mm. Area: " << ( (x2-x1)-jac*(config2-config1) ).norm() << "\n";
-        target1 = target2;
-        config1 = config2;
-    }
+    //     // std::cout<< "Config-1: " << config1.transpose()*(180/M_PI) << "\n";
+    //     // std::cout<< "Config-2: " << config2.transpose()*(180/M_PI) << "\n";
+    //     // std::cout<< "Joint Difference Norm: " << (config2-config1).norm()*(180/M_PI) << "\n"; 
+
+    //     theta = DFMapping::Eigen_to_KDLJoints(config1);
+    //     robot.Jac_KDL(theta,jac_kdl);
+    //     jac = DFMapping::KDLJacobian_to_Eigen(jac_kdl);
+
+    //     // std::cout<< "Distance: " << j*5 << " mm. Area: " << ( (x2-x1)-jac*(config2-config1) ).norm() << "\n";
+    //     target1 = target2;
+    //     config1 = config2;
+    // }
 
 
 

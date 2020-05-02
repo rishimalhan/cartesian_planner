@@ -21,7 +21,6 @@ bool gen_nodes(ikHandler* ik_handler, WM::WM* wm,
                 const std::vector<Eigen::MatrixXd>& wpTol, const std::vector<Eigen::MatrixXd>& tcp_list,
                 std::vector<node*>& node_map, std::vector<Eigen::VectorXi>& node_list,
                 Eigen::MatrixXd& success_flags){
-
     std::cout<< "\n\n##############################################################\n";
     std::cout<< "Generating nodes\n";
     node_list.clear();
@@ -34,8 +33,6 @@ bool gen_nodes(ikHandler* ik_handler, WM::WM* wm,
     KDL::JntArray theta;
     KDL::Jacobian jac_kdl;
     Eigen::MatrixXd jac;
-
-    Eigen::MatrixXi noSols_map(wpTol.size(),wpTol[0].rows());
     for (int i=0; i<wpTol.size();++i){ // For all the waypoints
         Eigen::MatrixXd waypoints = wpTol[i];
         Eigen::VectorXi nodes_at_depth;
@@ -52,8 +49,8 @@ bool gen_nodes(ikHandler* ik_handler, WM::WM* wm,
                     for (int sol_no=0; sol_no<ik_handler->solution.cols();++sol_no){
                         // Check for collision
                         std::vector<Eigen::MatrixXd> fk_kdl = ik_handler->robot->get_robot_FK_all_links(ik_handler->solution.col(sol_no));
-                        if(!wm->inCollision( fk_kdl )){
-                        // if(true){
+                        // if(!wm->inCollision( fk_kdl )){
+                        if(true){
                             theta = DFMapping::Eigen_to_KDLJoints(ik_handler->solution.col(sol_no));
                             ik_handler->robot->Jac_KDL(theta,jac_kdl);
                             jac = DFMapping::KDLJacobian_to_Eigen(jac_kdl);
@@ -68,9 +65,13 @@ bool gen_nodes(ikHandler* ik_handler, WM::WM* wm,
                             curr_node->jacobian = jac;
 
                             // bxbybz to euler waypoint
-                            curr_node->wp_eul.resize(6);
-                            curr_node->wp_eul.segment(0,3) = waypoints.block(j,0,1,3).transpose(); 
-                            curr_node->wp_eul.segment(3,3) = rtf::bxbybz2eul(waypoints.block(j,3,1,9),"XYZ").row(0).transpose();
+                            // curr_node->wp_eul.resize(6);
+                            // curr_node->wp_eul.segment(0,3) = waypoints.block(j,0,1,3).transpose(); 
+                            // curr_node->wp_eul.segment(3,3) = rtf::bxbybz2eul(waypoints.block(j,3,1,9),"XYZ").row(0).transpose();
+
+                            // xyzbxbybz of flange wrt rob_base
+                            curr_node->wp_ff = ik_handler->getFFTarget();
+
 
                             node_map.push_back(curr_node);
                             // Add these node ids to the node_list
@@ -80,7 +81,6 @@ bool gen_nodes(ikHandler* ik_handler, WM::WM* wm,
                         }
                     }
                 }
-                noSols_map(i,j) = no_sols;
             }
         }
         if (nodes_at_depth.size()==0){
@@ -95,10 +95,6 @@ bool gen_nodes(ikHandler* ik_handler, WM::WM* wm,
             node_list.push_back(nodes_at_depth);
         }
     }
-
-    // for (int i=0; i<node_list.size(); ++i)
-    //     std::cout<< node_list[i].transpose() << "\n";
-    file_rw::file_write("/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/csv/noSols_map.csv",noSols_map);
     std::cout<< "Total Number of Nodes: " << id_cnt << "\n"; 
     std::cout<< "##############################################################\n\n";
     return status;

@@ -18,15 +18,21 @@
 
 
 bool isEdge(ikHandler* ik_handler, const std::vector<node*>& node_map, const int parent, const int child){
-    // Path-Consistency Constraint
+    // // Path-Consistency Constraint
     // std::vector<Eigen::VectorXd> seg(4); // x1,q1,x2,q2
     // seg[0] = node_map[parent]->wp;
     // seg[1] = node_map[parent]->jt_config;
     // seg[2] = node_map[child]->wp;
     // seg[3] = node_map[child]->jt_config;
 
-    // if (!path_consistency(seg, ik_handler, 0, get_dist(seg, ik_handler))) // Returns true if jt configs are path consistent
+    // if (!path_consistency(seg, ik_handler, get_dist(seg, ik_handler))){ // Returns true if jt configs are path consistent
+    // // if (get_dist(seg, ik_handler) > 0.01){
+    //     // std::cout<< seg[0].transpose() << "\n";
+    //     // std::cout<< seg[1].transpose() << "\n";
+    //     // std::cout<< seg[2].transpose() << "\n";
+    //     // std::cout<< seg[3].transpose() << "\n\n";
     //     return false;
+    // }
     return true;
 }
 
