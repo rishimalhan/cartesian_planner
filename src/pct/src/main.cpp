@@ -11,9 +11,20 @@
 // N:434470 E:55650200 Works nut 7 GB memory
 // N:347576 E:35616128 Safe limit 4 GB memory
 
+
+// #define DEBUG_MODE_MAIN
+// #define SEQ_IK
+// #define DEBUG_PATH_CONSISTENCY
+#define GRAPH_SEARCH
+// #define SEARCH_ASSERT
+
+
+// #define fileWrite
+
 #include <iostream>
 #include <pct/gen_cvrg_plan.hpp>
 #include <ros/ros.h>
+#include <ros/package.h>
 #include <std_msgs/Bool.h>
 #include <cmath>
 #include <pct/genTolWp.hpp>
@@ -33,6 +44,8 @@
 #include <pct/timer.hpp>
 
 
+
+
 // Parameters to play with:
 // Parameters to check while things are not working out
 // Which robot is enabled. Check urdf, tcp, base frames and links
@@ -49,6 +62,9 @@ int main(int argc, char** argv){
     ros::Publisher cvrg_pub = main_handler.advertise<std_msgs::Bool>("cvrg_status",1000);
 
 
+    std::string csv_dir;
+    csv_dir = ros::package::getPath("pct") + "/data/csv/";
+
 
     double resolution;
     if(!ros::param::get("/sampling_res",resolution)){
@@ -56,7 +72,7 @@ int main(int argc, char** argv){
         return 0;
     }
     resolution *= (M_PI / 180);
-    double angle = 0*M_PI / 180; // Total angle is 200. 100 each side
+    double angle = 360*M_PI / 180; // Total angle is 200. 100 each side
 
 
     ///////////////// CAUTION ///////////////////////////////////////
@@ -191,8 +207,8 @@ int main(int argc, char** argv){
     ros::param::get("/cvrg_file_paths/path_file",path_file);
 
     // Generate Path
-    // Eigen::MatrixXd path = gen_cvrg_plan();
-    Eigen::MatrixXd path = load_plan(path_file); // Pre computed path file
+    Eigen::MatrixXd path = gen_cvrg_plan();
+    // Eigen::MatrixXd path = load_plan(path_file); // Pre computed path file
 
 
 
@@ -247,65 +263,61 @@ int main(int argc, char** argv){
 
 
 
+    timer main_timer;
+    main_timer.start();
 
-    // double elapsed;
-    // boost::posix_time::ptime start_time;
-    // boost::posix_time::time_duration time_diff;
-    // start_time = boost::posix_time::microsec_clock::local_time();
-
-    timer timer;
-    timer.start();
-
-
-    // // Using Sequential IK
-    // std::cout<< "Solving sequential IK for multiple start points......\n";
-    // Eigen::VectorXd jt_config;
-    // if (ik_handler.solveIK(path.row(0))){ // IK for first row
-    //     ik_handler.useNumIK = true;
-    //     Eigen::MatrixXd strt_solutions = ik_handler.solution;
-    //     // Eigen::MatrixXd strt_solutions = ik_handler.closest_sol;
-    //     std::cout<< "No of solutions for first point: " << ik_handler.solution.cols() << "\n";
-    //     std::cout<< "Number of starting points: " << strt_solutions.cols() << "\n";
-    //     for (int i=0; i<strt_solutions.cols();++i){
-    //         std::vector<Eigen::MatrixXd> fk_kdl = ik_handler.robot->get_robot_FK_all_links(strt_solutions.col(i));
-    //         if(wm.inCollision( fk_kdl )){
-    //             std::cout<< "In collision. Point index: " << i << "\n";
-    //             continue;
-    //         }
-    //         ik_handler.init_guess = strt_solutions.col(i); // Initial guess as first point
-    //         for (int j=0; j<path.rows(); ++j){
-    //             if (ik_handler.solveIK(path.row(j))){
-    //                 jt_config = ik_handler.closest_sol;
-    //                 std::vector<Eigen::MatrixXd> fk_kdl = ik_handler.robot->get_robot_FK_all_links(jt_config);
-    //                 if(!wm.inCollision( fk_kdl )){
-    //                     ik_handler.init_guess = jt_config;
-    //                     trajectory.conservativeResize(j+1,robot.NrOfJoints);
-    //                     trajectory.row(j) = jt_config.transpose();
-    //                     ik_handler.init_guess = jt_config;
-    //                     success_flags(j,0) = 1;
-    //                 }
-    //                 else{
-    //                     std::cout<< "IK not feasible. Point index: " << i << "\n";
-    //                     break;
-    //                     trajectory.conservativeResize(j+1,robot.NrOfJoints);
-    //                     trajectory.row(j) = jt_config.transpose();
-    //                     ik_handler.init_guess = jt_config;
-    //                     success_flags(j,0) = 0;
-    //                 }
-    //             }
-    //         }
-    //         if (trajectory.rows()==path.rows())
-    //             std::cout<< "Trajectory successfully found for sequential IK. Point Index: " << i <<"\n";
-    //         else
-    //             std::cout<< "Trajectory failure for sequential IK. Point Index: " << i <<"\n";
-    //         file_rw::file_write("/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/csv/"+std::to_string(i)+".csv", trajectory);
-    //     }
-    // }
-    // else{
-    //     std::cout<< "First point not reachable\n";
-    // }
-    // ik_handler.useNumIK = false;
-    
+    #ifdef SEQ_IK
+    trajectory.resize(1,ik_handler.OptVarDim);
+    trajectory.row(0) << ik_handler.init_guess.transpose();
+    // Using Sequential IK
+    std::cout<< "Solving sequential IK for multiple start points......\n";
+    Eigen::VectorXd jt_config;
+    if (ik_handler.solveIK(path.row(0))){ // IK for first row
+        ik_handler.useNumIK = true;
+        Eigen::MatrixXd strt_solutions = ik_handler.solution;
+        // Eigen::MatrixXd strt_solutions = ik_handler.closest_sol;
+        std::cout<< "No of solutions for first point: " << ik_handler.solution.cols() << "\n";
+        std::cout<< "Number of starting points: " << strt_solutions.cols() << "\n";
+        for (int i=0; i<strt_solutions.cols();++i){
+            std::vector<Eigen::MatrixXd> fk_kdl = ik_handler.robot->get_robot_FK_all_links(strt_solutions.col(i));
+            if(wm.inCollision( fk_kdl )){
+                std::cout<< "In collision. Point index: " << i << "\n";
+                continue;
+            }
+            ik_handler.init_guess = strt_solutions.col(i); // Initial guess as first point
+            for (int j=0; j<path.rows(); ++j){
+                if (ik_handler.solveIK(path.row(j))){
+                    jt_config = ik_handler.closest_sol;
+                    std::vector<Eigen::MatrixXd> fk_kdl = ik_handler.robot->get_robot_FK_all_links(jt_config);
+                    if(!wm.inCollision( fk_kdl )){
+                        ik_handler.init_guess = jt_config;
+                        trajectory.conservativeResize(j+1,robot.NrOfJoints);
+                        trajectory.row(j) = jt_config.transpose();
+                        ik_handler.init_guess = jt_config;
+                        success_flags(j,0) = 1;
+                    }
+                    else{
+                        std::cout<< "IK not feasible. Point index: " << i << "\n";
+                        break;
+                        trajectory.conservativeResize(j+1,robot.NrOfJoints);
+                        trajectory.row(j) = jt_config.transpose();
+                        ik_handler.init_guess = jt_config;
+                        success_flags(j,0) = 0;
+                    }
+                }
+            }
+            if (trajectory.rows()==path.rows())
+                std::cout<< "Trajectory successfully found for sequential IK. Point Index: " << i <<"\n";
+            else
+                std::cout<< "Trajectory failure for sequential IK. Point Index: " << i <<"\n";
+            file_rw::file_write(csv_dir+std::to_string(i)+".csv", trajectory);
+        }
+    }
+    else{
+        std::cout<< "First point not reachable\n";
+    }
+    ik_handler.useNumIK = false;
+    #endif
 
 
 
@@ -331,50 +343,71 @@ int main(int argc, char** argv){
     // std::cout<< trajectory << "\n";
 
 
-
+    #ifdef GRAPH_SEARCH
     // Graph Search
     Eigen::MatrixXi path_idx(wpTol.size(),1);
     Eigen::MatrixXi tcp_idx(wpTol.size(),1);
+    Eigen::MatrixXi strt_discnt;
     std::vector<node*> node_map;
     std::vector<Eigen::VectorXi> node_list;
     success_flags = Eigen::MatrixXd::Ones(wpTol.size(),1)*0;
     boost_graph graph;
+    double search_time = 0;
+    double no_strt_nodes;
+    double no_djk = 0;
+    timer search_timer;
 
+    main_timer.reset();
     if(!gen_nodes(&ik_handler, &wm, wpTol, tcp_list, node_map, node_list, success_flags)){
         std::cout<< "Nodes could not be generated. No solution found\n";
         trajectory.resize(1,ik_handler.OptVarDim);
         trajectory.row(0) << ik_handler.init_guess.transpose();
     }
     else{
-        std::cout<< "Nodes generation compute time: " << timer.elapsed() << std::endl;
-
-
+        std::cout<< "Nodes generation compute time: " << main_timer.elapsed() << std::endl;
+        #ifdef DEBUG_MODE_MAIN
         Eigen::MatrixXi reach_map = Eigen::MatrixXi::Ones(path.rows(),wpTol[0].rows())*0;
         for (int i=0; i<node_map.size(); ++i)
             reach_map(node_map[i]->depth,node_map[i]->index) = 1;
-        file_rw::file_write("/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/csv/reach_map.csv",reach_map);
+        #ifdef fileWrite
+        file_rw::file_write(csv_dir+"reach_map.csv",reach_map);
+        #endif
+        #endif
 
         std::vector<bool> root_connectivity;
+        main_timer.reset();
         if(!build_graph(&ik_handler, node_map,node_list,&graph,root_connectivity)){
             std::cout<< "Edges could not be created. No solution found\n";
             trajectory.resize(1,ik_handler.OptVarDim);
             trajectory.row(0) << ik_handler.init_guess.transpose();
         }
         else{
-            std::cout<< "Graph generation compute time: " << timer.elapsed() << std::endl;
+            std::cout<< "Graph generation compute time: " << main_timer.elapsed() << std::endl;
             Eigen::VectorXi strt_nodes = node_list[0];
             double lowest_cost = std::numeric_limits<double>::infinity();
+            strt_discnt = Eigen::MatrixXi::Ones(strt_nodes.size(),1); // For debugging
+            no_strt_nodes = strt_nodes.size();
+            search_timer.start();
             // Run Search For Multiple Start Configs
             for (int i=0; i<strt_nodes.size(); ++i){
-                if (!root_connectivity[i])
+                if (!root_connectivity[i]){
+                    strt_discnt(i) = 0;
                     continue;
+                }
                 int root_node = strt_nodes(i);
                 Eigen::VectorXd root_config = node_map[root_node]->jt_config;
+                #ifdef SEARCH_ASSERT
                 std::cout<< "Robot Config in Degrees: " << root_config.transpose()*(180/M_PI) << "\n";
+                #endif
                 // Change the start vertex in graph
                 vertex_descriptor s = vertex(root_node, graph.g); graph.s = s;
                 Eigen::VectorXi id_path;
-                if(graph_searches::djikstra(&graph,id_path)){ // Get the shortest path to a leaf node in terms of node ids
+                search_timer.reset();
+                bool search_success = graph_searches::djikstra(&graph,id_path);
+                no_djk += 1;
+                search_time += search_timer.elapsed();
+                
+                if(search_success){ // Get the shortest path to a leaf node in terms of node ids
                     // Generate Trajectory
                     Eigen::MatrixXd curr_traj(wpTol.size(), robot.NrOfJoints);
                     Eigen::MatrixXi curr_idx(wpTol.size(),1);
@@ -391,12 +424,15 @@ int main(int argc, char** argv){
                         path_cost += jt_diff.abs().maxCoeff();
                     }
                     if (path_cost<lowest_cost){
+                        #ifdef SEARCH_ASSERT
                         std::cout<< "Found Path With Lower Cost. Current Path Cost: " << path_cost << "\n\n";
+                        #endif
                         lowest_cost = path_cost;
                         trajectory = curr_traj;
                         path_idx = curr_idx;
                         tcp_idx = curr_tcp_idx;
 
+                        #ifdef DEBUG_MODE_MAIN
                         // Extras for research
                         Eigen::MatrixXd path_cost_mat(1,1);
                         path_cost_mat<< path_cost;
@@ -405,24 +441,36 @@ int main(int argc, char** argv){
                         for (int k=0; k<graph.paths.rows(); ++k)
                             for (int l=0; l<graph.paths.cols(); ++l)
                                 pathsToleaf(k,l) = node_map[graph.paths(k,l)]->index;
-                        file_rw::file_write("/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/csv/path_idx.csv",path_idx);
-                        file_rw::file_write("/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/csv/tcp_idx.csv",tcp_idx);
-                        file_rw::file_write("/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/csv/path_cost.csv",path_cost_mat);
-                        file_rw::file_write("/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/csv/pathsToLeaf.csv",pathsToleaf);
+                        #ifdef fileWrite
+                        file_rw::file_write(csv_dir+"path_idx.csv",path_idx);
+                        file_rw::file_write(csv_dir+"tcp_idx.csv",tcp_idx);
+                        file_rw::file_write(csv_dir+"path_cost.csv",path_cost_mat);
+                        file_rw::file_write(csv_dir+"pathsToLeaf.csv",pathsToleaf);
+                        #endif
                         // char x;
                         // std::cin>> x;
                         //
+                        #endif
                     }
                     success_flags = Eigen::MatrixXd::Ones(wpTol.size(),1);
                 }
-                else
-                    std::cout<< "Discontinuity detected for this configuration\n";
+                else{
+                    strt_discnt(i) = 0;
+                    #ifdef SEARCH_ASSERT
+                    std::cout<< "Discontinuity detected for this configuration\n\n";
+                    #endif
+                }
             }
 
             // std::cout<< "Trajectory: \n" << trajectory << "\n";
         }
     }
-
+    std::cout<< "Number of Start Nodes: " << no_strt_nodes << "\n";
+    std::cout<< "Time per search: " << search_time/no_djk << "\n";
+    #ifdef fileWrite
+    file_rw::file_write(csv_dir+"strt_discontinuities.csv",strt_discnt);
+    #endif
+    #endif
     
 
     // Evaluate trajectory cost
@@ -434,13 +482,14 @@ int main(int argc, char** argv){
         if (jt_diff.abs().maxCoeff()>max_change)
             max_change = jt_diff.abs().maxCoeff();
     }
+    #ifdef GRAPH_SEARCH
     std::cout<< "Total number of edges in graph: " << graph.no_edges << std::endl;
     std::cout<< "Total number of nodes in graph: " << graph.no_nodes << std::endl;
+    #endif
     std::cout<< "Maximum Joint Angle Change in Trajectory: " << max_change*(180/M_PI) << "\n";
     std::cout<< "Number of waypoints: " << wpTol.size() << "\n";
     std::cout<< "Number of TCPs: " << no_tcps << "\n";
     std::cout<< "Trajectory Cost: " << path_cost << "\n";
-    std::cout<< "Total compute time: " << timer.elapsed() << std::endl;
 
     file_rw::file_write(traj_path,trajectory);
     file_rw::file_write(success_flag_path,success_flags);

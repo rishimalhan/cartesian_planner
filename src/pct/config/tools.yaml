@@ -23,7 +23,7 @@ ferro_sander:
                 0.0,-0.03,0.2893,0,0,0,
                 0.0,-0.04,0.2893,0,0,0,
                 0.0,-0.05,0.2893,0,0,0], # All plus and minus Y TCPs 
-    # ff_T_tool: [0.0,0,0.2893,0,0,0] # Original TCP at center. Overriding multiple tcps
+    ff_T_tool: [0.0,0,0.2893,0,0,0] # Original TCP at center. Overriding multiple tcps
   }
 
 sander_v1:
