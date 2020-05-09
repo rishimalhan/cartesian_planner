@@ -51,8 +51,8 @@ bool gen_nodes(ikHandler* ik_handler, WM::WM* wm,
                     for (int sol_no=0; sol_no<ik_handler->solution.cols();++sol_no){
                         // Check for collision
                         std::vector<Eigen::MatrixXd> fk_kdl = ik_handler->robot->get_robot_FK_all_links(ik_handler->solution.col(sol_no));
-                        if(!wm->inCollision( fk_kdl )){
-                        // if(true){
+                        // if(!wm->inCollision( fk_kdl )){
+                        if(true){
                             theta = DFMapping::Eigen_to_KDLJoints(ik_handler->solution.col(sol_no));
                             ik_handler->robot->Jac_KDL(theta,jac_kdl);
                             jac = DFMapping::KDLJacobian_to_Eigen(jac_kdl);

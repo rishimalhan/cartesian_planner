@@ -23,11 +23,19 @@ ferro_sander:
                 0.0,-0.03,0.2893,0,0,0,
                 0.0,-0.04,0.2893,0,0,0,
                 0.0,-0.05,0.2893,0,0,0], # All plus and minus Y TCPs 
+    tool_stl_path: "/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/meshes/ferro_sander.stl",
+    tool_stl_viz_path: "package://pct/data/meshes/ferro_sander.stl",
+    tool_stl_coll_path: "/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/meshes/coll/ferro_sander/ferro_sander_coll.stl",
+    tool_stl_coll_folder: "/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/meshes/coll/ferro_sander",
+    # Override
     ff_T_tool: [0.0,0,0.2893,0,0,0] # Original TCP at center. Overriding multiple tcps
   }
 
 sander_v1:
   {
+    tool_stl_path: "/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/meshes/sander_v1.stl",
+    tool_stl_coll_path: "/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/meshes/coll/sander_v1/sander_v1_coll.stl",
+    tool_stl_coll_folder: "/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/meshes/coll/sander_v1",
     ff_T_tool: [0,-0.215,0.2155,0,0,0]
   }
 

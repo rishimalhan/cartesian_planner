@@ -46,7 +46,7 @@ int main(int argc, char** argv){
             curr_pose.orientation.z = qt(2);
             curr_pose.orientation.w = qt(3);
             if(!visual_tools_->publishMesh(curr_pose, stl_path, rviz_visual_tools::GREY, 1.0))
-                std::cout<< "Publishing Axis Failed\n";   
+                std::cout<< "Publishing Mesh Failed\n";   
             visual_tools_->trigger();
             doUpdate = false;
         }
