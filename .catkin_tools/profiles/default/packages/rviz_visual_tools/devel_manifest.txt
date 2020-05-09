@@ -1,4 +1,5 @@
 rviz_visual_tools
+<<<<<<< HEAD
 /workspace/ros_ws/devel/.private/rviz_visual_tools/cmake.lock /workspace/ros_ws/devel/./cmake.lock
 /workspace/ros_ws/devel/.private/rviz_visual_tools/lib/librviz_visual_tools_remote_control.so /workspace/ros_ws/devel/lib/librviz_visual_tools_remote_control.so
 /workspace/ros_ws/devel/.private/rviz_visual_tools/lib/librviz_visual_tools.so /workspace/ros_ws/devel/lib/librviz_visual_tools.so
@@ -9,3 +10,15 @@ rviz_visual_tools
 /workspace/ros_ws/devel/.private/rviz_visual_tools/lib/rviz_visual_tools/imarker_simple_demo /workspace/ros_ws/devel/lib/rviz_visual_tools/imarker_simple_demo
 /workspace/ros_ws/devel/.private/rviz_visual_tools/share/rviz_visual_tools/cmake/rviz_visual_toolsConfig-version.cmake /workspace/ros_ws/devel/share/rviz_visual_tools/cmake/rviz_visual_toolsConfig-version.cmake
 /workspace/ros_ws/devel/.private/rviz_visual_tools/share/rviz_visual_tools/cmake/rviz_visual_toolsConfig.cmake /workspace/ros_ws/devel/share/rviz_visual_tools/cmake/rviz_visual_toolsConfig.cmake
+=======
+/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/devel/.private/rviz_visual_tools/cmake.lock /home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/devel/./cmake.lock
+/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/devel/.private/rviz_visual_tools/share/rviz_visual_tools/cmake/rviz_visual_toolsConfig-version.cmake /home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/devel/share/rviz_visual_tools/cmake/rviz_visual_toolsConfig-version.cmake
+/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/devel/.private/rviz_visual_tools/share/rviz_visual_tools/cmake/rviz_visual_toolsConfig.cmake /home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/devel/share/rviz_visual_tools/cmake/rviz_visual_toolsConfig.cmake
+/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/devel/.private/rviz_visual_tools/lib/librviz_visual_tools_imarker_simple.so /home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/devel/lib/librviz_visual_tools_imarker_simple.so
+/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/devel/.private/rviz_visual_tools/lib/librviz_visual_tools_gui.so /home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/devel/lib/librviz_visual_tools_gui.so
+/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/devel/.private/rviz_visual_tools/lib/librviz_visual_tools.so /home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/devel/lib/librviz_visual_tools.so
+/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/devel/.private/rviz_visual_tools/lib/librviz_visual_tools_remote_control.so /home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/devel/lib/librviz_visual_tools_remote_control.so
+/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/devel/.private/rviz_visual_tools/lib/rviz_visual_tools/imarker_simple_demo /home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/devel/lib/rviz_visual_tools/imarker_simple_demo
+/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/devel/.private/rviz_visual_tools/lib/rviz_visual_tools/demo /home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/devel/lib/rviz_visual_tools/demo
+/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/devel/.private/rviz_visual_tools/lib/pkgconfig/rviz_visual_tools.pc /home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/devel/lib/pkgconfig/rviz_visual_tools.pc
+>>>>>>> 2aa1eea... Cleaned up code by defining macros for debugging mode.

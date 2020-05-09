@@ -1,5 +1,12 @@
 libigl
+<<<<<<< HEAD
 /workspace/ros_ws/devel/.private/libigl/cmake.lock /workspace/ros_ws/devel/./cmake.lock
 /workspace/ros_ws/devel/.private/libigl/lib/pkgconfig/libigl.pc /workspace/ros_ws/devel/lib/pkgconfig/libigl.pc
 /workspace/ros_ws/devel/.private/libigl/share/libigl/cmake/libiglConfig.cmake /workspace/ros_ws/devel/share/libigl/cmake/libiglConfig.cmake
 /workspace/ros_ws/devel/.private/libigl/share/libigl/cmake/libiglConfig-version.cmake /workspace/ros_ws/devel/share/libigl/cmake/libiglConfig-version.cmake
+=======
+/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/devel/.private/libigl/cmake.lock /home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/devel/./cmake.lock
+/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/devel/.private/libigl/share/libigl/cmake/libiglConfig.cmake /home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/devel/share/libigl/cmake/libiglConfig.cmake
+/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/devel/.private/libigl/share/libigl/cmake/libiglConfig-version.cmake /home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/devel/share/libigl/cmake/libiglConfig-version.cmake
+/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/devel/.private/libigl/lib/pkgconfig/libigl.pc /home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/devel/lib/pkgconfig/libigl.pc
+>>>>>>> 2aa1eea... Cleaned up code by defining macros for debugging mode.

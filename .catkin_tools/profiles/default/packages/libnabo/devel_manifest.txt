@@ -1,5 +1,12 @@
 libnabo
+<<<<<<< HEAD
 /workspace/ros_ws/devel/.private/libnabo/cmake.lock /workspace/ros_ws/devel/./cmake.lock
 /workspace/ros_ws/devel/.private/libnabo/lib/pkgconfig/libnabo.pc /workspace/ros_ws/devel/lib/pkgconfig/libnabo.pc
 /workspace/ros_ws/devel/.private/libnabo/share/libnabo/cmake/libnaboConfig.cmake /workspace/ros_ws/devel/share/libnabo/cmake/libnaboConfig.cmake
 /workspace/ros_ws/devel/.private/libnabo/share/libnabo/cmake/libnaboConfig-version.cmake /workspace/ros_ws/devel/share/libnabo/cmake/libnaboConfig-version.cmake
+=======
+/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/devel/.private/libnabo/cmake.lock /home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/devel/./cmake.lock
+/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/devel/.private/libnabo/share/libnabo/cmake/libnaboConfig.cmake /home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/devel/share/libnabo/cmake/libnaboConfig.cmake
+/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/devel/.private/libnabo/share/libnabo/cmake/libnaboConfig-version.cmake /home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/devel/share/libnabo/cmake/libnaboConfig-version.cmake
+/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/devel/.private/libnabo/lib/pkgconfig/libnabo.pc /home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/devel/lib/pkgconfig/libnabo.pc
+>>>>>>> 2aa1eea... Cleaned up code by defining macros for debugging mode.

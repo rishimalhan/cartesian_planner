@@ -48,7 +48,10 @@
   <!--   <test_depend>gtest</test_depend> -->
   <!-- Use doc_depend for packages you need only for building documentation: -->
   <!--   <doc_depend>doxygen</doc_depend> -->
+<<<<<<< HEAD
 
+=======
+>>>>>>> 2aa1eea... Cleaned up code by defining macros for debugging mode.
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>roscpp</build_depend>
   <build_depend>roslib</build_depend>

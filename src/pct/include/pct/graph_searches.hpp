@@ -16,9 +16,10 @@
 namespace graph_searches{
 
     bool djikstra(boost_graph* graph, Eigen::VectorXi& path){
+        #ifdef SEARCH_ASSERT
         std::cout<< "\n##############################################################\n";
         std::cout<< "Running Djikstra.........\n";
-
+        #endif
         dijkstra_shortest_paths(graph->g, graph->s,
                   predecessor_map(boost::make_iterator_property_map(graph->p.begin(), get(boost::vertex_index, graph->g))).
                   distance_map(boost::make_iterator_property_map(graph->d.begin(), get(boost::vertex_index, graph->g))));
@@ -31,9 +32,13 @@ namespace graph_searches{
         bool leaf_connected = false;
         Eigen::VectorXi curr_path(graph->no_levels);
         graph->paths.resize(graph->no_levels,1);
+        #ifdef SEARCH_ASSERT
         std::cout<< "Cost:\n";
+        #endif
         for (int i=0; i<leaf_nodes.size(); ++i){
+            #ifdef SEARCH_ASSERT
             std::cout<< graph->d[ leaf_nodes(i) ] << ", ";
+            #endif
             if ( leaf_nodes(i)!=graph->p[leaf_nodes(i)] ){ // if this node is not equal to its parent (terminal node)
                 if (graph->d[ leaf_nodes(i) ] < lowest_cost){
                     index = i;
@@ -53,11 +58,18 @@ namespace graph_searches{
             }
         }
         graph->paths.conservativeResize(graph->no_levels,graph->paths.cols()-1); // Kill the last col
+        #ifdef SEARCH_ASSERT
         std::cout<< "\n";
-        if (!leaf_connected)
+        #endif
+        if (!leaf_connected){
+            #ifdef SEARCH_ASSERT
+            std::cout<< "##############################################################\n";
+            #endif
             return false;
-
+        }
+        #ifdef SEARCH_ASSERT
         std::cout<< "Path Cost: " << graph->d[ leaf_nodes(index) ] << "\n";
+        #endif
 
         path.resize(graph->no_levels);
         int id = leaf_nodes(index);
@@ -66,7 +78,9 @@ namespace graph_searches{
             id = graph->p[ id ];
         }
         // std::cout<< path.transpose() << "\n";
+        #ifdef SEARCH_ASSERT
         std::cout<< "##############################################################\n";
+        #endif
         return true;
     };
 

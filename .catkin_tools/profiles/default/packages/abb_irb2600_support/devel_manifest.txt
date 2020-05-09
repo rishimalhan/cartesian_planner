@@ -1,5 +1,12 @@
 abb_irb2600_support
+<<<<<<< HEAD
 /workspace/ros_ws/devel/.private/abb_irb2600_support/cmake.lock /workspace/ros_ws/devel/./cmake.lock
 /workspace/ros_ws/devel/.private/abb_irb2600_support/lib/pkgconfig/abb_irb2600_support.pc /workspace/ros_ws/devel/lib/pkgconfig/abb_irb2600_support.pc
 /workspace/ros_ws/devel/.private/abb_irb2600_support/share/abb_irb2600_support/cmake/abb_irb2600_supportConfig-version.cmake /workspace/ros_ws/devel/share/abb_irb2600_support/cmake/abb_irb2600_supportConfig-version.cmake
 /workspace/ros_ws/devel/.private/abb_irb2600_support/share/abb_irb2600_support/cmake/abb_irb2600_supportConfig.cmake /workspace/ros_ws/devel/share/abb_irb2600_support/cmake/abb_irb2600_supportConfig.cmake
+=======
+/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/devel/.private/abb_irb2600_support/cmake.lock /home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/devel/./cmake.lock
+/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/devel/.private/abb_irb2600_support/share/abb_irb2600_support/cmake/abb_irb2600_supportConfig-version.cmake /home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/devel/share/abb_irb2600_support/cmake/abb_irb2600_supportConfig-version.cmake
+/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/devel/.private/abb_irb2600_support/share/abb_irb2600_support/cmake/abb_irb2600_supportConfig.cmake /home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/devel/share/abb_irb2600_support/cmake/abb_irb2600_supportConfig.cmake
+/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/devel/.private/abb_irb2600_support/lib/pkgconfig/abb_irb2600_support.pc /home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/devel/lib/pkgconfig/abb_irb2600_support.pc
+>>>>>>> 2aa1eea... Cleaned up code by defining macros for debugging mode.

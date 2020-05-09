@@ -6,6 +6,11 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
+
+// #define DEBUG_PATH_CONSISTENCY
+
+
+
 #include <iostream>
 #include <pct/gen_cvrg_plan.hpp>
 #include <ros/ros.h>
@@ -27,7 +32,6 @@
 #include <pct/graph_searches.hpp>
 #include <pct/timer.hpp>
 #include <pct/path_consistency.hpp>
-
 
 
 
@@ -101,18 +105,32 @@ int main(int argc, char** argv){
     std::cout<< "Obtaining Tool TCP\n";
     // TCP
     // Get transformation from ros parameter server
+    // By default it takes the first tf as a nominal TCP
+    std::string tool_name;
+    if(!ros::param::get("/tool_name",tool_name))
+        ROS_WARN("Unable to Obtain Tool name");
     std::vector<double> tf; tf.clear();
-    if(!ros::param::get("/cvrg_tf_param/ff_T_tool",tf))
-        std::cout<< "Unable to Obtain TCP tf\n";
+    tool_name = "/" + tool_name + "/ff_T_tool";
+    if(!ros::param::get(tool_name,tf)){
+        ROS_WARN("Unable to Obtain TCP tf");
+        return 1;
+    }
+
+    
+    int no_tcps = tf.size()/6;
+    std::vector<Eigen::MatrixXd> tcp_list(no_tcps);
     Eigen::VectorXd tf_eigen(6);
-    tf_eigen<< tf[0],tf[1],tf[2],tf[3],tf[4],tf[5];
-    Eigen::MatrixXd ff_T_tool = Eigen::MatrixXd::Identity(4,4);
-    ff_T_tool.block(0,0,3,3) = rtf::eul2rot(tf_eigen.segment(3,3).transpose(),"XYZ");
-    ff_T_tool.block(0,3,3,1) = tf_eigen.segment(0,3);
+    for (int i=0; i<no_tcps; ++i){
+        tf_eigen<< tf[i*6],tf[i*6+1],tf[i*6+2],tf[i*6+3],tf[i*6+4],tf[i*6+5];
+        Eigen::MatrixXd ff_T_tool = Eigen::MatrixXd::Identity(4,4);
+        ff_T_tool.block(0,0,3,3) = rtf::eul2rot(tf_eigen.segment(3,3).transpose(),"XYZ");
+        ff_T_tool.block(0,3,3,1) = tf_eigen.segment(0,3);
+        tcp_list[i] = ff_T_tool;
+    }
 
     std::cout<< "Creating Robot\n";
     // Create the robot
-    KDL::Frame tcp_frame = DFMapping::Eigen_to_KDLFrame(ff_T_tool);
+    KDL::Frame tcp_frame = DFMapping::Eigen_to_KDLFrame(tcp_list[0]);
 
     SerialLink_Manipulator::SerialLink_Manipulator robot(urdf_path, base_frame, tcp_frame, rob_base_link, rob_tip_link);
     Eigen::MatrixXd jt_lb = DFMapping::KDLJoints_to_Eigen(robot.Joints_ll);
@@ -153,22 +171,22 @@ int main(int argc, char** argv){
     Eigen::MatrixXd traj1 = file_rw::file_read_mat(file_path+"0.csv");
     Eigen::MatrixXd traj2 = file_rw::file_read_mat(file_path+"joint_states.csv");
 
-    // // Manipulability analysis
-    // std::cout<< "\nMANIPULABILITY,  Distance to Upper,  Distance to Lower\n";
-    // double manip1 = 0;
-    // double manip2 = 0;
-    // double sum_1 = 0;
-    // double sum_2 = 0;
-    // double dist_ub = 0;
-    // double dist_lb = 0;
-    // Eigen::MatrixXd ub = DFMapping::KDLJoints_to_Eigen(robot.Joints_ul);
-    // Eigen::MatrixXd lb = DFMapping::KDLJoints_to_Eigen(robot.Joints_ll);
-    // Eigen::MatrixXd data(traj2.rows(),6);
+    // Manipulability analysis
+    double manip1 = 0;
+    double manip2 = 0;
+    double sum_1 = 0;
+    double sum_2 = 0;
+    double dist_ub = 0;
+    double dist_lb = 0;
+    Eigen::MatrixXd ub = DFMapping::KDLJoints_to_Eigen(robot.Joints_ul);
+    Eigen::MatrixXd lb = DFMapping::KDLJoints_to_Eigen(robot.Joints_ll);
+    Eigen::MatrixXd data(traj2.rows(),6);
     KDL::Jacobian jac_kdl;
     KDL::JntArray theta;
     Eigen::MatrixXd jac;
 
 
+    // std::cout<< "\nMANIPULABILITY,  Distance to Upper,  Distance to Lower\n";
     // for(int i=0; i<traj2.rows(); ++i){
     //     if (i<traj1.rows()){
     //         theta = DFMapping::Eigen_to_KDLJoints(traj1.row(i).transpose());
@@ -212,7 +230,7 @@ int main(int argc, char** argv){
     // file_rw::file_write("/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/csv/data.csv",data);
 
 
-
+    // return 0;
 
 
 
@@ -229,17 +247,8 @@ int main(int argc, char** argv){
     // target2(2) += 0.1;
     
 
-    // target1 << 0.97553 ,  0.0160197 ,   0.236795, 0.000609452,    0.765329,   -0.643639 ,   0.945616,   -0.209807,   -0.248578 ,  -0.325284,   -0.608484 ,  -0.723835;
-    // target2 << 0.975506,  -0.0139803,    0.258972, 0.000670697,    0.842239,   -0.539105,     0.95532,   -0.159884,   -0.248597,   -0.295572 ,  -0.514851,   -0.804715;
-
-
-    // // Test Case-1
-    // target1 << 0.975546,0.0360197,0.21907,-0.00058108,-0.729701,0.683766,-0.949522,0.2149,0.22853,-0.3137,-0.649118,-0.692992;
-    // target2 << 0.975538,0.0260197,0.228244,-0.00060237,-0.756436,0.654068,-0.954525,0.195432,0.225139,-0.298129,-0.624189,-0.722155;
-
-    // Test Case-2
-    target1 << 0.975268,-0.31398,0.3204,-0.000781082,-0.980856,-0.194732,-0.940122,-0.0656515,0.334455,-0.340836,0.183333,-0.922074;
-    target2 << 0.97526,-0.32398,0.318245,-0.000776739,-0.975402,-0.220432,-0.955684,-0.06417,0.287317,-0.294395,0.210887,-0.932126;
+    target1<< 0.975268,-0.31398,0.3204,-0.000781082,-0.980856,-0.194732,-0.940122,-0.0656515,0.334455,-0.340836,0.183333,-0.922074;
+    target2<< 0.975244,-0.34398,0.313075,-0.000763927,-0.959313,-0.282343,-0.933548,-0.100522,0.344069,-0.358452,0.263844,-0.895488;
 
     // int i=0; 
     // int no_samples = 100;
@@ -276,7 +285,7 @@ int main(int argc, char** argv){
     else
         return 0;
     if (ik_handler.solveIK(target2))
-        seg[3] = ik_handler.solution.col(1);
+        seg[3] = ik_handler.solution.col(0);
     else
         return 0;
 
@@ -286,6 +295,19 @@ int main(int argc, char** argv){
 
     std::cout<< "Consistency Status: "<< 
     path_consistency(seg, &ik_handler, get_dist(seg, &ik_handler)) << "\n";
+
+    // Computation time per check
+    int itr = 10000;
+    timer timer;
+    timer.start();
+    for (int i=0; i<itr; ++i)
+        path_consistency(seg, &ik_handler, get_dist(seg, &ik_handler));
+    std::cout<< "Path Consistency Time per run: " << timer.elapsed()/itr << "\n";
+
+    timer.reset();
+    for (int i=0; i<itr; ++i)
+        ik_handler.solveIK(target2);
+    std::cout<< "IK Time per run: " << timer.elapsed()/itr << "\n";
     return 0;
 
 
