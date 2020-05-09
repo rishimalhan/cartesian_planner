@@ -23,6 +23,7 @@ struct node{
     int index;
     Eigen::VectorXd wp; // xyzbxbybz
     Eigen::VectorXd wp_eul; //xyzrxryrz
+    Eigen::VectorXd wp_ff; // xyzbxbybz of flange wrt rob_base
     Eigen::MatrixXd jacobian;
 };
 

@@ -27,10 +27,10 @@ int main(int argc, char** argv){
     while(ros::ok()){
         if (doUpdate){
             ROS_INFO("Updating Path on Display.....");
-            ros::param::get("/cvrg_file_paths/cvrg_path",path_path);
-            ros::param::get("/cvrg_file_paths/success_flags",success_flag_path);
-            ROS_WARN_STREAM("Got cvrg path : " << path_path);
-            ROS_WARN_STREAM("Got success_flags path : " << success_flag_path);
+            if(!ros::param::get("/cvrg_file_paths/cvrg_path",path_path))
+                ROS_WARN("Cannot get waypoint path in visualize path");
+            if(!ros::param::get("/cvrg_file_paths/success_flags",success_flag_path))
+                ROS_WARN("Cannot get success_flags path in visualize path");
             visual_tools_->deleteAllMarkers();
             Eigen::MatrixXd path = file_rw::file_read_mat(path_path);
             Eigen::MatrixXd success_flags = file_rw::file_read_mat(success_flag_path);
@@ -47,7 +47,7 @@ int main(int argc, char** argv){
                 curr_pt.y = path(i,1);
                 curr_pt.z = path(i,2);
                 path_points.push_back(curr_pt);
-                if (success_flags(i,0)<1) { // true
+                if (success_flags(i,0)<1) { // false
                     sphere_pose.position.x = curr_pt.x;
                     sphere_pose.position.y = curr_pt.y;
                     sphere_pose.position.z = curr_pt.z;
@@ -56,11 +56,11 @@ int main(int argc, char** argv){
                     sphere_pose.orientation.z = 0;
                     sphere_pose.orientation.w = 1;
                     if(!visual_tools_->publishSphere(sphere_pose, rviz_visual_tools::RED, 0.02, "spheres", i))
-                        std::cout<< "Publishing Sphere Failed\n";
+                        ROS_WARN("Publishing Sphere Failed");
                 }
             }
-            if(!visual_tools_->publishPath(path_points, rviz_visual_tools::GREEN, 0.01, "spheres"))
-                        std::cout<< "Publishing Path Failed\n";   
+            if(!visual_tools_->publishPath(path_points, rviz_visual_tools::GREEN, 0.01, "path"))
+                        ROS_WARN("Publishing Path Failed");   
             visual_tools_->trigger();
             doUpdate = false;
                                   ROS_WARN_STREAM("Just did one update");

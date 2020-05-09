@@ -19,8 +19,8 @@
 
 
     <!-- Tool Plot -->
-    <include file="$(arg pkg_path)/launch/sander.launch"/>
-    <!-- <include file="$(arg pkg_path)/launch/ferro_sander.launch"/> -->
+    <!-- <include file="$(arg pkg_path)/launch/sander.launch"/> -->
+    <include file="$(arg pkg_path)/launch/ferro_sander.launch"/>
 
 
     <!-- Robot TF publishers from the joint_states topics -->
@@ -28,4 +28,5 @@
     <node pkg="planner_viz" name="viz_stl" type="viz_stl" output="screen"/>
     <node pkg="planner_viz" name="viz_path" type="viz_path" output="screen"/>
     <node pkg="planner_viz" name="viz_robot" type="viz_robot" output="screen"/>
+    <!-- <node pkg="planner_viz" name="viz_ffWps" type="viz_ffWps" output="screen"/> -->
 </launch>

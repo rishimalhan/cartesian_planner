@@ -10,7 +10,7 @@ double get_dist(std::vector<Eigen::VectorXd> seg, ikHandler* ik_handler){
     for (int i=0; i<=no_samples; ++i){
         KDL::JntArray theta = DFMapping::Eigen_to_KDLJoints(seg[1]+i*dq);
         KDL::Frame fk_kdl;
-        ik_handler->robot->FK_KDL_TCP(theta,fk_kdl);
+        ik_handler->robot->FK_KDL_TCP(theta,fk_kdl); // Tool tip
         Eigen::MatrixXd fk = DFMapping::KDLFrame_to_Eigen(fk_kdl);
         // std::cout<< fk.block(0,3,3,1).transpose() << "\n";
         dist.push_back( (fk.block(0,3,3,1) - (seg[0].segment(0,3)+i*dx.segment(0,3)) ).norm() ); // Should also include orientation
@@ -22,6 +22,8 @@ double get_dist(std::vector<Eigen::VectorXd> seg, ikHandler* ik_handler){
 }
 
 bool path_consistency(std::vector<Eigen::VectorXd> seg, ikHandler* ik_handler, int depth, double prev_dist){
+    double red_factor = 0.9;
+
     // Analyze this segment
     double max_distance;
     if (depth>0)
@@ -29,23 +31,19 @@ bool path_consistency(std::vector<Eigen::VectorXd> seg, ikHandler* ik_handler, i
     else
         max_distance = prev_dist;
 
-    // std::cout<< "Depth: " << depth << ". Distance: " << max_distance*1000 << " mm. " << "Previous Dist: " << 
-    // prev_dist*1000 << " mm.\n";
-
-    prev_dist /= 2;
+    // std::cout<< "Depth: " << depth << ". Distance: " << max_distance*1000 << " mm. " << "Previous Dist: " << prev_dist*1000 << " mm.\n";
 
     if (depth==1) // Max depth to go
-        if (max_distance < prev_dist)
+        if (max_distance < prev_dist*red_factor) // If current error is less then half the prev
             return true;
         else
             return false;
     depth++;
 
     Eigen::VectorXd mid_x = (seg[0] + seg[2])/2;
-
+    // std::cout<< "MidX: " << mid_x.transpose() << "\n";
     // std::cout<< "\n";
     // For all possible configurations, generate more segments
-    bool status = false;
     if (ik_handler->solveIK(mid_x)){
         std::vector<Eigen::VectorXd> seg1 = seg;
         std::vector<Eigen::VectorXd> seg2 = seg;
@@ -56,13 +54,19 @@ bool path_consistency(std::vector<Eigen::VectorXd> seg, ikHandler* ik_handler, i
             seg2[1] = ik_handler->solution.col(i);
             bool status1 = path_consistency(seg1,ik_handler,depth,max_distance);
             bool status2 = path_consistency(seg2,ik_handler,depth,max_distance);
-            if (status1 &&
-                status2 )
-                status = true; // Both configurations are path consistent
+            if (status1 && status2 )
+                return true; // Both configurations are path consistent
             // std::cout<< "\n";
         }
     }
-    return status;
+    else{
+        std::cout<< "BUGGGGG!!!! IK not feasible\n";
+    }
+    return false;
+}
+
+bool path_consistency(std::vector<Eigen::VectorXd> seg, ikHandler* ik_handler, double prev_dist){
+    return path_consistency(seg, ik_handler, 0, prev_dist);
 }
 
 #endif 

@@ -214,6 +214,8 @@ set(DEP_LIBS ${catkin_LIBRARIES}
 add_executable(viz_wp src/viz_wp.cpp)
 target_link_libraries(viz_wp ${DEP_LIBS})
 
+# add_executable(viz_ffWps src/viz_ffWps.cpp)
+# target_link_libraries(viz_ffWps ${DEP_LIBS})
 
 add_executable(viz_stl src/viz_stl.cpp)
 target_link_libraries(viz_stl ${DEP_LIBS})

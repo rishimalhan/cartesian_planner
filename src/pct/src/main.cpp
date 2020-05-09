@@ -123,22 +123,36 @@ int main(int argc, char** argv){
     // return 0;
 
 
-    std::cout<< "Obtaining Tool TCP\n";
+    std::cout<< "Obtaining Tool TCPs\n";
     // TCP
     // Get transformation from ros parameter server
+    // By default it takes the first tf as a nominal TCP
+    std::string tool_name;
+    if(!ros::param::get("/tool_name",tool_name))
+        ROS_WARN("Unable to Obtain Tool name");
     std::vector<double> tf; tf.clear();
-    if(!ros::param::get("/cvrg_tf_param/ff_T_tool",tf))
-        std::cout<< "Unable to Obtain TCP tf\n";
+    tool_name = "/" + tool_name + "/ff_T_tool";
+    if(!ros::param::get(tool_name,tf)){
+        ROS_WARN("Unable to Obtain TCP tf");
+        return 1;
+    }
+
+    
+    int no_tcps = tf.size()/6;
+    std::vector<Eigen::MatrixXd> tcp_list(no_tcps);
     Eigen::VectorXd tf_eigen(6);
-    tf_eigen<< tf[0],tf[1],tf[2],tf[3],tf[4],tf[5];
-    Eigen::MatrixXd ff_T_tool = Eigen::MatrixXd::Identity(4,4);
-    ff_T_tool.block(0,0,3,3) = rtf::eul2rot(tf_eigen.segment(3,3).transpose(),"XYZ");
-    ff_T_tool.block(0,3,3,1) = tf_eigen.segment(0,3);
+    for (int i=0; i<no_tcps; ++i){
+        tf_eigen<< tf[i*6],tf[i*6+1],tf[i*6+2],tf[i*6+3],tf[i*6+4],tf[i*6+5];
+        Eigen::MatrixXd ff_T_tool = Eigen::MatrixXd::Identity(4,4);
+        ff_T_tool.block(0,0,3,3) = rtf::eul2rot(tf_eigen.segment(3,3).transpose(),"XYZ");
+        ff_T_tool.block(0,3,3,1) = tf_eigen.segment(0,3);
+        tcp_list[i] = ff_T_tool;
+    }
+
 
     std::cout<< "Creating Robot\n";
     // Create the robot
-    KDL::Frame tcp_frame = DFMapping::Eigen_to_KDLFrame(ff_T_tool);
-
+    KDL::Frame tcp_frame = DFMapping::Eigen_to_KDLFrame(tcp_list[0]);
     SerialLink_Manipulator::SerialLink_Manipulator robot(urdf_path, base_frame, tcp_frame, rob_base_link, rob_tip_link);
     Eigen::MatrixXd jt_lb = DFMapping::KDLJoints_to_Eigen(robot.Joints_ll);
     Eigen::MatrixXd jt_ub = DFMapping::KDLJoints_to_Eigen(robot.Joints_ul);
@@ -152,15 +166,21 @@ int main(int argc, char** argv){
     WM::WM wm;
     wm.addRobot(robot_obj);
     std::string wp_path;
-    if(!ros::param::get("/cvrg_file_paths/mesh_path",wp_path))
-        std::cout<< "Unable to Obtain mesh path\n";
-    tf.clear();
-    if(!ros::param::get("/cvrg_tf_param/world_T_part",tf))
-        std::cout<< "Unable to Obtain part tf\n";
+    if(!ros::param::get("/cvrg_file_paths/mesh_path",wp_path)){
+        ROS_WARN("Unable to Obtain mesh path");
+        return 1;
+    }
+    std::vector<double> tf_part(6);
+    if(!ros::param::get("/cvrg_tf_param/world_T_part",tf_part)){
+        ROS_WARN("Unable to Obtain part tf");
+        return 1;
+    }
     std::string toolstl_path;
-    if(!ros::param::get("/cvrg_file_paths/tool_stl_coll_path",toolstl_path))
-        std::cout<< "Unable to Obtain tool stl path\n";
-    tf_eigen<< tf[0],tf[1],tf[2],tf[3],tf[4],tf[5];
+    if(!ros::param::get("/cvrg_file_paths/tool_stl_coll_path",toolstl_path)){
+        ROS_WARN("Unable to Obtain tool stl path");
+        return 1;
+    }
+    tf_eigen<< tf_part[0],tf_part[1],tf_part[2],tf_part[3],tf_part[4],tf_part[5];
     Eigen::Matrix4d world_T_part = Eigen::Matrix4d::Identity();
     world_T_part.block(0,0,3,3) = rtf::eul2rot(tf_eigen.segment(3,3).transpose(),"XYZ");
     world_T_part.block(0,3,3,1) = tf_eigen.segment(0,3);
@@ -174,8 +194,8 @@ int main(int argc, char** argv){
     ros::param::get("/cvrg_file_paths/path_file",path_file);
 
     // Generate Path
-    Eigen::MatrixXd path = gen_cvrg_plan();
-    // Eigen::MatrixXd path = load_plan(path_file); // Pre computed path file
+    // Eigen::MatrixXd path = gen_cvrg_plan();
+    Eigen::MatrixXd path = load_plan(path_file); // Pre computed path file
 
 
 
@@ -203,20 +223,7 @@ int main(int argc, char** argv){
 
 
 
-
-    // Generate tcp_list
-    double no_tcps;
-    if(!ros::param::get("/no_tcps",no_tcps)){
-        std::cout<< "Unable to Obtain Number of TCPs\n";
-        return 0;
-    }
-    std::cout<< "Number of TCPs: " << no_tcps << "\n";
-    std::vector<Eigen::MatrixXd> tcp_list(no_tcps); // For now only 1 tcp
-    for (int i=0; i<tcp_list.size(); ++i)
-        tcp_list[i] = ff_T_tool;
-
     
-
 
 // ////////////////////////////////////////////////////////////////////
 //     // test collision
@@ -344,7 +351,7 @@ int main(int argc, char** argv){
     if(!gen_nodes(&ik_handler, &wm, wpTol, tcp_list, node_map, node_list, success_flags)){
         std::cout<< "Nodes could not be generated. No solution found\n";
         trajectory.resize(1,ik_handler.OptVarDim);
-        trajectory.row(0) << ik_handler.init_guess.col(0).transpose();
+        trajectory.row(0) << ik_handler.init_guess.transpose();
     }
     else{
         std::cout<< "Nodes generation compute time: " << timer.elapsed() << std::endl;
@@ -360,7 +367,7 @@ int main(int argc, char** argv){
         if(!build_graph(&ik_handler, node_map,node_list,&graph,root_connectivity)){
             std::cout<< "Edges could not be created. No solution found\n";
             trajectory.resize(1,ik_handler.OptVarDim);
-            trajectory.row(0) << ik_handler.init_guess.col(0).transpose();
+            trajectory.row(0) << ik_handler.init_guess.transpose();
         }
         else{
             std::cout<< "Graph generation compute time: " << timer.elapsed() << std::endl;
