@@ -29,6 +29,8 @@ double get_dist(std::vector<Eigen::VectorXd> seg, ikHandler* ik_handler){
     // return sum;
 }
 
+
+
 bool path_consistency(std::vector<Eigen::VectorXd> seg, ikHandler* ik_handler, int depth, double prev_dist){
     double red_factor = 0.9;
 

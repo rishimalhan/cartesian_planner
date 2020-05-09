@@ -11,7 +11,7 @@
 #include <Eigen/Eigen>
 #include <ros/ros.h>
 #include <robot_utilities/transformation_utilities.hpp>
-
+#include <pct/timer.hpp>
 
 int main(int argc, char** argv){
     ros::init(argc,argv,"toolColl");
@@ -56,6 +56,21 @@ int main(int argc, char** argv){
     // Any other env variables can be added here
 
 
+    // timer timer;
+    // timer.start();
+    // std::vector<Eigen::MatrixXd> tool_tf(1);
+    // tf_eigen<< tf_part[0],tf_part[1],tf_part[2],tf_part[3],tf_part[4],tf_part[5];
+    // Eigen::Matrix4d world_T_tool = Eigen::Matrix4d::Identity();
+    // world_T_tool.block(0,0,3,3) = rtf::eul2rot(tf_eigen.segment(3,3).transpose(),"XYZ");
+    // world_T_tool.block(0,3,3,1) = tf_eigen.segment(0,3);
+    // // std vector holding the tool to world transform
+    // tool_tf[0] = world_T_tool;
+    // for (int i=0; i<10000; ++i){
+    //     wm.inCollision(tool_tf);
+    // }
+
+    // std::cout<< "Cost: " << timer.elapsed()/10000 << "\n";
+    // return 0;
 
     ros::Rate loopRate(1000);
     while (ros::ok()){

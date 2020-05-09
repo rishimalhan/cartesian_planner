@@ -72,7 +72,7 @@ int main(int argc, char** argv){
         return 0;
     }
     resolution *= (M_PI / 180);
-    double angle = 360*M_PI / 180; // Total angle is 200. 100 each side
+    double angle = 0*M_PI / 180; // Total angle is 200. 100 each side
 
 
     ///////////////// CAUTION ///////////////////////////////////////
@@ -144,8 +144,8 @@ int main(int argc, char** argv){
     if(!ros::param::get("/tool_name",tool_name))
         ROS_WARN("Unable to Obtain Tool name");
     std::vector<double> tf; tf.clear();
-    tool_name = "/" + tool_name + "/ff_T_tool";
-    if(!ros::param::get(tool_name,tf)){
+    tool_name = "/" + tool_name;
+    if(!ros::param::get(tool_name + "/ff_T_tool",tf)){
         ROS_WARN("Unable to Obtain TCP tf");
         return 1;
     }
@@ -189,7 +189,7 @@ int main(int argc, char** argv){
         return 1;
     }
     std::string toolstl_path;
-    if(!ros::param::get("/cvrg_file_paths/tool_stl_coll_path",toolstl_path)){
+    if(!ros::param::get(tool_name + "/tool_stl_coll_path",toolstl_path)){
         ROS_WARN("Unable to Obtain tool stl path");
         return 1;
     }
@@ -207,8 +207,8 @@ int main(int argc, char** argv){
     ros::param::get("/cvrg_file_paths/path_file",path_file);
 
     // Generate Path
-    Eigen::MatrixXd path = gen_cvrg_plan();
-    // Eigen::MatrixXd path = load_plan(path_file); // Pre computed path file
+    // Eigen::MatrixXd path = gen_cvrg_plan();
+    Eigen::MatrixXd path = load_plan(path_file); // Pre computed path file
 
 
 
@@ -406,7 +406,7 @@ int main(int argc, char** argv){
                 bool search_success = graph_searches::djikstra(&graph,id_path);
                 no_djk += 1;
                 search_time += search_timer.elapsed();
-                
+
                 if(search_success){ // Get the shortest path to a leaf node in terms of node ids
                     // Generate Trajectory
                     Eigen::MatrixXd curr_traj(wpTol.size(), robot.NrOfJoints);

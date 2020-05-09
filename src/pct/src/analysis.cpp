@@ -247,8 +247,6 @@ int main(int argc, char** argv){
     // target2(2) += 0.1;
     
 
-    target1<< 0.975268,-0.31398,0.3204,-0.000781082,-0.980856,-0.194732,-0.940122,-0.0656515,0.334455,-0.340836,0.183333,-0.922074;
-    target2<< 0.975244,-0.34398,0.313075,-0.000763927,-0.959313,-0.282343,-0.933548,-0.100522,0.344069,-0.358452,0.263844,-0.895488;
 
     // int i=0; 
     // int no_samples = 100;
@@ -260,9 +258,9 @@ int main(int argc, char** argv){
     //     Eigen::VectorXd target = target1+i*dx;
     //     if (ik_handler.solveIK(target)){
     //         theta = DFMapping::Eigen_to_KDLJoints(ik_handler.solution.col(0));
-    //         KDL::Frame fk_kdl;
-    //         robot.FK_KDL_TCP(theta,fk_kdl);
-    //         Eigen::MatrixXd fk = DFMapping::KDLFrame_to_Eigen(fk_kdl);
+            // KDL::Frame fk_kdl;
+            // robot.FK_KDL_TCP(theta,fk_kdl);
+            // Eigen::MatrixXd fk = DFMapping::KDLFrame_to_Eigen(fk_kdl);
     //         // std::cout<< fk.block(0,3,3,1).transpose() << " " << fk.block(0,0,3,1).transpose()
     //         // << " " << fk.block(0,1,3,1).transpose()
     //         // << " " << fk.block(0,2,3,1).transpose() << "\n";
@@ -276,7 +274,59 @@ int main(int argc, char** argv){
 
     // return 0;
 
+
+    // Case when configs c1 and c2 are inconsistent but function gives consistent
+    // as the threshold is too high at 0.9 and reduction of 15% is obtained
+    Eigen::VectorXd c1(6);
+    Eigen::VectorXd c2(6);
+    c1<< -26.8803 ,-8.23767,  64.1847, -148.633, -21.8895,  35.7246;
+    c2<< -22.5127, -9.55133,  67.3078,  27.8599,  11.8884, -139.383;
+
+    c1 *= (3.14/180);
+    c2 *= (3.14/180);
+
+    KDL::Frame fk_kdl;
+    theta = DFMapping::Eigen_to_KDLJoints(c1);
+    robot.FK_KDL_TCP(theta,fk_kdl);
+    Eigen::MatrixXd fk1 = DFMapping::KDLFrame_to_Eigen(fk_kdl);
+
+    theta = DFMapping::Eigen_to_KDLJoints(c2);
+    robot.FK_KDL_TCP(theta,fk_kdl);
+    Eigen::MatrixXd fk2 = DFMapping::KDLFrame_to_Eigen(fk_kdl);
+
+
+    target1.segment(0,3) = fk1.block(0,3,3,1);
+    target1.segment(3,3) = fk1.block(0,0,3,1);
+    target1.segment(6,3) = fk1.block(0,1,3,1);
+    target1.segment(9,3) = fk1.block(0,2,3,1);
+
+    target2.segment(0,3) = fk2.block(0,3,3,1);
+    target2.segment(3,3) = fk2.block(0,0,3,1);
+    target2.segment(6,3) = fk2.block(0,1,3,1);
+    target2.segment(9,3) = fk2.block(0,2,3,1);
+
+
+    std::vector<Eigen::VectorXd> seg1(4);
+    seg1[0] = target1;
+    seg1[1] = c1;
+    seg1[2] = target2;
+    seg1[3] = c2;
+
+
+    std::cout<< "Consistency Status: "<< 
+    path_consistency(seg1, &ik_handler, get_dist(seg1, &ik_handler)) << "\n";
+
+    // return 0;
+
+
+
+
+
     std::vector<Eigen::VectorXd> seg(4);
+
+    target1<< 0.975268,-0.31398,0.3204,-0.000781082,-0.980856,-0.194732,-0.940122,-0.0656515,0.334455,-0.340836,0.183333,-0.922074;
+    target2<< 0.975244,-0.34398,0.313075,-0.000763927,-0.959313,-0.282343,-0.933548,-0.100522,0.344069,-0.358452,0.263844,-0.895488;
+
     seg[0] = target1;
     seg[2] = target2;
 
@@ -296,18 +346,6 @@ int main(int argc, char** argv){
     std::cout<< "Consistency Status: "<< 
     path_consistency(seg, &ik_handler, get_dist(seg, &ik_handler)) << "\n";
 
-    // Computation time per check
-    int itr = 10000;
-    timer timer;
-    timer.start();
-    for (int i=0; i<itr; ++i)
-        path_consistency(seg, &ik_handler, get_dist(seg, &ik_handler));
-    std::cout<< "Path Consistency Time per run: " << timer.elapsed()/itr << "\n";
-
-    timer.reset();
-    for (int i=0; i<itr; ++i)
-        ik_handler.solveIK(target2);
-    std::cout<< "IK Time per run: " << timer.elapsed()/itr << "\n";
     return 0;
 
 

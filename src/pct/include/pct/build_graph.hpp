@@ -31,7 +31,7 @@ bool isEdge(ikHandler* ik_handler, const std::vector<node*>& node_map, const int
         // std::cout<< seg[1].transpose() << "\n";
         // std::cout<< seg[2].transpose() << "\n";
         // std::cout<< seg[3].transpose() << "\n\n";
-        return true;
+        return false;
     }
     return true;
 }

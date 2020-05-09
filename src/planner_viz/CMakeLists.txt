@@ -22,7 +22,18 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 ## System dependencies are found with CMake's conventions
-find_package (orocos_kdl REQUIRED)
+find_package(Boost 1.54.0 REQUIRED COMPONENTS system filesystem)
+
+# find_package(CGAL REQUIRED)
+# if ( CGAL_FOUND )
+#   message(STATUS "CGAL_FOUND")
+# else()
+#     message(STATUS "This program requires the CGAL library, and will not be compiled.")
+# endif()
+# find_package(GMP REQUIRED)
+
+
+find_package(orocos_kdl REQUIRED)
 find_package(Boost 1.54.0 REQUIRED COMPONENTS system filesystem)
 find_package(gen_utilities REQUIRED)
 find_package(robot_utilities REQUIRED)
@@ -71,6 +82,8 @@ find_package(libnlopt REQUIRED COMPONENTS)
 include_directories(${libnlopt_SOURCE_DIR}/install/include)
 link_directories(${libnlopt_SOURCE_DIR}/install/lib)
 set(nlopt_ADDED_LIBS ${libnlopt_SOURCE_DIR}/install/lib/libnlopt.so)
+
+
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -181,25 +194,37 @@ include
   /opt/ros/kinetic/include/kdl
   /opt/ros/kinetic/include/urdf
   /opt/ros/kinetic/include
+
+#   CGAL_CreateSingleSourceCGALProgram
+#   /opt/gurobi901/linux64/
+#   /opt/gurobi901/linux64/include
+#   /opt/gurobi901/linux64/bin
 )
 
 link_directories(${libnabo_SOURCE_DIR}/include/libnabo/build/libnabo.a
                 ${libigl_SOURCE_DIR}/include/libigl/libigl.a
                 /opt/ros/kinetic/lib
-                /usr/local/lib)
+                /usr/local/lib
+#                 /opt/gurobi901/linux64/lib/
+                )
 
 
 set(DEP_LIBS ${catkin_LIBRARIES}
               /usr/local/lib/libfcl.so ${CCD_LIBRARIES} ${EIGEN3_LIBRARIES}
               /usr/lib/x86_64-linux-gnu/libboost_iostreams.a
-#               /usr/lib/x86_64-linux-gnu/libboost_system.a
-#               /usr/lib/x86_64-linux-gnu/libboost_filesystem.a
+              /usr/lib/x86_64-linux-gnu/libboost_system.a
+              /usr/lib/x86_64-linux-gnu/libboost_filesystem.a
               /usr/lib/x86_64-linux-gnu/libutil.a
               /usr/lib/x86_64-linux-gnu/libboost_thread.a
               ${libnabo_SOURCE_DIR}/include/libnabo/build/libnabo.a gomp
               orocos-kdl kdl_parser urdf
               ${Boost_LIBRARIES}
               ${nlopt_ADDED_LIBS}
+#               ${WITH_CGAL_Core} ${WITH_CGAL_ImageIO} ${WITH_CGAL_Qt5}
+#               gmp
+              ${Boost_LIBRARIES}
+#               /opt/gurobi901/linux64/lib/libgurobi_g++5.2.a
+#               /opt/gurobi901/linux64/lib/libgurobi90.so
                       )
 
 add_executable(viz_wp src/viz_wp.cpp)
@@ -216,6 +241,9 @@ target_link_libraries(viz_path ${DEP_LIBS})
 
 add_executable(viz_robot src/viz_robot.cpp)
 target_link_libraries(viz_robot ${DEP_LIBS})
+
+add_executable(viz_env_tool src/viz_env_tool.cpp)
+target_link_libraries(viz_env_tool ${DEP_LIBS})
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}

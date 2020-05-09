@@ -1,5 +1,0 @@
-libnlopt
-/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/devel/.private/libnlopt/cmake.lock /home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/devel/./cmake.lock
-/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/devel/.private/libnlopt/share/libnlopt/cmake/libnloptConfig-version.cmake /home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/devel/share/libnlopt/cmake/libnloptConfig-version.cmake
-/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/devel/.private/libnlopt/share/libnlopt/cmake/libnloptConfig.cmake /home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/devel/share/libnlopt/cmake/libnloptConfig.cmake
-/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/devel/.private/libnlopt/lib/pkgconfig/libnlopt.pc /home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/devel/lib/pkgconfig/libnlopt.pc

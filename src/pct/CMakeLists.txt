@@ -15,6 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   gen_utilities
   robot_utilities
+#   rviz_visual_tools
 )
 
 ## System dependencies are found with CMake's conventions
@@ -258,6 +259,9 @@ target_link_libraries(path_T_traj ${DEP_LIBS})
 
 add_executable(verify_ik_success src/verify_ik_success.cpp)
 target_link_libraries(verify_ik_success ${DEP_LIBS})
+
+add_executable(env_part_coll src/env_part_coll.cpp)
+target_link_libraries(env_part_coll ${DEP_LIBS})
 
 
 # add_executable(test_qp src/test_qp.cpp src/irb2600.cpp)
