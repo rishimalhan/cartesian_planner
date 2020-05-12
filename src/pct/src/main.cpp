@@ -72,7 +72,7 @@ int main(int argc, char** argv){
         return 0;
     }
     resolution *= (M_PI / 180);
-    double angle = 0*M_PI / 180; // Total angle is 200. 100 each side
+    double angle = 360*M_PI / 180; // Total angle is 200. 100 each side
 
 
     ///////////////// CAUTION ///////////////////////////////////////
@@ -221,14 +221,10 @@ int main(int argc, char** argv){
     std::vector<Eigen::MatrixXd> wpTol =  gen_wp_with_tolerance(tolerances,resolution, path );
     std::cout<< "Search Samples Generated....\n";
 
-    // wpTol[0] --> has a list of samples around that point
 
-
-
-    // sets output file path
     // Get trajectory path
     std::string traj_path;
-    ros::param::get("/cvrg_file_paths/joint_states",traj_path); 
+    ros::param::get("/cvrg_file_paths/joint_states",traj_path);
     Eigen::MatrixXd trajectory;
     Eigen::MatrixXd success_flags = Eigen::MatrixXd::Ones(path.rows(),1)*0;
     std::string success_flag_path;

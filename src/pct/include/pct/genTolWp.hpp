@@ -20,30 +20,28 @@ std::vector<Eigen::MatrixXd> gen_wp_with_tolerance(const Eigen::MatrixXd& tolera
     std::vector<Eigen::MatrixXd> tolWP(path.rows());
     tolWP.clear();
     for (int i=0; i<path.rows();++i){
-        Eigen::MatrixXd wp_subset; // for each waypoint, it is a set of search samples
+        Eigen::MatrixXd wp_subset;
         int ctr = 0;
         // Put the first waypoint
         wp_subset.conservativeResize(ctr+1,12);
-        wp_subset.block(ctr,0,1,3) = path.block(i,0,1,3); // x,y,z
-        wp_subset.block(ctr,3,1,3) = path.block(i,3,1,3); // bx
-        wp_subset.block(ctr,6,1,3) = path.block(i,6,1,3); // by
-        wp_subset.block(ctr,9,1,3) = path.block(i,9,1,3); // bz
-        ctr += 1; // given waypoint is included already ... so, start with ctr = 1
+        wp_subset.block(ctr,0,1,3) = path.block(i,0,1,3);
+        wp_subset.block(ctr,3,1,3) = path.block(i,3,1,3);
+        wp_subset.block(ctr,6,1,3) = path.block(i,6,1,3);
+        wp_subset.block(ctr,9,1,3) = path.block(i,9,1,3);
+        ctr += 1;
         for (double angle = resolution; angle<=tolerances(i,0)/2; angle+=resolution){
             Eigen::Matrix4d prev_tf;
             // Alternately apply rotation about Z axis
-
-            // mirror on both sides of the path x-axis
             for(int sign=-1; sign<2; sign+=2){
                 Eigen::Matrix3d rot;
                 rot.block(0,0,3,1) = path.block(i,3,1,3).transpose();
                 rot.block(0,1,3,1) = path.block(i,6,1,3).transpose();
                 rot.block(0,2,3,1) = path.block(i,9,1,3).transpose();
-                Eigen::Matrix4d p_T_pp = Eigen::Matrix4d::Identity(); // p original , p-prime new point
+                Eigen::Matrix4d p_T_pp = Eigen::Matrix4d::Identity();
                 p_T_pp.block(0,0,3,3) = rtf::rot_z(sign*angle);
                 Eigen::Matrix4d w_T_pp = rtf::hom_T(path.block(i,0,1,3).transpose(),rot) * p_T_pp; // W_T_p' = W_T_p * P_T_p'
                 if(prev_tf.isApprox(w_T_pp,1e-3)){ // If this waypoint is same as before then don't add
-                    continue; // get rid of duplicate points while mirroring
+                    continue;
                 }
                 prev_tf = w_T_pp;
                 wp_subset.conservativeResize(ctr+1,12);

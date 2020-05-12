@@ -1,7 +1,7 @@
 # Parameters for coverage path
 
-tool_name: "ferro_sander"
-# tool_name: "sander_v1"
+# tool_name: "ferro_sander"
+tool_name: "sander_v1"
 # tool_name: "flange"
 
 world_T_tool: [0,0,0,0,0,0]
@@ -81,37 +81,35 @@ world_T_tool: [0,0,0,0,0,0]
 
 
 
-# # Bath Tub Part
-# cvrg_file_paths:
-#   {
-#     path_file: "/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/csv/bath_tub_task1.csv",
-#     # path_file: "/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/csv/bath_tub_task2.csv",
-#     # path_file: "/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/csv/bath_tub_task3.csv",
-#     # path_file: "/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/csv/bath_tub_task4.csv",
-#     cvrg_path: "/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/csv/waypoints.csv", # Path to save the path
-#     success_flags: "/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/csv/success_flags.csv", # Path to save the path
-#     joint_states: "/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/csv/joint_states.csv", # Path to save the trajectory
-#     mesh_path: "/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/meshes/bath_tub.stl",
-#     mesh_viz_path: "package://pct/data/meshes/bath_tub.stl",
-#     tool_stl_path: "/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/meshes/ferro_sander.stl",
-#     tool_stl_coll_path: "/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/meshes/ferro_sander_coll.stl"
-#   }
+# Bath Tub Part
+cvrg_file_paths:
+  {
+    # path_file: "/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/csv/bath_tub_task1.csv",
+    path_file: "/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/csv/bath_tub_task2.csv",
+    # path_file: "/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/csv/bath_tub_task3.csv",
+    # path_file: "/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/csv/bath_tub_task4.csv",
+    cvrg_path: "/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/csv/waypoints.csv", # Path to save the path
+    success_flags: "/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/csv/success_flags.csv", # Path to save the path
+    joint_states: "/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/csv/joint_states.csv", # Path to save the trajectory
+    mesh_path: "/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/meshes/bath_tub.stl",
+    mesh_viz_path: "package://pct/data/meshes/bath_tub.stl",
+  }
 
-# cvrg_tf_param:
-#     {
-#         # world_T_part: [1,0,0,0,0,1.57], # x,y,z,rx,ry,rz xyzbxbybz
-#         world_T_part: [1,0,0,0,0,-1.57], # x,y,z,rx,ry,rz Task1
-#         # world_T_part: [1.1,0,0,0,0,1.57], # x,y,z,rx,ry,rz Task4
-#     }
+cvrg_tf_param:
+    {
+        # world_T_part: [1,0,0,0,0,1.57], # x,y,z,rx,ry,rz xyzbxbybz
+        world_T_part: [1,0,0,0,0,-1.57], # x,y,z,rx,ry,rz Task1
+        # world_T_part: [1.1,0,0,0,0,1.57], # x,y,z,rx,ry,rz Task4
+    }
 
-# viz_param:
-#     {
-#         rob_speed: 50
-#     }
+viz_param:
+    {
+        rob_speed: 10
+    }
 
-# path_find_mode: false
-# rob_config: [0,0,0,0,0,0]
-# sampling_res: 10 # Degrees
+path_find_mode: false
+rob_config: [0,0,0,0,0,0]
+sampling_res: 20 # Degrees
 
 
 
@@ -158,24 +156,24 @@ world_T_tool: [0,0,0,0,0,0]
 
 
 
-# Random Path
-cvrg_file_paths:
-  {
-    path_file: "/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/csv/xyzbxbybz.csv",
-    cvrg_path: "/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/csv/waypoints.csv",
-    success_flags: "/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/csv/success_flags.csv", # Path to save the path
-    joint_states: "/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/csv/joint_states.csv", # Path to save the trajectory
-  }
+# # Random Path
+# cvrg_file_paths:
+#   {
+#     path_file: "/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/csv/xyzbxbybz.csv",
+#     cvrg_path: "/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/csv/waypoints.csv",
+#     success_flags: "/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/csv/success_flags.csv", # Path to save the path
+#     joint_states: "/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/csv/joint_states.csv", # Path to save the trajectory
+#   }
 
-cvrg_tf_param:
-    {
-        # world_T_part: [ 1.2,-0.25,0.3,0,0,0 ], # x,y,z,rx,ry,rz
-        world_T_part: [ 0,0,0,0,0,0 ], # x,y,z,rx,ry,rz
-    }
+# cvrg_tf_param:
+#     {
+#         # world_T_part: [ 1.2,-0.25,0.3,0,0,0 ], # x,y,z,rx,ry,rz
+#         world_T_part: [ 0,0,0,0,0,0 ], # x,y,z,rx,ry,rz
+#     }
 
-viz_param:
-    {
-        rob_speed: 10
-    }
-rob_config: [0,0,0,0,0,0]
-sampling_res: 20 # Degrees
+# viz_param:
+#     {
+#         rob_speed: 10
+#     }
+# rob_config: [0,0,0,0,0,0]
+# sampling_res: 20 # Degrees

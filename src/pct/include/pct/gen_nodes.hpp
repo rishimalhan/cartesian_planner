@@ -40,19 +40,17 @@ bool gen_nodes(ikHandler* ik_handler, WM::WM* wm,
         for (int j=0; j<waypoints.rows(); ++j){
             // For each tcp solve IK and create node
             for (int k=0; k<tcp_list.size();++k){
-                 // set transform for the ik solver (configuration)
                 ik_handler->setTcpFrame(tcp_list[k]);
                 // Solve IK and check for collision
                 // If valid solution, then create a node out of it
                 int no_sols = 0;
                 if (ik_handler->solveIK(waypoints.row(j).transpose())){
                     // For every solution create a node
-                    //  ik_handler->solution.cols() contains the IK solution of size N_DOF X NUM SOLUTIONS ... access column by column
                     for (int sol_no=0; sol_no<ik_handler->solution.cols();++sol_no){
                         // Check for collision
                         std::vector<Eigen::MatrixXd> fk_kdl = ik_handler->robot->get_robot_FK_all_links(ik_handler->solution.col(sol_no));
-                        // if(!wm->inCollision( fk_kdl )){
-                        if(true){
+                        if(!wm->inCollision( fk_kdl )){
+                        // if(true){
                             theta = DFMapping::Eigen_to_KDLJoints(ik_handler->solution.col(sol_no));
                             ik_handler->robot->Jac_KDL(theta,jac_kdl);
                             jac = DFMapping::KDLJacobian_to_Eigen(jac_kdl);
@@ -64,8 +62,6 @@ bool gen_nodes(ikHandler* ik_handler, WM::WM* wm,
                             curr_node->index = j;
                             curr_node->tcp_id = k;
                             curr_node->wp = waypoints.row(j).transpose();
-
-                            // jacobian not immediately used
                             curr_node->jacobian = jac;
 
                             // bxbybz to euler waypoint
@@ -96,8 +92,6 @@ bool gen_nodes(ikHandler* ik_handler, WM::WM* wm,
         }
         else{
             // std::cout<< "Node ids: " << nodes_at_depth.transpose() << "\n\n";
-
-            // sibiling ids for each path waypoint
             node_list.push_back(nodes_at_depth);
         }
     }

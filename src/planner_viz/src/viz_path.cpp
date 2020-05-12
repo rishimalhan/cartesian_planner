@@ -34,15 +34,11 @@ int main(int argc, char** argv){
             visual_tools_->deleteAllMarkers();
             Eigen::MatrixXd path = file_rw::file_read_mat(path_path);
             Eigen::MatrixXd success_flags = file_rw::file_read_mat(success_flag_path);
-
-            ROS_WARN_STREAM("Path rows: " << path.rows() << ", Path cols: " << path.cols());
             // Concatenate all paths in a pose array
             std::vector<geometry_msgs::Point> path_points; path_points.clear();
             geometry_msgs::Point curr_pt;
             geometry_msgs::Pose sphere_pose;
             for (int i=0; i< path.rows();++i){
-                            // ROS_WARN_STREAM("i: " << i);
-
                 curr_pt.x = path(i,0);
                 curr_pt.y = path(i,1);
                 curr_pt.z = path(i,2);
@@ -63,9 +59,6 @@ int main(int argc, char** argv){
                         ROS_WARN("Publishing Path Failed");   
             visual_tools_->trigger();
             doUpdate = false;
-                                  ROS_WARN_STREAM("Just did one update");
-  
-
         }
         ros::spinOnce();
         loop_rate.sleep();
