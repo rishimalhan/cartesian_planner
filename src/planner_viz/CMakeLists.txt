@@ -35,6 +35,17 @@ find_package(Boost 1.54.0 REQUIRED COMPONENTS system filesystem)
 
 
 find_package(orocos_kdl REQUIRED)
+
+# find_package(CGAL REQUIRED)
+# if ( CGAL_FOUND )
+#   message(STATUS "CGAL_FOUND")
+# else()
+#     message(STATUS "This program requires the CGAL library, and will not be compiled.")
+# endif()
+# find_package(GMP REQUIRED)
+
+
+find_package(orocos_kdl REQUIRED)
 find_package(Boost 1.54.0 REQUIRED COMPONENTS system filesystem)
 # find_package(gen_utilities REQUIRED)
 # find_package(robot_utilities REQUIRED)
