@@ -1,7 +1,8 @@
 <launch>
+    <arg name="tool_name" default="cam_sander_0"/>
     <arg name="pkg_path" value="$(find planner_viz)"/>
 
-    <node pkg="rviz" name="planner_rviz" type="rviz" args="$(arg pkg_path)/config/rviz_config.rviz" required="true"/>
+    <node pkg="rviz" name="planner_rviz" type="rviz" args="-d $(arg pkg_path)/config/rviz_config.rviz" required="true"/>
 
     <node pkg="tf" type="static_transform_publisher" name="map_T_world" args="0 0 0 0 0 0 /map /world 10" />
 
@@ -19,9 +20,7 @@
 
 
     <!-- Tool Plot -->
-    <include file="$(arg pkg_path)/launch/sander.launch"/>
-    <!-- <include file="$(arg pkg_path)/launch/ferro_sander.launch"/> -->
-
+    <include file="$(arg pkg_path)/launch/$(arg tool_name).launch"/>
 
     <!-- Robot TF publishers from the joint_states topics -->
     <node pkg="planner_viz" name="viz_wp" type="viz_wp" output="screen"/>

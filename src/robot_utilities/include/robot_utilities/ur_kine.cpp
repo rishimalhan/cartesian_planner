@@ -1,6 +1,3 @@
-// #include <robot_utilities/ur_kine.h>
-
-
 #include <cmath>
 double PI = 3.141592653589793;
 

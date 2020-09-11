@@ -62,6 +62,20 @@ int main(int argc, char** argv){
     ros::Publisher cvrg_pub = main_handler.advertise<std_msgs::Bool>("cvrg_status",1000);
 
 
+    // // Prahar Testing
+    // Eigen::MatrixXd init_guess(6,1);
+    // init_guess << 0,0,0,0,0,0;
+    // std::string rob_base_link = "base_link";
+    // std::string rob_tip_link = "pen";
+    // std::string urdf_path = ros::package::getPath("robot_utilities") + "/urdf/irb4600.urdf.xacro";
+    // KDL::Frame tcp_frame = KDL::Frame::Identity();
+    // KDL::Frame base_frame = KDL::Frame::Identity();
+    // SerialLink_Manipulator::SerialLink_Manipulator robot(urdf_path, base_frame, tcp_frame, rob_base_link, rob_tip_link);
+    // Eigen::MatrixXd jt_pt(6,1);
+    // jt_pt << 0,0,0,0,0,0;
+    // std::vector<Eigen::MatrixXd> fk_kdl = robot.get_robot_FK_all_links(jt_pt);
+
+
     std::string csv_dir;
     csv_dir = ros::package::getPath("pct") + "/data/csv/";
 
@@ -72,7 +86,7 @@ int main(int argc, char** argv){
         return 0;
     }
     resolution *= (M_PI / 180);
-    double angle = 360*M_PI / 180; // Total angle is 200. 100 each side
+    double angle = 90*M_PI / 180; // Total angle is 200. 100 each side
 
 
     ///////////////// CAUTION ///////////////////////////////////////
@@ -207,8 +221,8 @@ int main(int argc, char** argv){
     ros::param::get("/cvrg_file_paths/path_file",path_file);
 
     // Generate Path
-    // Eigen::MatrixXd path = gen_cvrg_plan();
-    Eigen::MatrixXd path = load_plan(path_file); // Pre computed path file
+    Eigen::MatrixXd path = gen_cvrg_plan();
+    // Eigen::MatrixXd path = load_plan(path_file); // Pre computed path file
 
 
 

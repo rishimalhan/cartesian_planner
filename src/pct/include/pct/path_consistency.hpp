@@ -25,6 +25,10 @@ double get_dist(std::vector<Eigen::VectorXd> seg, ikHandler* ik_handler){
     std::cout<< "\n";
     // std::cout<< "Max Distance: " << *max_element(dist.begin(),dist.end()) << "\n";
     #endif
+    #ifdef DEBUG_CVG
+    std::cout<< "Max Distance: " << *max_element(dist.begin(),dist.end()) << "\n";
+    #endif
+
     return *max_element(dist.begin(),dist.end());
     // return sum;
 }
@@ -45,7 +49,7 @@ bool path_consistency(std::vector<Eigen::VectorXd> seg, ikHandler* ik_handler, i
     std::cout<< "Depth: " << depth << ". Distance: " << max_distance*1000 << " mm. " << "Previous Dist: " << prev_dist*1000 << " mm.\n";
     #endif
 
-    if (depth==1) // Max depth to go
+    if (depth==1) // Set Max depth to go
         if (max_distance < prev_dist*red_factor) // If current error is less then half the prev
             return true;
         else
@@ -75,6 +79,11 @@ bool path_consistency(std::vector<Eigen::VectorXd> seg, ikHandler* ik_handler, i
         std::vector<Eigen::VectorXd> seg1 = seg;
         std::vector<Eigen::VectorXd> seg2 = seg;
         for (int i=0; i<ik_handler->solution.cols(); ++i){
+            #ifdef DEBUG_CVG
+            std::cout<< "\n\n";
+            std::cout<< "Trying a new Configuration" << "\n";
+            std::cout<< "\n\n";
+            #endif  
             seg1[2] = mid_x;
             seg1[3] = ik_handler->solution.col(i);
             seg2[0] = mid_x;

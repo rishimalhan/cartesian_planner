@@ -1,0 +1,12 @@
+# All transforms are x,y,z,rx,ry,rz
+tool_name: "cam_sander_90"
+world_T_tool: [0,0,0,0,0,0]
+
+cam_sander_90:
+  {
+    tool_stl_path: !!python/object/apply:string.join [[$(arg pkg_path), "data/meshes/cam_sander_90.stl"], /],
+    tool_stl_viz_path: "package://pct/data/meshes/cam_sander_90.stl",
+    tool_stl_coll_path: !!python/object/apply:string.join [[$(arg pkg_path), "data/meshes/coll/cam_sander_90/cam_sander_90.stl"], /],
+    tool_stl_coll_folder: !!python/object/apply:string.join [[$(arg pkg_path), "data/meshes/coll/cam_sander_90"], /],
+    ff_T_tool: [ 0.0873,-0.24201,0.027,1.57,0.0,3.14 ] 
+  }

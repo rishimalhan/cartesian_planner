@@ -49,7 +49,8 @@ void ComputeFk(const IkReal* jt_config, IkReal* translation, IkReal* rotation){
     rotation[8] = tf[8];
 }
 
-bool ComputeIk(const IkReal* eetrans, const IkReal* eerot, const IkReal* v_free, IkSolutionList<IkReal>& solutions){
+bool ComputeIk(const IkReal* eetrans, const IkReal* eerot, 
+                const IkReal* v_free, IkSolutionList<IkReal>& solutions){
     bool status;
     double tf[16];
     tf[12] = 0;

@@ -1,0 +1,68 @@
+# Fender Part
+cvrg_path_parameters:
+  {
+    scan_ori: true, # this param will change the scanning orientation
+    scan_normals: true, # this param will scan along the normals or flat z-plane
+
+    # hatching angle properties, this will orient that path as needed
+    # start_hatch_angle: !!python/object/apply:eval [3.14159/2.0], # in RADIANS
+    # start_hatch_angle: -0.785, # in RADIANS
+    start_hatch_angle: 0, # in RADIANS
+    # double start_hatch_angle: 0.0 # in RADIANS
+
+    ## THESE PARAMS WILL CHANGE THE SPACING OF THE POINTS OF THE PATH
+    # this param skips the hatching lines, it needs to be tweaked based on the sanding tool diameter
+    skip_hatching_lines: &skip_hatching_lines 0, # UNIT LESS (ROUGH ESTIMATE - 1 UNIT IS 1 centimeter)
+     # this param skips points along the hatching direction - DEFAULT VALUE 0
+    skip_points_hatching_lines: 0, # UNIT LESS (ROUGH ESTIMATE - 1 UNIT IS 1 centimeter)
+    # this param skips points orthogonal to the hatching direction - DEFAULT VALUE 0
+    skip_points_orthogonal_lines: *skip_hatching_lines, # UNIT LESS (ROUGH ESTIMATE - 1 UNIT IS 1 centimeter)
+    
+    #outer boundary box points to avoid. Basically shrinking the boundary by given values
+    # Parameter not reachable by sequential IK
+    # outer_boundary_subtraction_x_dir: 0.32, # IN METERS
+    # outer_boundary_subtraction_y_dir: 0.03, # IN METERS
+
+    outer_boundary_subtraction_x_dir: 0.05, # IN METERS
+    outer_boundary_subtraction_y_dir: 0.03, # IN METERS
+    
+    # parameter to offset the complete path in Z direction from the surface
+    z_height_offset_all_waypoints: 0, # IN METERS
+
+    # Resolution at which initial points are spaced in x and y
+    # path_gap: 0.01, #mm
+    path_gap: 0.03, #mm
+  }
+
+cvrg_file_paths:
+  {
+    cvrg_path: !!python/object/apply:string.join [[$(arg pkg_path),"data/csv/waypoints.csv"], /], # Path to save the path
+    success_flags: !!python/object/apply:string.join [[$(arg pkg_path),"data/csv/success_flags.csv"], /], # Path to save the path
+    joint_states: !!python/object/apply:string.join [[$(arg pkg_path),"data/csv/joint_states.csv"], /], # Path to save the trajectory
+    # mesh_path: !!python/object/apply:string.join [[$(arg pkg_path),"data/meshes/fender_binScaled.stl"], /],
+    # mesh_viz_path: "package://pct/data/meshes/fender_binScaled.stl",
+    mesh_path: !!python/object/apply:string.join [[$(arg pkg_path),"data/meshes/fender_bin.stl"], /],
+    mesh_viz_path: "package://pct/data/meshes/fender_bin.stl",
+
+    # tool_stl_path: !!python/object/apply:string.join [[$(arg pkg_path),"data/meshes/sander_v1.stl"], /],
+    # tool_stl_path: !!python/object/apply:string.join [[$(arg pkg_path),"data/meshes/ferro_sander.stl"], /],
+    tool_stl_path: &tool_stl_path !!python/object/apply:string.join [[$(arg pkg_path),"data/meshes/wld_gun.stl"], /],
+    # tool_stl_coll_path: !!python/object/apply:string.join [[$(arg pkg_path),"data/meshes/sander_v1/sander_v1_coll.stl"], /],
+    # tool_stl_coll_path: !!python/object/apply:string.join [[$(arg pkg_path),"data/meshes/ferro_sander/ferro_sander_coll.stl"], /]
+    tool_stl_coll_path: *tool_stl_path
+  }
+
+cvrg_tf_param:
+    {
+        world_T_part: [ 1,-0.65,0,0,0, !!python/object/apply:eval [ 90*3.14/180 ] ], # x,y,z,rx,ry,rz
+        # world_T_part: [ 2,-0.1,0,0,0, 3.14 ], # x,y,z,rx,ry,rz // Scaled mold
+    }
+
+viz_param:
+    {
+        rob_speed: 100
+    }
+
+path_find_mode: false
+rob_config: [0,0,0,0,0,0]
+sampling_res: 10 # Degrees

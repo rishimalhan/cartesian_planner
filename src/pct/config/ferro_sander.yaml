@@ -1,0 +1,34 @@
+# All transforms are x,y,z,rx,ry,rz
+tool_name: "ferro_sander"
+world_T_tool: [0,0,0,0,0,0]
+
+ferro_sander:
+  {
+    ff_T_tool: [0.0,0,0.2893,0,0,0, # Original TCP at center
+                0.01,0,0.2893,0,0,0,
+                0.02,0,0.2893,0,0,0,
+                0.03,0,0.2893,0,0,0,
+                0.04,0,0.2893,0,0,0,
+                0.05,0,0.2893,0,0,0,
+                -0.01,0,0.2893,0,0,0,
+                -0.02,0,0.2893,0,0,0,
+                -0.03,0,0.2893,0,0,0,
+                -0.04,0,0.2893,0,0,0,
+                -0.05,0,0.2893,0,0,0, # All plus and minus X TCPs
+                0.0,0.01,0.2893,0,0,0,
+                0.0,0.02,0.2893,0,0,0,
+                0.0,0.03,0.2893,0,0,0,
+                0.0,0.04,0.2893,0,0,0,
+                0.0,0.05,0.2893,0,0,0,
+                0.0,-0.01,0.2893,0,0,0,
+                0.0,-0.02,0.2893,0,0,0,
+                0.0,-0.03,0.2893,0,0,0,
+                0.0,-0.04,0.2893,0,0,0,
+                0.0,-0.05,0.2893,0,0,0], # All plus and minus Y TCPs 
+    tool_stl_path: !!python/object/apply:string.join [[$(arg pkg_path), "data/meshes/ferro_sander.stl"], /],
+    tool_stl_coll_path: !!python/object/apply:string.join [[$(arg pkg_path), "data/meshes/coll/ferro_sander/ferro_sander.stl"], /],
+    tool_stl_coll_folder: !!python/object/apply:string.join [[$(arg pkg_path), "data/meshes/coll/ferro_sander"], /],
+    tool_stl_viz_path: "package://pct/data/meshes/ferro_sander.stl",
+    # Override
+    ff_T_tool: [0.0,0,0.2893,0,0,0] # Original TCP at center. Overriding multiple tcps
+  }

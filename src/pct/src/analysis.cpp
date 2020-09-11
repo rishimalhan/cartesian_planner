@@ -8,7 +8,7 @@
 
 
 // #define DEBUG_PATH_CONSISTENCY
-
+// #define DEBUG_CVG
 
 
 #include <iostream>
@@ -32,6 +32,7 @@
 #include <pct/graph_searches.hpp>
 #include <pct/timer.hpp>
 #include <pct/path_consistency.hpp>
+#include <pct/path_consistency_convergence.hpp>
 
 
 
@@ -313,8 +314,8 @@ int main(int argc, char** argv){
     seg1[3] = c2;
 
 
-    std::cout<< "Consistency Status: "<< 
-    path_consistency(seg1, &ik_handler, get_dist(seg1, &ik_handler)) << "\n";
+    // std::cout<< "Consistency Status: "<< 
+    // path_consistency(seg1, &ik_handler, get_dist(seg1, &ik_handler)) << "\n";
 
     // return 0;
 
@@ -322,29 +323,52 @@ int main(int argc, char** argv){
 
 
 
-    std::vector<Eigen::VectorXd> seg(4);
-
+    std::vector<Eigen::VectorXd> seg(6);
+    std::vector<Eigen::MatrixXd> jacobians(2);
     target1<< 0.975268,-0.31398,0.3204,-0.000781082,-0.980856,-0.194732,-0.940122,-0.0656515,0.334455,-0.340836,0.183333,-0.922074;
     target2<< 0.975244,-0.34398,0.313075,-0.000763927,-0.959313,-0.282343,-0.933548,-0.100522,0.344069,-0.358452,0.263844,-0.895488;
 
     seg[0] = target1;
-    seg[2] = target2;
+    seg[3] = target2;
 
     if (ik_handler.solveIK(target1))
-        seg[1] = ik_handler.solution.col(0);
+        seg[2] = ik_handler.solution.col(0);
     else
         return 0;
     if (ik_handler.solveIK(target2))
-        seg[3] = ik_handler.solution.col(0);
+        seg[5] = ik_handler.solution.col(0);
     else
         return 0;
 
+    Eigen::VectorXd wp_eul(6);
+    // bxbybz to euler waypoint
+    wp_eul.resize(6);
+    wp_eul.segment(0,3) = target1.segment(0,3); 
+    wp_eul.segment(3,3) = rtf::bxbybz2eul(target1.segment(3,9).transpose(),"XYZ").row(0).transpose();
+    seg[1] = wp_eul;
 
-    std::cout<< "Config-1: " << seg[1].transpose()*(180/M_PI) << "\n";
-    std::cout<< "Config-2: " << seg[3].transpose()*(180/M_PI) << "\n";
+    // bxbybz to euler waypoint
+    wp_eul.resize(6);
+    wp_eul.segment(0,3) = target2.segment(0,3); 
+    wp_eul.segment(3,3) = rtf::bxbybz2eul(target2.segment(3,9).transpose(),"XYZ").row(0).transpose();
+    seg[4] = wp_eul;
 
-    std::cout<< "Consistency Status: "<< 
-    path_consistency(seg, &ik_handler, get_dist(seg, &ik_handler)) << "\n";
+    std::cout<< "Config-1: " << seg[2].transpose()*(180/M_PI) << "\n";
+    std::cout<< "Config-2: " << seg[5].transpose()*(180/M_PI) << "\n";
+
+    theta = DFMapping::Eigen_to_KDLJoints(seg[2]);
+    robot.Jac_KDL(theta,jac_kdl);
+    jacobians[0] = DFMapping::KDLJacobian_to_Eigen(jac_kdl);
+
+    theta = DFMapping::Eigen_to_KDLJoints(seg[5]);
+    robot.Jac_KDL(theta,jac_kdl);
+    jacobians[1] = DFMapping::KDLJacobian_to_Eigen(jac_kdl);
+    
+
+    // std::cout<< "Consistency Status: "<< 
+    // path_consistency(seg, &ik_handler, get_dist(seg, &ik_handler)) << "\n";
+    // path_consistency_cvg(seg, &ik_handler, get_dist(seg, &ik_handler)) << "\n";
+    JacDrivenPCCheck(seg, jacobians, &ik_handler);
 
     return 0;
 

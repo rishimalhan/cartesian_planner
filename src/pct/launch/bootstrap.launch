@@ -1,0 +1,32 @@
+<launch>
+    <arg name="part" default="fender"/>
+    <arg name="tool" default="cam_sander_0"/>
+    <arg name="viz" default="false"/>
+    <arg name="pkg_path" value="$(find pct)"/>
+
+    <rosparam command="load" file="$(arg pkg_path)/config/$(arg tool).yaml"
+        />
+
+
+
+
+    <!-- Fender Case -->
+    <rosparam command="load" file="$(arg pkg_path)/config/fender.yaml" subst_value="true"
+                if="$(eval part == 'fender')"/>
+        />
+    <!-- Boeing part Case -->
+    <rosparam command="load" file="$(arg pkg_path)/config/boeing.yaml" subst_value="true"
+                if="$(eval part == 'boeing')"/>
+        />
+
+
+
+
+
+    <include file="$(find planner_viz)/launch/planner_viz.launch" if="$(eval viz == 'sim')">
+        <arg name="tool_name" value="$(arg tool)"/> 
+    </include>
+
+    <!-- <rosparam command="load" file="$(arg pkg_path)/config/planner.yaml"/> -->
+    <!-- <rosparam command="load" file="$(arg pkg_path)/config/tools.yaml"/> -->
+</launch>

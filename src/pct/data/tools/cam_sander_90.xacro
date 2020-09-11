@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<robot name="cam_sander_90">
+  <link name="tool_origin">
+    <visual>
+      	<geometry>
+          	<mesh filename="package://pct/data/meshes/cam_sander_90.stl"
+                scale="1 1 1"/>
+      	</geometry>
+	  	<material name="ABS" >
+          	<color rgba="0.5 0.5 0.5 1.0" />
+         </material> 	
+    	</visual>
+  </link>
+</robot>

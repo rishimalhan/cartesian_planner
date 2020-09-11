@@ -1,0 +1,10 @@
+<launch>
+    <param name="rob_tool" command="$(find xacro)/xacro $(find pct)/data/tools/cam_sander_0.xacro"/>
+    <node pkg="robot_state_publisher" type="robot_state_publisher" name="tool_publ">
+        <remap from="robot_description" to="rob_tool" />
+    </node>
+    <node pkg="tf" name="rob_T_tool" type="static_transform_publisher" args=" 0 0 0 0 0 0 /tool0 /tool_origin 30"/>
+
+    <!-- Plot the TCPs -->
+    <node pkg="tf" name="tcp1" type="static_transform_publisher" args="0.00565 -0.1463 0.30661 0.0 0.0 0.0 /tool0 /tcp1 30"/>
+</launch>

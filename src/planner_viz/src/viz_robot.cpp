@@ -8,6 +8,22 @@
 
 bool doUpdate = true;
 
+Eigen::MatrixXd IncreaseTrajResolution( Eigen::MatrixXd traj ){
+    // High resolution linear interpolation of trajectory to check if traj is actually PC.
+    int no_samples = 10;
+    Eigen::MatrixXd upd_traj;
+    int counter = 0;
+    for (int i=0; i<traj.rows()-1; ++i){
+        Eigen::VectorXd dt = (traj.row(i+1)-traj.row(i))/no_samples;
+        for (int j=0; j<no_samples; ++j){
+            upd_traj.conservativeResize(counter+1,traj.cols());
+            upd_traj.row(counter) = traj.row(i) + (j*dt).transpose();
+            counter++;
+        }
+    }
+    return upd_traj;
+}
+
 void cvrg_update(const std_msgs::Bool::ConstPtr& msg){
     doUpdate = msg->data;
     ROS_INFO("Subscribed to coverage update. Received: %d",doUpdate);
@@ -24,7 +40,7 @@ int main(int argc, char** argv){
     std::string traj_path;
     if(!ros::param::get("/cvrg_file_paths/joint_states",traj_path))
         ROS_INFO("Unable to obtain robot Trajectory");
-    Eigen::MatrixXd traj = file_rw::file_read_mat(traj_path);
+    Eigen::MatrixXd traj = IncreaseTrajResolution(file_rw::file_read_mat(traj_path));
 
     sensor_msgs::JointState joint_config;
     joint_config.name.resize(traj.cols());
@@ -44,7 +60,7 @@ int main(int argc, char** argv){
             if (doUpdate){
                 ROS_INFO("Updating Trajectory on Display.....");
                 ros::param::get("/cvrg_file_paths/joint_states",traj_path);
-                traj = file_rw::file_read_mat(traj_path);
+                traj = IncreaseTrajResolution(file_rw::file_read_mat(traj_path));
                 ROS_INFO("Size of Trajectory: %d", (int)traj.rows());
                 doUpdate = false;
                 break;

@@ -1,0 +1,155 @@
+<?xml version="1.0"?>                                                                                     
+<robot name="IRB 4600/40" xmlns:xacro="http://ros.org/wiki/xacro">                                        
+  <link name="base_link">                                                                                 
+    <visual name="shape_59">                                                                              
+      <geometry>                                                                                          
+        <box size="0.01 0.01 0.01"/>                                                                      
+      </geometry>                                                                                         
+    </visual>                                                                                             
+    <visual name="transform_161">                                                                         
+      <geometry>                                                                                          
+        <box size="0.01 0.01 0.01"/>                                                                      
+      </geometry>                                                                                         
+    </visual>                                                                                             
+  </link>                                                                                                 
+  <joint name="A sensor" type="continuous">                                                               
+    <parent link="base_link"/>                                                                            
+    <child link="solid_68"/>                                                                              
+    <axis xyz="0 0 1"/>                                                                                   
+    <origin xyz="0 0 0.159498" rpy="0 0 0"/>                                                              
+  </joint>                                                                                                
+  <link name="solid_68">                                                                                  
+    <visual name="shape_69">                                                                              
+      <geometry>                                                                                          
+        <box size="0.01 0.01 0.01"/>                                                                      
+      </geometry>                                                                                         
+    </visual>                                                                                             
+    <visual name="transform_158">                                                                         
+      <geometry>                                                                                          
+        <box size="0.01 0.01 0.01"/>                                                                      
+      </geometry>                                                                                         
+    </visual>                                                                                             
+  </link>                                                                                                 
+  <joint name="B sensor" type="continuous">                                                               
+    <parent link="solid_68"/>                                                                             
+    <child link="solid_78"/>                                                                              
+    <axis xyz="0 1 0"/>                                                                                   
+    <origin xyz="0.178445 -0.122498 0.334888" rpy="0 0 0"/>                                               
+  </joint>                                                                                                
+  <link name="solid_78">                                                                                  
+    <visual name="shape_79">                                                                              
+      <geometry>                                                                                          
+        <box size="0.01 0.01 0.01"/>                                                                      
+      </geometry>                                                                                         
+    </visual>                                                                                             
+    <visual name="transform_155">                                                                         
+      <geometry>                                                                                          
+        <box size="0.01 0.01 0.01"/>                                                                      
+      </geometry>                                                                                         
+    </visual>                                                                                             
+  </link>                                                                                                 
+  <joint name="C sensor" type="continuous">                                                               
+    <parent link="solid_78"/>                                                                             
+    <child link="solid_88"/>                                                                              
+    <axis xyz="0 1 0"/>                                                                                   
+    <origin xyz="-0.003447 -0.0267 1.095594" rpy="0 0 0"/>                                                
+  </joint>                                                                                                
+  <link name="solid_88">                                                                                  
+    <visual name="shape_89">                                                                              
+      <geometry>                                                                                          
+        <box size="0.01 0.01 0.01"/>                                                                      
+      </geometry>                                                                                         
+    </visual>                                                                                             
+    <visual name="transform_152">                                                                         
+      <geometry>                                                                                          
+        <box size="0.01 0.01 0.01"/>                                                                      
+      </geometry>                                                                                         
+    </visual>                                                                                             
+  </link>                                                                                                 
+  <joint name="D sensor" type="continuous">                                                               
+    <parent link="solid_88"/>                                                                             
+    <child link="solid_98"/>                                                                              
+    <axis xyz="1 0 0"/>                                                                                   
+    <origin xyz="0.340095 0.149198 0.174998" rpy="0 0 0"/>                                                
+  </joint>                                                                                                
+  <link name="solid_98">                                                                                  
+    <visual name="shape_99">                                                                              
+      <geometry>                                                                                          
+        <box size="0.01 0.01 0.01"/>                                                                      
+      </geometry>                                                                                         
+    </visual>                                                                                             
+    <visual name="transform_149">                                                                         
+      <geometry>                                                                                          
+        <box size="0.01 0.01 0.01"/>                                                                      
+      </geometry>                                                                                         
+    </visual>                                                                                             
+  </link>                                                                                                 
+  <joint name="E sensor" type="continuous">                                                               
+    <parent link="solid_98"/>                                                                             
+    <child link="solid_108"/>                                                                             
+    <axis xyz="0 1 0"/>                                                                                   
+    <origin xyz="0.929888 0 0" rpy="0 0 0"/>                                                              
+  </joint>                                                                                                
+  <link name="solid_108">                                                                                 
+    <visual name="shape_109">                                                                             
+      <geometry>                                                                                          
+        <box size="0.01 0.01 0.01"/>                                                                      
+      </geometry>                                                                                         
+    </visual>                                                                                             
+    <visual name="transform_146">                                                                         
+      <geometry>                                                                                          
+        <box size="0.01 0.01 0.01"/>                                                                      
+      </geometry>                                                                                         
+    </visual>                                                                                             
+  </link>                                                                                                 
+  <joint name="F sensor" type="continuous">                                                               
+    <parent link="solid_108"/>                                                                            
+    <child link="solid_118"/>                                                                             
+    <axis xyz="1 0 0"/>                                                                                   
+    <origin xyz="0.125 0 0" rpy="0 0 0"/>                                                                 
+  </joint>                                                                                                
+  <link name="solid_118">                                                                                 
+    <visual name="transform_119">                                                                         
+      <geometry>                                                                                          
+        <box size="0.01 0.01 0.01"/>                                                                      
+      </geometry>                                                                                         
+    </visual>                                                                                             
+    <visual name="shape_135">                                                                             
+      <geometry>                                                                                          
+        <box size="0.01 0.01 0.01"/>                                                                      
+      </geometry>                                                                                         
+    </visual>                                                                                             
+    <visual name="transform_143">                                                                         
+      <geometry>                                                                                          
+        <box size="0.01 0.01 0.01"/>                                                                      
+      </geometry>                                                                                         
+    </visual>                                                                                             
+  </link>                                                                                                 
+  <link name="pen">                                                                                       
+    <visual name="transform_164">                                                                         
+      <geometry>                                                                                          
+        <box size="0.01 0.01 0.01"/>                                                                      
+      </geometry>                                                                                         
+    </visual>                                                                                             
+    <visual name="shape_165">                                                                             
+      <geometry>                                                                                          
+        <box size="0.01 0.01 0.01"/>                                                                      
+      </geometry>                                                                                         
+    </visual>                                                                                             
+    <visual name="transform_171">                                                                         
+      <geometry>                                                                                          
+        <box size="0.01 0.01 0.01"/>                                                                      
+      </geometry>                                                                                         
+    </visual>                                                                                             
+    <visual name="shape_172">                                                                             
+      <geometry>                                                                                          
+        <box size="0.01 0.01 0.01"/>                                                                      
+      </geometry>                                                                                         
+    </visual>                                                                                             
+  </link>                                                                                                 
+  <joint name="solid_118_pen_joint" type="fixed">                                                         
+    <parent link="solid_118"/>                                                                            
+    <child link="pen"/>                                                                                   
+    <origin xyz="0.06 0 0.02" rpy="-1.0223011728634628e-06 -2.6509109577497154e-06 1.5707989776988271" /> 
+  </joint>                                                                                                
+</robot>                                                                                                  

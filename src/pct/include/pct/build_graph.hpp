@@ -15,7 +15,8 @@
 #include <pct/graph_description.hpp>
 #include <Eigen/Eigen>
 #include <pct/path_consistency.hpp>
-
+#include <pct/JacDrivenPCCheck.hpp>
+#include <pct/ShortestDistanceCheck.hpp>
 
 bool isEdge(ikHandler* ik_handler, const std::vector<node*>& node_map, const int parent, const int child){
     // Path-Consistency Constraint
@@ -24,21 +25,35 @@ bool isEdge(ikHandler* ik_handler, const std::vector<node*>& node_map, const int
     seg[1] = node_map[parent]->jt_config;
     seg[2] = node_map[child]->wp;
     seg[3] = node_map[child]->jt_config;
-
-    if (!path_consistency(seg, ik_handler, get_dist(seg, ik_handler))){ // Returns true if jt configs are path consistent
-    // if (get_dist(seg, ik_handler) > 0.01){
-        // std::cout<< seg[0].transpose() << "\n";
-        // std::cout<< seg[1].transpose() << "\n";
-        // std::cout<< seg[2].transpose() << "\n";
-        // std::cout<< seg[3].transpose() << "\n\n";
+    
+    if (!ShortestDistanceCheck(seg, ik_handler))
         return false;
-    }
+
+    // std::cout<< "Path Consistent Configurations: \n";
+    // std::cout<< seg[1].transpose() * 180 / M_PI << "\n";
+    // std::cout<< seg[3].transpose() * 180 / M_PI << "\n\n";
+
+    // if (!path_consistency(seg, ik_handler, get_dist(seg, ik_handler))) // Returns true if jt configs are path consistent
+        // return false;
+
+    // seg.resize(6);
+    // seg[0] = node_map[parent]->wp;
+    // seg[1] = node_map[parent]->wp_eul;
+    // seg[2] = node_map[parent]->jt_config;
+    // seg[3] = node_map[child]->wp;
+    // seg[4] = node_map[child]->wp_eul;
+    // seg[5] = node_map[child]->jt_config;
+    // std::vector<Eigen::MatrixXd> jacobians(2);
+    // jacobians[0] = node_map[parent]->jacobian;
+    // jacobians[1] = node_map[child]->jacobian;
+    // JacDrivenPCCheck(seg, jacobians, ik_handler);
     return true;
 }
 
 
 double computeGCost( const std::vector<node*>& node_map, const int parent, const int child ){
     return (node_map[child]->jt_config - node_map[parent]->jt_config).array().abs().maxCoeff();
+    // return (node_map[child]->jt_config - node_map[parent]->jt_config).array().abs().maxCoeff();
     // return (node_map[child]->jt_config - node_map[parent]->jt_config).norm();
 }
 

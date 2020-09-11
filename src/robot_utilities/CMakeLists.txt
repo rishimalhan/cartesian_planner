@@ -13,15 +13,27 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
 )
 
-find_package(libnlopt REQUIRED COMPONENTS)
+# find_package(libnlopt REQUIRED COMPONENTS)
 find_package(fcl REQUIRED)
 find_package(CCD REQUIRED)
 
-find_package(libnabo REQUIRED COMPONENTS)
-find_package(libigl REQUIRED COMPONENTS)
+# find_package(libnabo REQUIRED COMPONENTS)
+# find_package(libigl REQUIRED COMPONENTS)
 
 find_package (orocos_kdl REQUIRED)
 find_package(Boost 1.54.0 REQUIRED COMPONENTS system filesystem)
+
+set(libigl_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../libigl)
+set(libnlopt_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../libnlopt)
+set(libnabo_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../libnabo)
+set(fcl_INCLUDE_DIRS
+  /usr/local/include)
+set(FCL_LIB /usr/local/lib/libfcl.so)
+message(WARNING "FCL INCLUDES LOCATED AT ${fcl_INCLUDE_DIRS}")
+# set(FCL_INCLUDE_DIRS
+# ${CMAKE_CURRENT_SOURCE_DIR}/../fcl/build/install/include)
+# set(FCL_LIB ${CMAKE_CURRENT_SOURCE_DIR}/../fcl/build/install/lib/libfcl.a)
+# message(WARNING "FCL INCLUDES LOCATED AT ${FCL_INCLUDE_DIRS}")
 
 # Adding nlopt header file and linking dependancies 
 include_directories(${libnlopt_SOURCE_DIR}/install/include)
@@ -54,13 +66,6 @@ if (CCD_FOUND)
   message("${CCD_INCLUDE_DIRS}")
   include_directories(${CCD_INCLUDE_DIRS})
 endif (CCD_FOUND)
-
-
-find_package(libnlopt REQUIRED COMPONENTS)
-# Adding nlopt header file and linking dependancies 
-include_directories(${libnlopt_SOURCE_DIR}/install/include)
-link_directories(${libnlopt_SOURCE_DIR}/install/lib)
-set(nlopt_ADDED_LIBS ${libnlopt_SOURCE_DIR}/install/lib/libnlopt.so)
 
 
 # Use ${EIGEN3_...} variables in either case below
@@ -156,6 +161,7 @@ catkin_package(
 ## Build ##
 ###########
 
+
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
@@ -169,10 +175,12 @@ include
   /opt/ros/kinetic/include/kdl
   /opt/ros/kinetic/include/urdf
   /opt/ros/kinetic/include
+  ${fcl_INCLUDE_DIRS}
 )
 
 link_directories(${libnabo_SOURCE_DIR}/include/libnabo/build/libnabo.a
                 ${libigl_SOURCE_DIR}/include/libigl/libigl.a
+                
                 /opt/ros/kinetic/lib
                 /usr/local/lib)
 
@@ -196,7 +204,11 @@ add_library(${PROJECT_NAME}
 
 
 set(robot_utilities_libs ${catkin_LIBRARIES}
-                      /usr/local/lib/libfcl.so ${CCD_LIBRARIES} ${EIGEN3_LIBRARIES}
+                      ${FCL_LIB}
+                      /opt/ros/kinetic/lib/liboctomath.a
+                      /opt/ros/kinetic/lib/liboctomap.a
+                      /usr/lib/x86_64-linux-gnu/libccd.so 
+                      ${EIGEN3_LIBRARIES}
                       /usr/lib/x86_64-linux-gnu/libboost_iostreams.a
 #                       /usr/lib/x86_64-linux-gnu/libboost_system.a
 #                       /usr/lib/x86_64-linux-gnu/libboost_filesystem.a
@@ -210,7 +222,7 @@ set(robot_utilities_libs ${catkin_LIBRARIES}
 
 
 target_link_libraries(${PROJECT_NAME} ${robot_utilities_libs})
-set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME rob_utils CXX_STANDARD 14)
+# set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME rob_utils CXX_STANDARD 14)
 
 
 add_executable(verify_analytical_ik src/verify_ik.cpp)

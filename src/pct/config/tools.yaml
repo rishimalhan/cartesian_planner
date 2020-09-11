@@ -50,3 +50,27 @@ flange:
   {
     ff_T_tool: [0,0,0,0,0,0]
   }
+
+wld_gun:
+  {
+    tool_stl_path: "/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/meshes/wld_gun.stl",
+    tool_stl_coll_path: "/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/meshes/coll/wld_gun/wld_gun.stl",
+    tool_stl_coll_folder: "/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/meshes/coll/wld_gun",
+    ff_T_tool: [ -0.033,0.0,0.4932,0.0,0.533,0.0 ]
+  }
+
+cam_sander_0:
+  {
+    tool_stl_path: "/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/meshes/cam_sander_0.stl",
+    tool_stl_coll_path: "/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/meshes/coll/cam_sander_0/cam_sander_0.stl",
+    tool_stl_coll_folder: "/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/meshes/coll/cam_sander_0",
+    ff_T_tool: [ 0.00565,-0.1463,0.30661,0.0,0.0,0.0 ] 
+  }
+
+cam_sander_90:
+  {
+    tool_stl_path: "/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/meshes/cam_sander_90.stl",
+    tool_stl_coll_path: "/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/meshes/coll/cam_sander_90/cam_sander_90s.stl",
+    tool_stl_coll_folder: "/home/rmalhan/Work/USC/Modules/cartesian_planning/cartesian_planner/src/pct/data/meshes/coll/cam_sander_90",
+    ff_T_tool: [ 0.0873,-0.24201,0.027,1.57,0.0,3.14 ] 
+  }

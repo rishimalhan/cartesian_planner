@@ -1,0 +1,12 @@
+# All transforms are x,y,z,rx,ry,rz
+tool_name: "wld_gun"
+world_T_tool: [0,0,0,0,0,0]
+
+wld_gun:
+  {
+    tool_stl_path: !!python/object/apply:string.join [[$(arg pkg_path), "data/meshes/wld_gun.stl"], /],
+    tool_stl_viz_path: "package://pct/data/meshes/wld_gun.stl",
+    tool_stl_coll_path: !!python/object/apply:string.join [[$(arg pkg_path), "data/meshes/coll/wld_gun/wld_gun.stl"], /],
+    tool_stl_coll_folder: !!python/object/apply:string.join [[$(arg pkg_path), "data/meshes/coll/wld_gun"], /],
+    ff_T_tool: [ -0.033,0.0,0.4932,0.0,0.533,0.0 ]
+  }

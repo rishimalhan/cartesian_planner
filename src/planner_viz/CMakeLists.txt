@@ -22,32 +22,21 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 ## System dependencies are found with CMake's conventions
-find_package(Boost 1.54.0 REQUIRED COMPONENTS system filesystem)
-
-# find_package(CGAL REQUIRED)
-# if ( CGAL_FOUND )
-#   message(STATUS "CGAL_FOUND")
-# else()
-#     message(STATUS "This program requires the CGAL library, and will not be compiled.")
-# endif()
-# find_package(GMP REQUIRED)
-
-
-find_package(orocos_kdl REQUIRED)
+find_package (orocos_kdl REQUIRED)
 find_package(Boost 1.54.0 REQUIRED COMPONENTS system filesystem)
 find_package(gen_utilities REQUIRED)
 find_package(robot_utilities REQUIRED)
-find_package(libnlopt REQUIRED COMPONENTS)
-find_package(fcl REQUIRED)
-find_package(CCD REQUIRED)
+# find_package(libnlopt REQUIRED COMPONENTS)
+# find_package(fcl REQUIRED)
+# find_package(CCD REQUIRED)
 
-find_package(libnabo REQUIRED COMPONENTS)
-find_package(libigl REQUIRED COMPONENTS)
+# find_package(libnabo REQUIRED COMPONENTS)
+# find_package(libigl REQUIRED COMPONENTS)
 
-# Adding nlopt header file and linking dependancies 
-include_directories(${libnlopt_SOURCE_DIR}/install/include)
-link_directories(${libnlopt_SOURCE_DIR}/install/lib)
-set(nlopt_ADDED_LIBS ${libnlopt_SOURCE_DIR}/install/lib/libnlopt.so)
+# # Adding nlopt header file and linking dependancies 
+# include_directories(${libnlopt_SOURCE_DIR}/install/include)
+# link_directories(${libnlopt_SOURCE_DIR}/install/lib)
+# set(nlopt_ADDED_LIBS ${libnlopt_SOURCE_DIR}/install/lib/libnlopt.so)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -64,26 +53,24 @@ else()
   set(EIGEN3_INCLUDE_DIRS ${EIGEN3_INCLUDE_DIR})
 endif()
 
-if (fcl_FOUND)
-  message("fcl found!")
-  message("${fcl_INCLUDE_DIRS}")
-    include_directories(${fcl_INCLUDE_DIRS})
-endif (fcl_FOUND) 
+# if (fcl_FOUND)
+#   message("fcl found!")
+#   message("${fcl_INCLUDE_DIRS}")
+#     include_directories(${fcl_INCLUDE_DIRS})
+# endif (fcl_FOUND) 
 
-if (CCD_FOUND)
-  message("CCD found!")
-  message("${CCD_INCLUDE_DIRS}")
-  include_directories(${CCD_INCLUDE_DIRS})
-endif (CCD_FOUND)
-
-
-find_package(libnlopt REQUIRED COMPONENTS)
-# Adding nlopt header file and linking dependancies 
-include_directories(${libnlopt_SOURCE_DIR}/install/include)
-link_directories(${libnlopt_SOURCE_DIR}/install/lib)
-set(nlopt_ADDED_LIBS ${libnlopt_SOURCE_DIR}/install/lib/libnlopt.so)
+# if (CCD_FOUND)
+#   message("CCD found!")
+#   message("${CCD_INCLUDE_DIRS}")
+#   include_directories(${CCD_INCLUDE_DIRS})
+# endif (CCD_FOUND)
 
 
+# find_package(libnlopt REQUIRED COMPONENTS)
+# # Adding nlopt header file and linking dependancies 
+# include_directories(${libnlopt_SOURCE_DIR}/install/include)
+# link_directories(${libnlopt_SOURCE_DIR}/install/lib)
+# set(nlopt_ADDED_LIBS ${libnlopt_SOURCE_DIR}/install/lib/libnlopt.so)
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -187,44 +174,34 @@ include_directories(
 include
   ${catkin_INCLUDE_DIRS}
   ${EIGEN3_INCLUDE_DIRS}
-  ${libnlopt_SOURCE_DIR}/install/include
-  ${libnabo_SOURCE_DIR}/include/libnabo
-  ${libigl_SOURCE_DIR}/include/libigl
+#   ${libnlopt_SOURCE_DIR}/install/include
+#   ${libnabo_SOURCE_DIR}/include/libnabo
+#   ${libigl_SOURCE_DIR}/include/libigl
   ${orocos_kdl_INCLUDE_DIRS}
   /opt/ros/kinetic/include/kdl
   /opt/ros/kinetic/include/urdf
   /opt/ros/kinetic/include
-
-#   CGAL_CreateSingleSourceCGALProgram
-#   /opt/gurobi901/linux64/
-#   /opt/gurobi901/linux64/include
-#   /opt/gurobi901/linux64/bin
 )
 
-link_directories(${libnabo_SOURCE_DIR}/include/libnabo/build/libnabo.a
-                ${libigl_SOURCE_DIR}/include/libigl/libigl.a
+link_directories(
+#                 ${libnabo_SOURCE_DIR}/include/libnabo/build/libnabo.a
+#                 ${libigl_SOURCE_DIR}/include/libigl/libigl.a
                 /opt/ros/kinetic/lib
-                /usr/local/lib
-#                 /opt/gurobi901/linux64/lib/
-                )
+                /usr/local/lib)
 
 
 set(DEP_LIBS ${catkin_LIBRARIES}
-              /usr/local/lib/libfcl.so ${CCD_LIBRARIES} ${EIGEN3_LIBRARIES}
+#               /usr/local/lib/libfcl.so ${CCD_LIBRARIES} 
+              ${EIGEN3_LIBRARIES}
               /usr/lib/x86_64-linux-gnu/libboost_iostreams.a
-              /usr/lib/x86_64-linux-gnu/libboost_system.a
-              /usr/lib/x86_64-linux-gnu/libboost_filesystem.a
+#               /usr/lib/x86_64-linux-gnu/libboost_system.a
+#               /usr/lib/x86_64-linux-gnu/libboost_filesystem.a
               /usr/lib/x86_64-linux-gnu/libutil.a
               /usr/lib/x86_64-linux-gnu/libboost_thread.a
-              ${libnabo_SOURCE_DIR}/include/libnabo/build/libnabo.a gomp
+#               ${libnabo_SOURCE_DIR}/include/libnabo/build/libnabo.a gomp
               orocos-kdl kdl_parser urdf
               ${Boost_LIBRARIES}
-              ${nlopt_ADDED_LIBS}
-#               ${WITH_CGAL_Core} ${WITH_CGAL_ImageIO} ${WITH_CGAL_Qt5}
-#               gmp
-              ${Boost_LIBRARIES}
-#               /opt/gurobi901/linux64/lib/libgurobi_g++5.2.a
-#               /opt/gurobi901/linux64/lib/libgurobi90.so
+#               ${nlopt_ADDED_LIBS}
                       )
 
 add_executable(viz_wp src/viz_wp.cpp)
@@ -241,9 +218,6 @@ target_link_libraries(viz_path ${DEP_LIBS})
 
 add_executable(viz_robot src/viz_robot.cpp)
 target_link_libraries(viz_robot ${DEP_LIBS})
-
-add_executable(viz_env_tool src/viz_env_tool.cpp)
-target_link_libraries(viz_env_tool ${DEP_LIBS})
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}

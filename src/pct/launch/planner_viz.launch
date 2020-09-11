@@ -1,0 +1,4 @@
+<launch>
+    <arg name="pkg_path" value="$(find pct)"/>
+    <include file="$(find planner_viz)/launch/planner_viz.launch"/>
+</launch>
