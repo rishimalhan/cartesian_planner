@@ -1,6 +1,8 @@
+
 #define UR10e_PARAMS
 
 #include <robot_utilities/ur_kine.cpp>
+
 
 #define IKFAST_HAS_LIBRARY
 #include <robot_utilities/ikfast.h> // found inside share/openrave-X.Y/python/ikfast.h

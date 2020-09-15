@@ -199,7 +199,17 @@ void ikHandler::apply_URikPatch(Eigen::MatrixXd &solutions){
 };
 
 
-
+bool ikHandler::IsWithinLimits(Eigen::VectorXd joint_config){
+    if ((joint_config(0)>=jt_ll(0) && joint_config(0)<=jt_ul(0)) &&
+        (joint_config(1)>=jt_ll(1) && joint_config(1)<=jt_ul(1)) &&
+        (joint_config(2)>=jt_ll(2) && joint_config(2)<=jt_ul(2)) &&
+        (joint_config(3)>=jt_ll(3) && joint_config(3)<=jt_ul(3)) &&
+        (joint_config(4)>=jt_ll(4) && joint_config(4)<=jt_ul(4)) &&
+        (joint_config(5)>=jt_ll(5) && joint_config(5)<=jt_ul(5))) 
+        return true;
+    else
+        return false;
+};
 
 
 
@@ -321,6 +331,7 @@ bool ikHandler::solveIK(Eigen::VectorXd _target){
         status = false; // Make status false again so we can check if solutions exist
         double config_dist = std::numeric_limits<double>::infinity();
         int ctr = 0;
+        unfiltered_sol = sol_mat.transpose();
         for (int i=0; i<sol_mat.rows(); ++i){
             // Check the Limits
             if ((sol_mat(i,0)>=jt_ll(0) && sol_mat(i,0)<=jt_ul(0)) &&
@@ -329,6 +340,7 @@ bool ikHandler::solveIK(Eigen::VectorXd _target){
                 (sol_mat(i,3)>=jt_ll(3) && sol_mat(i,3)<=jt_ul(3)) &&
                 (sol_mat(i,4)>=jt_ll(4) && sol_mat(i,4)<=jt_ul(4)) &&
                 (sol_mat(i,5)>=jt_ll(5) && sol_mat(i,5)<=jt_ul(5))) 
+            // if (true)
             {
                 // Add it to solution. Also check if this is closest to given config
                 double dist = (sol_mat.row(i).transpose() - init_guess).norm();

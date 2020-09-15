@@ -1,0 +1,25 @@
+# Step Slab Part
+cvrg_file_paths:
+  {
+    path_file: !!python/object/apply:string.join [[$(arg pkg_path),"data/csv/debug_pc.csv"], /],
+    cvrg_path: !!python/object/apply:string.join [[$(arg pkg_path),"data/csv/waypoints.csv"], /], # Path to save the path
+    success_flags: !!python/object/apply:string.join [[$(arg pkg_path),"data/csv/success_flags.csv"], /], # Path to save the path
+    joint_states: !!python/object/apply:string.join [[$(arg pkg_path),"data/csv/joint_states.csv"], /], # Path to save the trajectory
+    mesh_path: !!python/object/apply:string.join [[$(arg pkg_path),"data/meshes/step_slab.stl"], /],
+    mesh_viz_path: "package://pct/data/meshes/step_slab.stl",
+  }
+
+cvrg_tf_param:
+    {
+        world_T_part: [0.0,0.0,0.0,0,0,0.0], # x,y,z,rx,ry,rz xyzbxbybz
+    }
+
+viz_param:
+    {
+        rob_speed: 10
+    }
+
+gen_path: false
+rob_config: [0,0,0,0,0,0]
+sampling_res: 20 # Degrees
+angular_range: 360

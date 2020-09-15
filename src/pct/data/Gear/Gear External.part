@@ -1,0 +1,11 @@
+[basic]
+name=Gear External
+number_of_features= 5
+default_pose = -0.2069, -1.5271, 0.8915,0,         0,    -0.0026,    1
+
+[features]
+feature1 = Test Edge Chamfering
+feature2 = Test Deburring
+feature3 = Demo Edge Chamfering
+feature4 = Demo Deburring
+feature5 = Custom

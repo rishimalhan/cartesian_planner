@@ -13,6 +13,8 @@ Eigen::MatrixXd IncreaseTrajResolution( Eigen::MatrixXd traj ){
     int no_samples = 10;
     Eigen::MatrixXd upd_traj;
     int counter = 0;
+    if (traj.rows()==1)
+        return traj;
     for (int i=0; i<traj.rows()-1; ++i){
         Eigen::VectorXd dt = (traj.row(i+1)-traj.row(i))/no_samples;
         for (int j=0; j<no_samples; ++j){

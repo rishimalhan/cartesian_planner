@@ -1,0 +1,16 @@
+[basic]
+name=Gear Internal Outer
+number_of_features= 3
+default_pose = 1.3888,-0.0525,0.88999,0.1794,0,0,0.9838
+
+[poses]
+Demo Edge Chamfering_pose = 0.8,0.0,0.0,0.1797,0,0,0.9837
+Demo Deburring_pose = 0.8,0.0,0.0,0.1797,0,0,0.9837
+Custom_pose = 0.8,0.0,0.0,0.1797,0,0,0.9837
+
+[features]
+feature1 = Demo Edge Chamfering
+feature2 = Demo Deburring
+feature3 = Custom
+
+

@@ -4,7 +4,7 @@
     <arg name="viz" default="false"/>
     <arg name="pkg_path" value="$(find pct)"/>
 
-    <rosparam command="load" file="$(arg pkg_path)/config/$(arg tool).yaml"
+    <rosparam command="load" file="$(arg pkg_path)/config/$(arg tool).yaml" subst_value="true"
         />
 
 
@@ -18,6 +18,24 @@
     <rosparam command="load" file="$(arg pkg_path)/config/boeing.yaml" subst_value="true"
                 if="$(eval part == 'boeing')"/>
         />
+    <!-- Gear Internal part Case -->
+    <rosparam command="load" file="$(arg pkg_path)/config/gear_int.yaml" subst_value="true"
+                if="$(eval part == 'gear_int')"/>
+        />
+    <!-- Bath Tub Case -->
+    <rosparam command="load" file="$(arg pkg_path)/config/bath_tub.yaml" subst_value="true"
+                if="$(eval part == 'bath_tub')"/>
+        />
+    <!-- Step Slab Case -->
+    <rosparam command="load" file="$(arg pkg_path)/config/step_slab.yaml" subst_value="true"
+                if="$(eval part == 'step_slab')"/>
+        />
+
+
+    <!-- Debugging Case -->
+    <rosparam command="load" file="$(arg pkg_path)/config/debug_pc.yaml" subst_value="true"
+                if="$(eval part == 'debug_pc')"/>
+        />
 
 
 
@@ -30,3 +48,4 @@
     <!-- <rosparam command="load" file="$(arg pkg_path)/config/planner.yaml"/> -->
     <!-- <rosparam command="load" file="$(arg pkg_path)/config/tools.yaml"/> -->
 </launch>
+

@@ -1,0 +1,24 @@
+[basic]
+name=Gear Internal Inner
+number_of_features= 7
+default_pose = 1.3888,-0.0525,0.88999,0.1797,0,0,0.9837
+
+[poses]
+Test Edge Chamfering_pose = 0.8,0.0,0.0,0.1797,0,0,0.9837
+Test Root Chamfering_pose = 0.8,0.0,0.0,0.1797,0,0,0.9837
+Test Deburring_pose = 0.8,0.0,0.0,0.1797,0,0,0.9837
+Demo Edge Chamfering_pose = 0.8,0.0,0.0,0.1797,0,0,0.9837
+Demo Root Chamfering_pose = 0.8,0.0,0.0,0.1797,0,0,0.9837
+Demo Deburring_pose = 0.8,0.0,0.0,0.1797,0,0,0.9837
+Custom_pose = 0.8,0.0,0.0,0.1797,0,0,0.9837
+
+[features]
+feature1 = Test Edge Chamfering
+feature2 = Test Root Chamfering
+feature3 = Test Deburring
+feature4 = Demo Edge Chamfering
+feature5 = Demo Root Chamfering
+feature6 = Demo Deburring
+feature7 = Custom
+
+

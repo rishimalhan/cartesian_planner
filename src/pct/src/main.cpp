@@ -44,6 +44,12 @@
 #include <pct/timer.hpp>
 
 
+// Test Cases
+// roslaunch pct bootstrap.launch part:=fender tool:=cam_sander_0 viz:=sim
+// roslaunch pct bootstrap.launch part:=step_slab tool:=ferro_sander viz:=sim
+// roslaunch pct bootstrap.launch part:=boeing tool:=cam_sander_90 viz:=sim
+// roslaunch pct bootstrap.launch part:=gear_int tool:=ati viz:=sim
+// roslaunch pct bootstrap.launch part:=bath_tub tool:=ferro_sander viz:=sim
 
 
 // Parameters to play with:
@@ -86,7 +92,12 @@ int main(int argc, char** argv){
         return 0;
     }
     resolution *= (M_PI / 180);
-    double angle = 90*M_PI / 180; // Total angle is 200. 100 each side
+    double range;
+    if(!ros::param::get("/angular_range",range)){
+        std::cout<< "Unable to Obtain Sampling Resolution\n";
+        return 0;
+    }
+    double angle = range*M_PI / 180; // Total angle is 200. 100 each side
 
 
     ///////////////// CAUTION ///////////////////////////////////////
@@ -216,13 +227,17 @@ int main(int argc, char** argv){
     wm.prepareSelfCollisionPatch(zero_fk);
     wm.addWorkpiece(wp_path, world_T_part);
 
-
-    std::string path_file;
-    ros::param::get("/cvrg_file_paths/path_file",path_file);
-
-    // Generate Path
-    Eigen::MatrixXd path = gen_cvrg_plan();
-    // Eigen::MatrixXd path = load_plan(path_file); // Pre computed path file
+    Eigen::MatrixXd path;
+    bool gen_path;
+    ros::param::get("/gen_path",gen_path);
+    if (gen_path)    
+        // Generate Path
+        path = gen_cvrg_plan();
+    else{
+        std::string path_file;
+        ros::param::get("/cvrg_file_paths/path_file",path_file);
+        path = load_plan(path_file); // Pre computed path file
+    }
 
 
 
@@ -495,6 +510,11 @@ int main(int argc, char** argv){
         path_cost += jt_diff.abs().maxCoeff();
         if (jt_diff.abs().maxCoeff()>max_change)
             max_change = jt_diff.abs().maxCoeff();
+        if (jt_diff.abs().maxCoeff()*(180/M_PI) > 179){
+            std::cout<< "Max Change: " << jt_diff.abs().maxCoeff()*(180/M_PI) << "\n";
+            std::cout<< "Config-1:" << trajectory.row(i)*(180/M_PI) << "\n";
+            std::cout<< "Config-2:" << trajectory.row(i+1)*(180/M_PI) << "\n";
+        }
     }
     #ifdef GRAPH_SEARCH
     std::cout<< "Total number of edges in graph: " << graph.no_edges << std::endl;

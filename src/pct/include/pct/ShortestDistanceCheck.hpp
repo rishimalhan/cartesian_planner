@@ -1,39 +1,55 @@
 #ifndef __SHORTESTDISTANCECHECK__HPP__
 #define __SHORTESTDISTANCECHECK__HPP__
 
-bool ShortestDistanceCheck(std::vector<Eigen::VectorXd> seg, ikHandler* ik_handler){
-    Eigen::VectorXd mid_x = (seg[0] + seg[2])/2;
-    // Make the Cartesian Axes Perpendicular. Evaluate // by = bz x bx and // bx = by x bz
-    // by
-    mid_x(6) = (mid_x(10)*mid_x(5)) - (mid_x(11)*mid_x(4));
-    mid_x(7) = (mid_x(11)*mid_x(3)) - (mid_x(9)*mid_x(5));
-    mid_x(8) = (mid_x(9)*mid_x(4)) - (mid_x(10)*mid_x(3));
-    // bx
-    mid_x(3) = (mid_x(7)*mid_x(11)) - (mid_x(8)*mid_x(10));
-    mid_x(4) = (mid_x(8)*mid_x(9)) - (mid_x(6)*mid_x(11));
-    mid_x(5) = (mid_x(6)*mid_x(10)) - (mid_x(7)*mid_x(9));
-    mid_x.segment(3,3) /= mid_x.segment(3,3).norm(); //bx
-    mid_x.segment(9,3) /= mid_x.segment(9,3).norm(); //by
-    mid_x.segment(6,3) /= mid_x.segment(6,3).norm(); //bz
-        
-    // For all possible configurations, generate more segments
-    if (ik_handler->solveIK(mid_x)){
-        Eigen::VectorXd q1(6); // Configuration reached from seg[1]
-        Eigen::VectorXd q2(6); // Configuration reached from seg[3]
-        double dist1 = std::numeric_limits<double>::infinity();
-        double dist2 = std::numeric_limits<double>::infinity();
-        for (int i=0; i<ik_handler->solution.cols(); ++i){
-            if ( (ik_handler->solution.col(i)-seg[1]).norm() < dist1 ){
-                dist1 = (ik_handler->solution.col(i)-seg[1]).norm();
-                q1 = ik_handler->solution.col(i);
-            }
+#include <Eigen/Geometry> 
+#include <robot_utilities/transformation_utilities.hpp>
+#include <cmath>
 
-            if ( (ik_handler->solution.col(i)-seg[3]).norm() < dist2 ){
-                dist2 = (ik_handler->solution.col(i)-seg[1]).norm();
-                q2 = ik_handler->solution.col(i);
-            }
+double GetWSDist(Eigen::VectorXd c1, Eigen::VectorXd c2,
+                 ikHandler* ik_handler){
+    int no_samples = 10;
+    Eigen::VectorXd dq = (c2 - c1)/no_samples;
+    double pos_dist = 0;
+    double ori_dist = 0;
+    Eigen::VectorXd prev_point(7);
+    for (int i=0; i<=no_samples; ++i){
+        KDL::JntArray theta = DFMapping::Eigen_to_KDLJoints(c1 + i*dq);
+        KDL::Frame fk_kdl;
+        ik_handler->robot->FK_KDL_TCP(theta,fk_kdl); // Tool tip
+        Eigen::MatrixXd fk = DFMapping::KDLFrame_to_Eigen(fk_kdl);
+        Eigen::VectorXd wp_quat(7);
+        wp_quat.segment(0,3) = fk.block(0,3,3,1);
+        wp_quat.segment(3,4) = rtf::rot2qt(fk.block(0,0,3,3)).row(0).transpose();
+
+        // std::cout<< fk.block(0,3,3,1).transpose() << " " << fk.block(0,0,3,1).transpose() << " " << 
+        // fk.block(0,1,3,1).transpose() << " " <<  fk.block(0,2,3,1).transpose() << "\n";
+        
+        if (i==0){
+            prev_point = wp_quat;
+            continue;
         }
-        if ( (q2-q1).norm() > 0.0 )
+        pos_dist += (wp_quat.segment(0,3)-prev_point.segment(0,3)).norm();
+        ori_dist += std::fabs(2 * acos( std::fabs(wp_quat.segment(3,4).dot(prev_point.segment(3,4))) ));
+        prev_point = wp_quat;
+    }
+    return (pos_dist+ori_dist);
+}
+
+
+bool ShortestDistanceCheck(std::vector<Eigen::VectorXd> seg, ikHandler* ik_handler){
+    // For all possible configurations, generate more segments
+    if (ik_handler->solveIK(seg[2])){
+        std::vector<double> dist; dist.clear();
+        // std::cout<< "Solutions: " << ik_handler->solution.transpose() * (180/M_PI) << "\n";
+        for (int i=0; i<ik_handler->solution.cols(); ++i){
+            // std::cout<< "Solution: " << ik_handler->solution.col(i).transpose()*(180/M_PI) << "\n";
+            double distance = GetWSDist(seg[1],ik_handler->solution.col(i),ik_handler);
+            dist.push_back( distance );
+            // std::cout<< "Positional Distance: " << distances[0] << ". Orientational Distance: " 
+            // << distances[1] << "\n";
+        }
+        if ( (ik_handler->solution.col(std::min_element(dist.begin(),dist.end()) - dist.begin())-
+                seg[3]).norm() > 1e-2 )
             return false;
         else
             return true;

@@ -66,9 +66,11 @@ bool gen_nodes(ikHandler* ik_handler, WM::WM* wm,
 
                             // bxbybz to euler waypoint
                             curr_node->wp_eul.resize(6);
-                            curr_node->wp_eul.segment(0,3) = waypoints.block(j,0,1,3).transpose(); 
+                            curr_node->wp_eul.segment(0,3) = waypoints.block(j,0,1,3).transpose();
                             curr_node->wp_eul.segment(3,3) = rtf::bxbybz2eul(waypoints.block(j,3,1,9),"XYZ").row(0).transpose();
-
+                            curr_node->wp_quat.resize(7);
+                            curr_node->wp_quat.segment(0,3) = waypoints.block(j,0,1,3).transpose();
+                            curr_node->wp_quat.segment(3,4) = rtf::bxbybz2qt(waypoints.block(j,3,1,9)).row(0).transpose();
                             // xyzbxbybz of flange wrt rob_base
                             curr_node->wp_ff = ik_handler->getFFTarget();
 

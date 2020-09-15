@@ -1,0 +1,25 @@
+# Gear External Part
+cvrg_file_paths:
+  {
+    # path_file: !!python/object/apply:string.join [[$(arg pkg_path),"data/csv/gear_ext_deburring.csv"], /],
+    path_file: !!python/object/apply:string.join [[$(arg pkg_path),"data/csv/gear_ext_edge_chamfering.csv"], /],
+    cvrg_path: !!python/object/apply:string.join [[$(arg pkg_path),"data/csv/waypoints.csv"], /], # Path to save the path
+    success_flags: !!python/object/apply:string.join [[$(arg pkg_path),"data/csv/success_flags.csv"], /], # Path to save the path
+    joint_states: !!python/object/apply:string.join [[$(arg pkg_path),"data/csv/joint_states.csv"], /], # Path to save the trajectory
+    mesh_path: !!python/object/apply:string.join [[$(arg pkg_path),"data/meshes/gear_ext.stl"], /],
+    mesh_viz_path: "package://pct/data/meshes/gear_ext.stl",
+  }
+
+cvrg_tf_param:
+    {
+        world_T_part: [1.2,0,0.5,0,-1.57,0], # x,y,z,rx,ry,rz xyzbxbybz
+    }
+
+viz_param:
+    {
+        rob_speed: 50
+    }
+
+gen_path: false
+rob_config: [0,0,0,0,0,0]
+sampling_res: 20 # Degrees

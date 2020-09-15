@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <robot name="ati">
-  <link name="ati_origin">
+  <link name="tool_origin">
     <visual>
       	<geometry>
-          	<mesh filename="package://beg_tut/meshes/ati_sphere_orig.stl"
+          	<mesh filename="package://pct/data/meshes/ati.stl"
                 scale="1 1 1"/>
       	</geometry>
 	  	<material name="ABS" >

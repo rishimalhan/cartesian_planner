@@ -1,0 +1,12 @@
+# All transforms are x,y,z,rx,ry,rz
+tool_name: "ati"
+world_T_tool: [0,0,0,0,0,0]
+
+ati:
+  {
+    tool_stl_path: !!python/object/apply:string.join [[$(arg pkg_path), "data/meshes/ati.stl"], /],
+    tool_stl_viz_path: "package://pct/data/meshes/ati.stl",
+    tool_stl_coll_path: !!python/object/apply:string.join [[$(arg pkg_path), "data/meshes/coll/ati/ati.stl"], /],
+    tool_stl_coll_folder: !!python/object/apply:string.join [[$(arg pkg_path), "data/meshes/coll/ati"], /],
+    ff_T_tool: [ 0.1115, 0.3434, 0.21779, -1.5708, 0.3141, 0 ] 
+  }

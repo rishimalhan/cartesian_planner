@@ -63,6 +63,6 @@ viz_param:
         rob_speed: 100
     }
 
-path_find_mode: false
+gen_path: true
 rob_config: [0,0,0,0,0,0]
 sampling_res: 10 # Degrees

@@ -42,6 +42,7 @@ public:
     Eigen::VectorXd jt_ll;
     SerialLink_Manipulator::SerialLink_Manipulator* robot;
     Eigen::MatrixXd solution;
+    Eigen::MatrixXd unfiltered_sol;
     bool useNumIK = false;
     int OptVarDim;  // Decision variable dimension
     double f_val;
@@ -49,6 +50,7 @@ public:
     Eigen::VectorXd init_guess;
     ikHandler(SerialLink_Manipulator::SerialLink_Manipulator*);
     ~ikHandler();
+    bool IsWithinLimits(const Eigen::VectorXd joint_config);
     void tf_target(Eigen::VectorXd&, const Eigen::MatrixXd&);
     double obj_func(const std::vector<double>&, std::vector<double>&);
     double err_func(const std::vector<double>&);
