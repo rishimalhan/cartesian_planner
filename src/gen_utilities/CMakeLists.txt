@@ -195,7 +195,7 @@ include
   /opt/ros/kinetic/include/kdl
   /opt/ros/kinetic/include/urdf
   /opt/ros/kinetic/include
-  ${FCL_INCLUDE_DIRS}
+#   ${FCL_INCLUDE_DIRS}
 )
 
 link_directories(${libnabo_SOURCE_DIR}/include/libnabo/build/libnabo.a
@@ -223,8 +223,8 @@ add_library(${PROJECT_NAME}
 # set_source_files_properties(src/file_rw.cpp PROPERTIES COMPILE_FLAGS -O1)
 
 set(gen_utilities_libs ${catkin_LIBRARIES}
-                      /usr/lib/x86_64-linux-gnu/libfcl.so
-                      /usr/lib/x86_64-linux-gnu/libccd.so 
+#                       /usr/lib/x86_64-linux-gnu/libfcl.so
+#                       /usr/lib/x86_64-linux-gnu/libccd.so 
                       ${EIGEN3_LIBRARIES}
                       /usr/lib/x86_64-linux-gnu/libboost_iostreams.a
 #                       /usr/lib/x86_64-linux-gnu/libboost_system.a

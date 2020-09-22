@@ -510,7 +510,7 @@ int main(int argc, char** argv){
         path_cost += jt_diff.abs().maxCoeff();
         if (jt_diff.abs().maxCoeff()>max_change)
             max_change = jt_diff.abs().maxCoeff();
-        if (jt_diff.abs().maxCoeff()*(180/M_PI) > 179){
+        if (jt_diff.abs().maxCoeff()*(180/M_PI) > 130){
             std::cout<< "Max Change: " << jt_diff.abs().maxCoeff()*(180/M_PI) << "\n";
             std::cout<< "Config-1:" << trajectory.row(i)*(180/M_PI) << "\n";
             std::cout<< "Config-2:" << trajectory.row(i+1)*(180/M_PI) << "\n";

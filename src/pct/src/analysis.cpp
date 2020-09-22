@@ -301,6 +301,8 @@ int main(int argc, char** argv){
     // c2 *= (3.14/180);
 
 
+
+    // // I think following example is violation of config having pos and ori both mini but is still PC
     // target1 << -0.065971,   1.32866,  0.633328, -0.540029, -0.820469, -0.187615,
     //  0.0540645,  -0.25627,  0.965092, -0.839908,  0.511035,  0.182752;
     // target2 << -0.127249,   1.24218,  0.591808,  -0.44703, -0.852819, -0.269932,
@@ -317,98 +319,179 @@ int main(int argc, char** argv){
     // segment[1] = c1;
     // segment[2] = target2;
     // segment[3] = c2;
+
     // std::cout<< "Validity: " << ShortestDistanceCheck(segment, &ik_handler) << "\n";
 
     // return 0;
 
-    ik_handler.jt_ll << -3.14, -2.705, -2.705, -3.14, -2.094, -3.14;
-    ik_handler.jt_ul << 3.14, 1.658, 1.309, 3.14, 2.094, 3.14;
-
-    int no_samples = 50000;
-
-    for (int i=0; i<no_samples; ++i){
-        KDL::JntArray sample;
-        robot.getRandJointArray(sample);
-        Eigen::VectorXd c1 = DFMapping::KDLJoints_to_Eigen(sample).col(0);
-        
-        if (!ik_handler.IsWithinLimits(c1))
-            continue;
-
-        theta = DFMapping::Eigen_to_KDLJoints(c1);
-        robot.Jac_KDL(theta,jac_kdl);
-        jac = DFMapping::KDLJacobian_to_Eigen(jac_kdl);
-        double manip = (jac*jac.transpose()).determinant();
-
-        if (manip < 0.2)
-            continue;
-
-        Eigen::VectorXd perturb = Eigen::VectorXd::Random(6);
-        perturb = perturb * 0.35;
-        
-        c2 = c1 + perturb;
-        bool flag = false;
-        Eigen::VectorXd dq = (c2 - c1)/no_samples;
-        for (int j=0; j<=no_samples; ++j){
-            if (!ik_handler.IsWithinLimits(c1 + j*dq)){
-                flag = true;
-                break;
-            }
-        }
-        if (flag)
-            continue;
-
-        KDL::Frame fk_kdl;
-        theta = DFMapping::Eigen_to_KDLJoints(c1);
-        robot.FK_KDL_TCP(theta,fk_kdl);
-        Eigen::MatrixXd fk1 = DFMapping::KDLFrame_to_Eigen(fk_kdl);
-
-        theta = DFMapping::Eigen_to_KDLJoints(c2);
-        robot.FK_KDL_TCP(theta,fk_kdl);
-        Eigen::MatrixXd fk2 = DFMapping::KDLFrame_to_Eigen(fk_kdl);
 
 
-        target1.segment(0,3) = fk1.block(0,3,3,1);
-        target1.segment(3,3) = fk1.block(0,0,3,1);
-        target1.segment(6,3) = fk1.block(0,1,3,1);
-        target1.segment(9,3) = fk1.block(0,2,3,1);
+    // // Shouldn't be PC but it is
+    // target1 <<  -1.19093, -0.249334, -0.176893, -0.436431,  0.589835,  0.679428,
+    //  -0.782622,  0.123677, -0.610087 , -0.44388, -0.797997,  0.407641;
+    // target2 << -0.519246,  0.175798,   2.14568,  0.587851,  -0.75536,  -0.28959,
+    //   0.755462,  0.384562,  0.530461, -0.289324, -0.530606,  0.796711;
+    // c1 <<  177.243,  89.2407, -3.66856, -61.9959, -112.034, -133.797;
+    // c2 <<  137.664,  30.9181, -109.385, -62.9435, -41.2411, -135.765;
 
-        target2.segment(0,3) = fk2.block(0,3,3,1);
-        target2.segment(3,3) = fk2.block(0,0,3,1);
-        target2.segment(6,3) = fk2.block(0,1,3,1);
-        target2.segment(9,3) = fk2.block(0,2,3,1);
+    // c1 *= (3.14/180);
+    // c2 *= (3.14/180);
 
-        Eigen::VectorXd eul1 = rtf::bxbybz2eul( target1.segment(3,9).transpose(),"XYZ" ).row(0).transpose();
-        Eigen::VectorXd eul2 = rtf::bxbybz2eul( target2.segment(3,9).transpose(),"XYZ" ).row(0).transpose();
+    
+    // std::vector<Eigen::VectorXd> segment(4);
+    // segment[0] = target1;
+    // segment[1] = c1;
+    // segment[2] = target2;
+    // segment[3] = c2;
+    // std::cout<< "Validity: " << ShortestDistanceCheck(segment, &ik_handler) << "\n";
 
-        // std::cout<< "Pos Diff: " << (target2.segment(0,3) - target1.segment(0,3)).norm()
-        //              << "Angle Diff: " << (eul2 - eul1).norm() * (180/M_PI) << "\n";
+    // return 0;
 
-        // ik_handler.solveIK(target1);
-        // std::cout<< ik_handler.solution.transpose() * (180/M_PI) << "\n\n";
 
-        // ik_handler.solveIK(target2);
-        // std::cout<< ik_handler.solution.transpose() * (180/M_PI) << "\n\n";
 
-        std::vector<Eigen::VectorXd> seg1(4);
-        seg1[0] = target1;
-        seg1[1] = c1;
-        seg1[2] = target2;
-        seg1[3] = c2;
+    // Violating PC rule for weighted sum
+    c1 << -13.6384, -1.67241,  33.3332,        0,  58.3393,  -97.998;
+    c2 << -17.0218,  6.18898,  25.1781,        0,  58.6329,  35.7281;
+    c1 *= (3.14/180);
+    c2 *= (3.14/180);
 
-        if (!ShortestDistanceCheck(seg1, &ik_handler)){
-            std::cout<< "Invalid for: " << i << "\n";
-            std::cout<< "Target1: " << target1.transpose() << "\n";
-            std::cout<< "Target2: " << target2.transpose() << "\n";
-            std::cout<< "C1: " << c1.transpose() * (180/M_PI) << "\n";
-            std::cout<< "C2: " << c2.transpose() * (180/M_PI) << "\n";
-        }
-        continue;
-        std::cout<< "Consistency Status: "<< 
-        // path_consistency(seg1, &ik_handler, get_dist(seg1, &ik_handler)) << "\n";
-        ShortestDistanceCheck(seg1, &ik_handler) << "\n";
+    KDL::Frame fk_kdl;
+    theta = DFMapping::Eigen_to_KDLJoints(c1);
+    robot.FK_KDL_TCP(theta,fk_kdl);
+    Eigen::MatrixXd fk1 = DFMapping::KDLFrame_to_Eigen(fk_kdl);
+
+    theta = DFMapping::Eigen_to_KDLJoints(c2);
+    robot.FK_KDL_TCP(theta,fk_kdl);
+    Eigen::MatrixXd fk2 = DFMapping::KDLFrame_to_Eigen(fk_kdl);
+
+
+    target1.segment(0,3) = fk1.block(0,3,3,1);
+    target1.segment(3,3) = fk1.block(0,0,3,1);
+    target1.segment(6,3) = fk1.block(0,1,3,1);
+    target1.segment(9,3) = fk1.block(0,2,3,1);
+
+    target2.segment(0,3) = fk2.block(0,3,3,1);
+    target2.segment(3,3) = fk2.block(0,0,3,1);
+    target2.segment(6,3) = fk2.block(0,1,3,1);
+    target2.segment(9,3) = fk2.block(0,2,3,1);
+
+
+    Eigen::VectorXd dx = (target2 - target1) / 100;
+    ik_handler.init_guess = c1;
+    for (int i=0; i<100; ++i){
+        ik_handler.solveIK(target1+i*dx);
+        std::cout<< ik_handler.closest_sol.transpose() << "\n";
     }
+    return 0;
+
+    std::vector<Eigen::VectorXd> segment(4);
+    segment[0] = target1;
+    segment[1] = c1;
+    segment[2] = target2;
+    segment[3] = c2;
+    std::cout<< "Validity: " << ShortestDistanceCheck(segment, &ik_handler) << "\n";
 
     return 0;
+
+
+    // ik_handler.jt_ll << -3.14, -2.705, -2.705, -3.14, -2.094, -3.14;
+    // ik_handler.jt_ul << 3.14, 1.658, 1.309, 3.14, 2.094, 3.14;
+
+    // int no_samples = 50000;
+
+    // timer timer;
+    // timer.start();
+    // double tot_time = 0;
+    // for (int i=0; i<no_samples; ++i){
+    //     KDL::JntArray sample;
+    //     robot.getRandJointArray(sample);
+    //     Eigen::VectorXd c1 = DFMapping::KDLJoints_to_Eigen(sample).col(0);
+        
+    //     if (!ik_handler.IsWithinLimits(c1))
+    //         continue;
+
+    //     theta = DFMapping::Eigen_to_KDLJoints(c1);
+    //     robot.Jac_KDL(theta,jac_kdl);
+    //     jac = DFMapping::KDLJacobian_to_Eigen(jac_kdl);
+    //     double manip = (jac*jac.transpose()).determinant();
+
+    //     if (manip < 0.2)
+    //         continue;
+
+    //     Eigen::VectorXd perturb = Eigen::VectorXd::Random(6);
+    //     perturb = perturb * 0.3;
+        
+    //     c2 = c1 + perturb;
+
+    //     // if ( (c2-c1).norm() < 1.57 )
+    //     //     continue;
+
+    //     bool flag = false;
+    //     Eigen::VectorXd dq = (c2 - c1)/no_samples;
+    //     for (int j=0; j<=no_samples; ++j){
+    //         if (!ik_handler.IsWithinLimits(c1 + j*dq)){
+    //             flag = true;
+    //             break;
+    //         }
+    //     }
+    //     if (flag)
+    //         continue;
+
+        // KDL::Frame fk_kdl;
+        // theta = DFMapping::Eigen_to_KDLJoints(c1);
+        // robot.FK_KDL_TCP(theta,fk_kdl);
+        // Eigen::MatrixXd fk1 = DFMapping::KDLFrame_to_Eigen(fk_kdl);
+
+        // theta = DFMapping::Eigen_to_KDLJoints(c2);
+        // robot.FK_KDL_TCP(theta,fk_kdl);
+        // Eigen::MatrixXd fk2 = DFMapping::KDLFrame_to_Eigen(fk_kdl);
+
+
+        // target1.segment(0,3) = fk1.block(0,3,3,1);
+        // target1.segment(3,3) = fk1.block(0,0,3,1);
+        // target1.segment(6,3) = fk1.block(0,1,3,1);
+        // target1.segment(9,3) = fk1.block(0,2,3,1);
+
+        // target2.segment(0,3) = fk2.block(0,3,3,1);
+        // target2.segment(3,3) = fk2.block(0,0,3,1);
+        // target2.segment(6,3) = fk2.block(0,1,3,1);
+        // target2.segment(9,3) = fk2.block(0,2,3,1);
+
+    //     Eigen::VectorXd eul1 = rtf::bxbybz2eul( target1.segment(3,9).transpose(),"XYZ" ).row(0).transpose();
+    //     Eigen::VectorXd eul2 = rtf::bxbybz2eul( target2.segment(3,9).transpose(),"XYZ" ).row(0).transpose();
+
+    //     // std::cout<< "Pos Diff: " << (target2.segment(0,3) - target1.segment(0,3)).norm()
+    //     //              << "Angle Diff: " << (eul2 - eul1).norm() * (180/M_PI) << "\n";
+
+    //     // ik_handler.solveIK(target1);
+    //     // std::cout<< ik_handler.solution.transpose() * (180/M_PI) << "\n\n";
+
+    //     // ik_handler.solveIK(target2);
+    //     // std::cout<< ik_handler.solution.transpose() * (180/M_PI) << "\n\n";
+
+    //     std::vector<Eigen::VectorXd> seg1(4);
+    //     seg1[0] = target1;
+    //     seg1[1] = c1;
+    //     seg1[2] = target2;
+    //     seg1[3] = c2;
+
+
+    //     timer.reset();
+    //     if (!ShortestDistanceCheck(seg1, &ik_handler)){
+    //         std::cout<< "Invalid for: " << i << "\n";
+    //         std::cout<< "Target1: " << target1.transpose() << "\n";
+    //         std::cout<< "Target2: " << target2.transpose() << "\n";
+    //         std::cout<< "C1: " << c1.transpose() * (180/M_PI) << "\n";
+    //         std::cout<< "C2: " << c2.transpose() * (180/M_PI) << "\n";
+    //     }
+    //     tot_time += timer.elapsed();
+    //     continue;
+    //     std::cout<< "Consistency Status: "<< 
+    //     // path_consistency(seg1, &ik_handler, get_dist(seg1, &ik_handler)) << "\n";
+    //     ShortestDistanceCheck(seg1, &ik_handler) << "\n";
+    // }
+    // std::cout<< "Check time: " << tot_time / no_samples << "\n" ;
+    // return 0;
 
 
 

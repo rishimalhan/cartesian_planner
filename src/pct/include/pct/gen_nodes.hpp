@@ -58,6 +58,7 @@ bool gen_nodes(ikHandler* ik_handler, WM::WM* wm,
                             node* curr_node = new node;
                             curr_node->id = id_cnt;
                             curr_node->jt_config = ik_handler->solution.col(sol_no);
+                            curr_node->family_id = sol_no;
                             curr_node->depth = i;
                             curr_node->index = j;
                             curr_node->tcp_id = k;

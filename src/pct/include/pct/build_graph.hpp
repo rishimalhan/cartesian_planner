@@ -19,15 +19,20 @@
 #include <pct/ShortestDistanceCheck.hpp>
 
 bool isEdge(ikHandler* ik_handler, const std::vector<node*>& node_map, const int parent, const int child){
-    // Path-Consistency Constraint
-    std::vector<Eigen::VectorXd> seg(4); // x1,q1,x2,q2
-    seg[0] = node_map[parent]->wp;
-    seg[1] = node_map[parent]->jt_config;
-    seg[2] = node_map[child]->wp;
-    seg[3] = node_map[child]->jt_config;
-    
-    if (!ShortestDistanceCheck(seg, ik_handler))
+
+    if (node_map[parent]->family_id != node_map[child]->family_id)
         return false;
+
+    // Path-Consistency Constraint
+    // std::vector<Eigen::VectorXd> seg(4); // x1,q1,x2,q2
+    // seg[0] = node_map[parent]->wp;
+    // seg[1] = node_map[parent]->jt_config;
+    // seg[2] = node_map[child]->wp;
+    // seg[3] = node_map[child]->jt_config;
+    // if (!ShortestDistanceCheck(seg, ik_handler))
+    //     return false;
+
+
 
     // std::cout<< "Path Consistent Configurations: \n";
     // std::cout<< seg[1].transpose() * 180 / M_PI << "\n";
@@ -68,6 +73,7 @@ bool build_graph(ikHandler* ik_handler, const std::vector<node*>& node_map, cons
     std::cout<< "\n##############################################################\n";
     std::cout<< "Generating Graph\n";
 
+    int no_connections_eval = 0;
     std::vector<Edge> edges; edges.clear();
     std::vector<double> weights; weights.clear();
     root_connectivity.resize(node_list[0].size());
@@ -90,6 +96,7 @@ bool build_graph(ikHandler* ik_handler, const std::vector<node*>& node_map, cons
         // For each node at current level, build edges for each node at next level
         for (int j=0; j<curr_level.size(); ++j){
             for (int k=0; k<next_level.size(); ++k){
+                no_connections_eval++;
                 if ( isEdge(ik_handler, node_map, curr_level(j), next_level(k)) ){
                     if (i==0) // Mark this root to be connected to graph
                         root_connectivity[j] = true;
@@ -99,6 +106,8 @@ bool build_graph(ikHandler* ik_handler, const std::vector<node*>& node_map, cons
             }
         }
         if (prev_edge_size==edges.size()){ // No edges have been added
+            // This is where we split the graph into two
+            // Will be a part of our approach
             std::cout<< "Edges could not be created between: " << i << " and "<< i+1 << ". Base index is 0. Terminating\n";
             std::cout<< "##############################################################\n";
             return false;
@@ -113,7 +122,7 @@ bool build_graph(ikHandler* ik_handler, const std::vector<node*>& node_map, cons
             return false;
         }
     }   
-    std::cout<< "Total Number of Edges: " << edges.size() << "\n";
+    std::cout<< "Total #Edges: " << no_connections_eval << ". Valid #edges: " << edges.size() << "\n";
     boost_graph->no_edges = edges.size();
 
     const int num_nodes = node_map.size();

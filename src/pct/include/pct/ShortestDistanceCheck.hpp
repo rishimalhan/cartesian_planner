@@ -5,7 +5,7 @@
 #include <robot_utilities/transformation_utilities.hpp>
 #include <cmath>
 
-double GetWSDist(Eigen::VectorXd c1, Eigen::VectorXd c2,
+std::vector<double> GetWSDist(Eigen::VectorXd c1, Eigen::VectorXd c2,
                  ikHandler* ik_handler){
     int no_samples = 10;
     Eigen::VectorXd dq = (c2 - c1)/no_samples;
@@ -32,27 +32,37 @@ double GetWSDist(Eigen::VectorXd c1, Eigen::VectorXd c2,
         ori_dist += std::fabs(2 * acos( std::fabs(wp_quat.segment(3,4).dot(prev_point.segment(3,4))) ));
         prev_point = wp_quat;
     }
-    return (pos_dist+ori_dist);
+    std::vector<double> distances(2);
+    distances[0] = pos_dist;
+    distances[1] = ori_dist;
+    return distances;
 }
 
 
 bool ShortestDistanceCheck(std::vector<Eigen::VectorXd> seg, ikHandler* ik_handler){
     // For all possible configurations, generate more segments
     if (ik_handler->solveIK(seg[2])){
+        // std::vector<double> pos_dist; pos_dist.clear();
+        // std::vector<double> ori_dist; ori_dist.clear();
         std::vector<double> dist; dist.clear();
         // std::cout<< "Solutions: " << ik_handler->solution.transpose() * (180/M_PI) << "\n";
         for (int i=0; i<ik_handler->solution.cols(); ++i){
             // std::cout<< "Solution: " << ik_handler->solution.col(i).transpose()*(180/M_PI) << "\n";
-            double distance = GetWSDist(seg[1],ik_handler->solution.col(i),ik_handler);
-            dist.push_back( distance );
+            std::vector<double> distances = GetWSDist(seg[1],ik_handler->solution.col(i),
+                ik_handler);
+            // pos_dist.push_back( distances[0] );
+            // ori_dist.push_back( distances[1] );
+            dist.push_back( distances[0] + distances[1] );
             // std::cout<< "Positional Distance: " << distances[0] << ". Orientational Distance: " 
             // << distances[1] << "\n";
         }
-        if ( (ik_handler->solution.col(std::min_element(dist.begin(),dist.end()) - dist.begin())-
-                seg[3]).norm() > 1e-2 )
-            return false;
-        else
+        // if ( std::min_element(pos_dist.begin(),pos_dist.end()) - pos_dist.begin() == 
+        //     std::min_element(ori_dist.begin(),ori_dist.end()) - ori_dist.begin() )
+        if ( (ik_handler->solution.col(std::min_element(dist.begin(),dist.end())
+                 - dist.begin()) - seg[3]).norm() < 1e-2 )
             return true;
+        else
+            return false;
     }
     else{
         // std::cout<< "BUGGGGG!!!! IK not feasible\n";

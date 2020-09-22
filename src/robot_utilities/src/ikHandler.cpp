@@ -215,6 +215,19 @@ bool ikHandler::IsWithinLimits(Eigen::VectorXd joint_config){
 
 //////////////////////// MAIN FUNCTION //////////////////////////////////////////////////
 bool ikHandler::solveIK(Eigen::VectorXd _target){
+    // Make the Cartesian Axes Perpendicular. Evaluate // by = bz x bx and // bx = by x bz
+    // by
+    _target(6) = (_target(10)*_target(5)) - (_target(11)*_target(4));
+    _target(7) = (_target(11)*_target(3)) - (_target(9)*_target(5));
+    _target(8) = (_target(9)*_target(4)) - (_target(10)*_target(3));
+    // bx
+    _target(3) = (_target(7)*_target(11)) - (_target(8)*_target(10));
+    _target(4) = (_target(8)*_target(9)) - (_target(6)*_target(11));
+    _target(5) = (_target(6)*_target(10)) - (_target(7)*_target(9));
+    _target.segment(3,3) /= _target.segment(3,3).norm(); //bx
+    _target.segment(9,3) /= _target.segment(9,3).norm(); //by
+    _target.segment(6,3) /= _target.segment(6,3).norm(); //bz
+
     // Find target with respect to robot base
     Eigen::Matrix4d target_robBase = Eigen::Matrix4d::Identity();
     target_robBase.block(0,0,3,1) = _target.segment(3,3);
@@ -260,7 +273,7 @@ bool ikHandler::solveIK(Eigen::VectorXd _target){
         target.segment(3,3) /= target.segment(3,3).norm(); //bx
         target.segment(9,3) /= target.segment(9,3).norm(); //by
         target.segment(6,3) /= target.segment(6,3).norm(); //bz
-
+        
         solution.resize(OptVarDim,1);
         
         std::vector<double> iterator(OptVarDim);
