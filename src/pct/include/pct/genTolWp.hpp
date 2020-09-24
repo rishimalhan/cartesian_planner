@@ -15,6 +15,15 @@
 #include <Eigen/Eigen>
 #include <cmath>
 
+double LimitAngle(double angle){
+    if (angle < -M_PI)
+        return (angle + 2*M_PI);
+    if (angle > M_PI)
+        return (angle - 2*M_PI);
+    else 
+        return angle;
+}
+
 std::vector<Eigen::MatrixXd> gen_wp_with_tolerance(const Eigen::MatrixXd& tolerances,
                  double resolution, const Eigen::MatrixXd& path){
     std::vector<Eigen::MatrixXd> tolWP(path.rows());
@@ -29,29 +38,29 @@ std::vector<Eigen::MatrixXd> gen_wp_with_tolerance(const Eigen::MatrixXd& tolera
         wp_subset.block(ctr,6,1,3) = path.block(i,6,1,3);
         wp_subset.block(ctr,9,1,3) = path.block(i,9,1,3);
         ctr += 1;
-        for (double angle = resolution; angle<=tolerances(i,0)/2; angle+=resolution){
-            Eigen::Matrix4d prev_tf;
-            // Alternately apply rotation about Z axis
-            for(int sign=-1; sign<2; sign+=2){
-                Eigen::Matrix3d rot;
-                rot.block(0,0,3,1) = path.block(i,3,1,3).transpose();
-                rot.block(0,1,3,1) = path.block(i,6,1,3).transpose();
-                rot.block(0,2,3,1) = path.block(i,9,1,3).transpose();
-                Eigen::Matrix4d p_T_pp = Eigen::Matrix4d::Identity();
-                p_T_pp.block(0,0,3,3) = rtf::rot_z(sign*angle);
-                Eigen::Matrix4d w_T_pp = rtf::hom_T(path.block(i,0,1,3).transpose(),rot) * p_T_pp; // W_T_p' = W_T_p * P_T_p'
-                if(prev_tf.isApprox(w_T_pp,1e-3)){ // If this waypoint is same as before then don't add
-                    continue;
+        for (double angle_x = tolerances(i,0); angle_x-1e-2 <= tolerances(i,1); angle_x += resolution){
+            for (double angle_y = tolerances(i,2); angle_y-1e-2 <= tolerances(i,3); angle_y += resolution){
+                for (double angle_z = tolerances(i,4); angle_z-1e-2 <= tolerances(i,5); angle_z += resolution){
+                    Eigen::Matrix3d rot;
+                    rot.block(0,0,3,1) = path.block(i,3,1,3).transpose();
+                    rot.block(0,1,3,1) = path.block(i,6,1,3).transpose();
+                    rot.block(0,2,3,1) = path.block(i,9,1,3).transpose();
+                    Eigen::Matrix4d p_T_pp = Eigen::Matrix4d::Identity();
+                    Eigen::VectorXd eul_angles(3);
+                    eul_angles << angle_z, angle_y, angle_x;
+                    // std::cout<< eul_angles.transpose() * (180/M_PI) << "\n";
+                    p_T_pp.block(0,0,3,3) = rtf::eul2rot(eul_angles.transpose(),"ZYX");
+                    Eigen::Matrix4d w_T_pp = rtf::hom_T(path.block(i,0,1,3).transpose(),rot) * p_T_pp; // W_T_p' = W_T_p * P_T_p'
+                    wp_subset.conservativeResize(ctr+1,12);
+                    wp_subset.block(ctr,0,1,3) = w_T_pp.block(0,3,3,1).transpose();
+                    wp_subset.block(ctr,3,1,3) = w_T_pp.block(0,0,3,1).transpose();
+                    wp_subset.block(ctr,6,1,3) = w_T_pp.block(0,1,3,1).transpose();
+                    wp_subset.block(ctr,9,1,3) = w_T_pp.block(0,2,3,1).transpose();
+                    ctr += 1;
                 }
-                prev_tf = w_T_pp;
-                wp_subset.conservativeResize(ctr+1,12);
-                wp_subset.block(ctr,0,1,3) = w_T_pp.block(0,3,3,1).transpose();
-                wp_subset.block(ctr,3,1,3) = w_T_pp.block(0,0,3,1).transpose();
-                wp_subset.block(ctr,6,1,3) = w_T_pp.block(0,1,3,1).transpose();
-                wp_subset.block(ctr,9,1,3) = w_T_pp.block(0,2,3,1).transpose();
-                ctr += 1;
             }
         }
+        // std::cout<< "\n\n";
         tolWP.push_back(wp_subset);
         // std::cout<< wp_subset << "\n\n";
     }

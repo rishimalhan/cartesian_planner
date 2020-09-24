@@ -361,8 +361,11 @@ bool ikHandler::solveIK(Eigen::VectorXd _target){
                     closest_sol << sol_mat.row(i).transpose();
                     config_dist = dist;
                 }
+                ikFamily.conservativeResize(ctr+1);
+                ikFamily(ctr) = ctr;
                 solution.conservativeResize(OptVarDim,ctr+1);
-                solution.col(ctr) = sol_mat.row(i).transpose(); ctr++;
+                solution.col(ctr) = sol_mat.row(i).transpose(); 
+                ctr++;
                 status = true;
             }
         }

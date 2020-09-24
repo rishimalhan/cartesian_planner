@@ -43,6 +43,7 @@ public:
     SerialLink_Manipulator::SerialLink_Manipulator* robot;
     Eigen::MatrixXd solution;
     Eigen::MatrixXd unfiltered_sol;
+    Eigen::VectorXi ikFamily;
     bool useNumIK = false;
     int OptVarDim;  // Decision variable dimension
     double f_val;

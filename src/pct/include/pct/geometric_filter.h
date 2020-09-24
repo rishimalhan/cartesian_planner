@@ -6,8 +6,6 @@
 #include <ros/ros.h>
 #include <robot_utilities/transformation_utilities.hpp>
 #include <pct/timer.hpp>
-
-#include <unordered_map>
 #include <iomanip>
 
 class GeometricFilterHarness
@@ -18,6 +16,17 @@ class GeometricFilterHarness
 
         //
         Eigen::Matrix4d ff_T_tcp_;
+        Eigen::VectorXd world_T_ff;
+
+        // Generate Waypoint xyz_bxbybz from transform
+        Eigen::VectorXd generate_xyz_rxryrz_from_transform(Eigen::Matrix4d transform){
+            Eigen::VectorXd waypoint(12);
+            waypoint.segment(0,3) = transform.block(0,3,3,1);
+            waypoint.segment(3,3) = transform.block(0,0,3,1);
+            waypoint.segment(6,3) = transform.block(0,1,3,1);
+            waypoint.segment(9,3) = transform.block(0,2,3,1);
+            return waypoint;
+        }
 
         // Generate Eigen matrix from euler angles
         Eigen::Matrix4d generate_transform_from_xyz_rxryrz_(
@@ -48,10 +57,17 @@ class GeometricFilterHarness
             return transform;
         }
         bool is_collision_free_(Eigen::Matrix4d const& world_T_tcp,
-                                Eigen::Matrix4d const& flange_frame_T_tcp
+                                Eigen::Matrix4d const& flange_frame_T_tcp,
+                                bool check_coll
                                 )// should be const, but WM is not const correct
         {
+            // TODO:
+            // Take the world_T_tool transform from rosparam 
+            // Since tool origin and flange could have diff transform
             auto world_T_tool = world_T_tcp * flange_frame_T_tcp.inverse();
+            world_T_ff = generate_xyz_rxryrz_from_transform(world_T_tool);
+            if (!check_coll)
+                return true;
             std::vector<Eigen::MatrixXd> tool_tf;
             tool_tf.push_back(world_T_tool);
             auto ret_val = wm.inCollision(tool_tf);
@@ -69,6 +85,7 @@ class GeometricFilterHarness
     public:
         GeometricFilterHarness()
         {
+            world_T_ff.resize(12);
             std::vector<double> tf_part(6);
             Eigen::VectorXd tf_eigen(6);
             // Mesh Path
@@ -127,63 +144,56 @@ class GeometricFilterHarness
             ROS_WARN_STREAM("GeometricFilterHarness initialized");
         }
         
-        std::unordered_map<std::string, std::vector<Eigen::MatrixXd>> generate_flange_frames(
+        std::vector<Eigen::MatrixXd> generate_flange_frames(
                                    std::vector<Eigen::MatrixXd> const& waypoint_samples_all_levels,
-                                   std::unordered_map<std::string, Eigen::MatrixXd> const& tcp_map
+                                   std::vector< Eigen::MatrixXd > const& tcp_list
                                    ) // should be const, but WM is not const correct
         {
-            std::unordered_map<std::string, std::vector<Eigen::MatrixXd>> flange_frames_map;
+            std::vector<Eigen::MatrixXd> flange_frames; flange_frames.clear();
             int const NUM_COLS = 12;
-
+            bool should_take;
             int num_samples_counter = 0;
             int level_counter = 0;
-            int counter = 0;
-            for (auto const& key_value_pair : tcp_map)
-            {
-                auto const& tcp_name = key_value_pair.first;
-                auto const& tcp = key_value_pair.second;
-
-                for (auto const& waypoint_samples_single_level : waypoint_samples_all_levels)
-                {
-                    Eigen::MatrixXd tmp;
+            int no_valid_samples = 0;
+            for (auto const& waypoint_samples_single_level : waypoint_samples_all_levels){
+                Eigen::MatrixXd tmp;
+                int counter = 0;
+                for (auto const& tcp : tcp_list){
+                    auto flange_frame_T_tcp = tcp;
                     // each level has multiple samples
-                    for (auto row_id = 0; row_id < waypoint_samples_single_level.rows(); ++row_id)
-                    {
+                    for (auto row_id = 0; row_id < waypoint_samples_single_level.rows(); ++row_id){
                         auto const& waypoint_sample = waypoint_samples_single_level.row(row_id);
                         auto world_T_tcp = generate_transform_from_xyz_bxbybz_(
                             waypoint_sample
                         );
-                        // auto flange_frame_T_tcp = generate_transform_from_xyz_rxryrz_(
-                        //     tcp(0),
-                        //     tcp(1),
-                        //     tcp(2),
-                        //     tcp(3),
-                        //     tcp(4),
-                        //     tcp(5)
-                        // );
-                        auto flange_frame_T_tcp = tcp;
                         
-                        auto should_take = is_collision_free_(world_T_tcp, flange_frame_T_tcp);
+                        #ifdef PCT
+                        should_take = is_collision_free_(world_T_tcp, flange_frame_T_tcp,true);
+                        #endif
+                        #ifdef BASELINE
+                        should_take = is_collision_free_(world_T_tcp, flange_frame_T_tcp,false);
+                        #endif
                         if (should_take)
                         {
                             
                             tmp.conservativeResize(counter+1, NUM_COLS);
-                            tmp.row(counter) = waypoint_sample;
+                            tmp.row(counter) = world_T_ff;
                             counter++;
+                            no_valid_samples++;
                         }
                         num_samples_counter++;
-                        ROS_DEBUG_STREAM((should_take?"$":"X") << "----- when testing " << tcp_name << ", level " << level_counter << ", row_id " << row_id);    
+                        // ROS_DEBUG_STREAM((should_take?"$":"X") << "----- when testing " << tcp_name << ", level " << level_counter << ", row_id " << row_id);    
                     }
-                    flange_frames_map[tcp_name].push_back(tmp);
-                    level_counter++;
                 }
+                flange_frames.push_back(tmp);
+                level_counter++;
             }
-            auto reduction_percent = 100 * (double)(num_samples_counter-counter)/ num_samples_counter;
+            auto reduction_percent = 100 * (double)(num_samples_counter-no_valid_samples)/ num_samples_counter;
             ROS_INFO_STREAM(std::setw(25) << "Reduction: " << std::setw(20) << std::setprecision(4) << reduction_percent << " %");
-            ROS_INFO_STREAM(std::setw(25) << "Accepted sample count: " << std::setw(20) << std::setprecision(4) << counter);
+            ROS_INFO_STREAM(std::setw(25) << "Accepted sample count: " << std::setw(20) << std::setprecision(4) << no_valid_samples);
             ROS_INFO_STREAM(std::setw(25) << "Total sample count: " << std::setw(20) << std::setprecision(4) << num_samples_counter);
 
-            return flange_frames_map;
+            return flange_frames;
         }
 
 };

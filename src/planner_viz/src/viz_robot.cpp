@@ -5,10 +5,13 @@
 #include <sensor_msgs/JointState.h>
 #include <Eigen/Geometry>
 #include <std_msgs/Bool.h>
+#include <robot_utilities/ikHandler.hpp>
+#include <robot_utilities/Data_Format_Mapping.hpp>
 
 bool doUpdate = true;
 
 Eigen::MatrixXd IncreaseTrajResolution( Eigen::MatrixXd traj ){
+    return traj;
     // High resolution linear interpolation of trajectory to check if traj is actually PC.
     int no_samples = 10;
     Eigen::MatrixXd upd_traj;

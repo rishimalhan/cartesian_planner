@@ -14,9 +14,9 @@
 #include <pct/node_description.hpp>
 #include <pct/graph_description.hpp>
 #include <Eigen/Eigen>
-#include <pct/path_consistency.hpp>
-#include <pct/JacDrivenPCCheck.hpp>
-#include <pct/ShortestDistanceCheck.hpp>
+// #include <pct/path_consistency.hpp>
+// #include <pct/JacDrivenPCCheck.hpp>
+// #include <pct/ShortestDistanceCheck.hpp>
 
 bool isEdge(ikHandler* ik_handler, const std::vector<node*>& node_map, const int parent, const int child){
 
@@ -77,7 +77,6 @@ bool build_graph(ikHandler* ik_handler, const std::vector<node*>& node_map, cons
     std::vector<Edge> edges; edges.clear();
     std::vector<double> weights; weights.clear();
     root_connectivity.resize(node_list[0].size());
-
     for (int i=0; i<node_list[0].size(); ++i)
         root_connectivity[i] = false;
     std::cout<< "Number of levels in the graph: " << node_list.size() << "\n";
@@ -121,7 +120,8 @@ bool build_graph(ikHandler* ik_handler, const std::vector<node*>& node_map, cons
             std::cout<< "##############################################################\n\n";
             return false;
         }
-    }   
+    } 
+    
     std::cout<< "Total #Edges: " << no_connections_eval << ". Valid #edges: " << edges.size() << "\n";
     boost_graph->no_edges = edges.size();
 

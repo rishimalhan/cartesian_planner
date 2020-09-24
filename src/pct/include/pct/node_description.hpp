@@ -19,9 +19,7 @@ struct node{
     Eigen::VectorXd jt_config;
     double g_cost;
     int family_id;
-    // Optional depth and index corresponding to original wpTol
     int depth; 
-    int index;
     Eigen::VectorXd wp; // xyzbxbybz
     Eigen::VectorXd wp_eul; //xyzrxryrz
     Eigen::VectorXd wp_quat; //Quaternion

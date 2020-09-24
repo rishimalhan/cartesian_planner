@@ -18,9 +18,13 @@ cvrg_tf_param:
 
 viz_param:
     {
-        rob_speed: 50
+        rob_speed: 400
     }
 
 gen_path: false
 rob_config: [0,0,0,0,0,0]
 sampling_res: 20 # Degrees
+# The first two values in tolerances are angle
+# theta1 and theta2 bounds
+# Three bounds in total for X Y and Z
+tolerances: [ -70,70,-70,70,0,0 ]

@@ -6,6 +6,6 @@
     <node pkg="tf" name="rob_T_tool" type="static_transform_publisher" args=" 0 0 0 0 0 0 /tool0 /tool_origin 30"/>
 
     <!-- Plot the TCPs -->
-    <node pkg="tf" name="tcp_main" type="static_transform_publisher" args="0.1115 0.3434 0.21779 -1.5708 0.3141 0 /tool0 /tcp_main 30"/>
+    <node pkg="tf" name="tcp_main" type="static_transform_publisher" args="0.1115 0.3434 0.21779 0.0 0.3141 -1.5708 /tool0 /tcp_main 30"/>
 
 </launch>

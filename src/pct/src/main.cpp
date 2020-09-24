@@ -17,9 +17,11 @@
 // #define DEBUG_PATH_CONSISTENCY
 #define GRAPH_SEARCH
 // #define SEARCH_ASSERT
+// #define BASELINE
+#define PCT
 
 
-// #define fileWrite
+#define fileWrite
 
 #include <iostream>
 #include <pct/gen_cvrg_plan.hpp>
@@ -42,6 +44,8 @@
 #include <pct/graph_description.hpp>
 #include <pct/graph_searches.hpp>
 #include <pct/timer.hpp>
+#include <pct/IncreasePathResolution.hpp>
+#include <pct/geometric_filter.h>
 
 
 // Test Cases
@@ -67,20 +71,9 @@ int main(int argc, char** argv){
     ros::NodeHandle main_handler;
     ros::Publisher cvrg_pub = main_handler.advertise<std_msgs::Bool>("cvrg_status",1000);
 
-
-    // // Prahar Testing
-    // Eigen::MatrixXd init_guess(6,1);
-    // init_guess << 0,0,0,0,0,0;
-    // std::string rob_base_link = "base_link";
-    // std::string rob_tip_link = "pen";
-    // std::string urdf_path = ros::package::getPath("robot_utilities") + "/urdf/irb4600.urdf.xacro";
-    // KDL::Frame tcp_frame = KDL::Frame::Identity();
-    // KDL::Frame base_frame = KDL::Frame::Identity();
-    // SerialLink_Manipulator::SerialLink_Manipulator robot(urdf_path, base_frame, tcp_frame, rob_base_link, rob_tip_link);
-    // Eigen::MatrixXd jt_pt(6,1);
-    // jt_pt << 0,0,0,0,0,0;
-    // std::vector<Eigen::MatrixXd> fk_kdl = robot.get_robot_FK_all_links(jt_pt);
-
+    timer main_timer;
+    main_timer.start();
+    double exec_time = 0;
 
     std::string csv_dir;
     csv_dir = ros::package::getPath("pct") + "/data/csv/";
@@ -92,13 +85,6 @@ int main(int argc, char** argv){
         return 0;
     }
     resolution *= (M_PI / 180);
-    double range;
-    if(!ros::param::get("/angular_range",range)){
-        std::cout<< "Unable to Obtain Sampling Resolution\n";
-        return 0;
-    }
-    double angle = range*M_PI / 180; // Total angle is 200. 100 each side
-
 
     ///////////////// CAUTION ///////////////////////////////////////
     // WHEN CHANGING A 6DOF ROBOT FOR ANALYTICAL IK, MAKE SURE CHANGES ARE MADE
@@ -240,17 +226,50 @@ int main(int argc, char** argv){
     }
 
 
-
+    int NumWaypoints = path.rows();
 
 
     // Obtain all the waypoints with tolerances applied at different depths
     // Note these points will be the transformed points in space
+    std::vector<double> tolerances_vec; tolerances_vec.clear();
+    if(!ros::param::get("/tolerances",tolerances_vec)){
+        ROS_WARN("Unable to Obtain Waypoint Tolerances");
+        return 1;
+    }
+    Eigen::MatrixXd tolerances(path.rows(),tolerances_vec.size());
+    for (int i=0; i<path.rows(); ++i){
+        for (int j=0; j<tolerances_vec.size(); ++j){
+            tolerances(i,j) = tolerances_vec[j];
+        }
+    }
+    tolerances *= (M_PI/180);
+
     std::cout<< "Generating Search Samples....\n";
-    Eigen::MatrixXd tolerances = Eigen::MatrixXd::Ones(path.rows(),1)*angle;
+    main_timer.reset();
     std::vector<Eigen::MatrixXd> wpTol =  gen_wp_with_tolerance(tolerances,resolution, path );
-    std::cout<< "Search Samples Generated....\n";
+    ROS_INFO( "Search Samples Generated....COMPUTE TIME: %f",  main_timer.elapsed() );
 
+    #ifdef PCT
+    main_timer.reset();
+    // Geometric Filter Harness
+    GeometricFilterHarness geo_filter;
+    std::vector<Eigen::MatrixXd> ff_frames = 
+    geo_filter.generate_flange_frames( wpTol,tcp_list );
+    exec_time += main_timer.elapsed();
+    ROS_INFO( "Geometric Filter Harness COMPUTE TIME: %f",main_timer.elapsed() );
+    #endif
 
+    #ifdef BASELINE
+    main_timer.reset();
+    // Geometric Filter Harness Bypass
+    GeometricFilterHarness geo_filter;
+    std::vector<Eigen::MatrixXd> ff_frames = 
+    geo_filter.generate_flange_frames( wpTol,tcp_list );
+    exec_time += main_timer.elapsed();
+    ROS_INFO( "Geometric Filter Harness COMPUTE TIME: %f",main_timer.elapsed() );
+    #endif
+
+    
     // Get trajectory path
     std::string traj_path;
     ros::param::get("/cvrg_file_paths/joint_states",traj_path);
@@ -290,12 +309,8 @@ int main(int argc, char** argv){
 
 
 
-
-
-    timer main_timer;
-    main_timer.start();
-
     #ifdef SEQ_IK
+    main_timer.reset();
     trajectory.resize(1,ik_handler.OptVarDim);
     trajectory.row(0) << ik_handler.init_guess.transpose();
     // Using Sequential IK
@@ -346,6 +361,7 @@ int main(int argc, char** argv){
         std::cout<< "First point not reachable\n";
     }
     ik_handler.useNumIK = false;
+    ROS_INFO( "Sequential IK COMPUTE TIME: %f", main_timer.reset().elapsed() );
     #endif
 
 
@@ -374,12 +390,12 @@ int main(int argc, char** argv){
 
     #ifdef GRAPH_SEARCH
     // Graph Search
-    Eigen::MatrixXi path_idx(wpTol.size(),1);
-    Eigen::MatrixXi tcp_idx(wpTol.size(),1);
+    Eigen::MatrixXi path_idx(NumWaypoints,1);
+    Eigen::MatrixXi tcp_idx(NumWaypoints,1);
     Eigen::MatrixXi strt_discnt;
     std::vector<node*> node_map;
     std::vector<Eigen::VectorXi> node_list;
-    success_flags = Eigen::MatrixXd::Ones(wpTol.size(),1)*0;
+    success_flags = Eigen::MatrixXd::Ones(NumWaypoints,1)*0;
     boost_graph graph;
     double search_time = 0;
     double no_strt_nodes;
@@ -387,13 +403,14 @@ int main(int argc, char** argv){
     timer search_timer;
 
     main_timer.reset();
-    if(!gen_nodes(&ik_handler, &wm, wpTol, tcp_list, node_map, node_list, success_flags)){
+    if(!gen_nodes(&ik_handler, &wm, ff_frames, node_map, node_list, success_flags)){
         std::cout<< "Nodes could not be generated. No solution found\n";
         trajectory.resize(1,ik_handler.OptVarDim);
         trajectory.row(0) << ik_handler.init_guess.transpose();
     }
     else{
-        std::cout<< "Nodes generation compute time: " << main_timer.elapsed() << std::endl;
+        exec_time += main_timer.elapsed();
+        ROS_INFO( "Nodes generation COMPUTE TIME: %f", main_timer.elapsed() );
         #ifdef DEBUG_MODE_MAIN
         Eigen::MatrixXi reach_map = Eigen::MatrixXi::Ones(path.rows(),wpTol[0].rows())*0;
         for (int i=0; i<node_map.size(); ++i)
@@ -411,7 +428,8 @@ int main(int argc, char** argv){
             trajectory.row(0) << ik_handler.init_guess.transpose();
         }
         else{
-            std::cout<< "Graph generation compute time: " << main_timer.elapsed() << std::endl;
+            exec_time += main_timer.elapsed();
+            ROS_INFO( "Graph generation COMPUTE TIME: %f", main_timer.elapsed() );
             Eigen::VectorXi strt_nodes = node_list[0];
             double lowest_cost = std::numeric_limits<double>::infinity();
             strt_discnt = Eigen::MatrixXi::Ones(strt_nodes.size(),1); // For debugging
@@ -438,12 +456,10 @@ int main(int argc, char** argv){
 
                 if(search_success){ // Get the shortest path to a leaf node in terms of node ids
                     // Generate Trajectory
-                    Eigen::MatrixXd curr_traj(wpTol.size(), robot.NrOfJoints);
-                    Eigen::MatrixXi curr_idx(wpTol.size(),1);
-                    Eigen::MatrixXi curr_tcp_idx(wpTol.size(),1);
+                    Eigen::MatrixXd curr_traj(NumWaypoints, robot.NrOfJoints);
+                    Eigen::MatrixXi curr_tcp_idx(NumWaypoints,1);
                     for(int k=0; k<id_path.size(); ++k){
                         curr_traj.row(k) = node_map[id_path(k)]->jt_config.transpose();
-                        curr_idx(k,0) = node_map[id_path(k)]->index;
                         curr_tcp_idx(k,0) = node_map[id_path(k)]->tcp_id;
                     }
                     // Evaluate trajectory cost
@@ -458,7 +474,6 @@ int main(int argc, char** argv){
                         #endif
                         lowest_cost = path_cost;
                         trajectory = curr_traj;
-                        path_idx = curr_idx;
                         tcp_idx = curr_tcp_idx;
 
                         #ifdef DEBUG_MODE_MAIN
@@ -471,7 +486,6 @@ int main(int argc, char** argv){
                             for (int l=0; l<graph.paths.cols(); ++l)
                                 pathsToleaf(k,l) = node_map[graph.paths(k,l)]->index;
                         #ifdef fileWrite
-                        file_rw::file_write(csv_dir+"path_idx.csv",path_idx);
                         file_rw::file_write(csv_dir+"tcp_idx.csv",tcp_idx);
                         file_rw::file_write(csv_dir+"path_cost.csv",path_cost_mat);
                         file_rw::file_write(csv_dir+"pathsToLeaf.csv",pathsToleaf);
@@ -481,7 +495,7 @@ int main(int argc, char** argv){
                         //
                         #endif
                     }
-                    success_flags = Eigen::MatrixXd::Ones(wpTol.size(),1);
+                    success_flags = Eigen::MatrixXd::Ones(NumWaypoints,1);
                 }
                 else{
                     strt_discnt(i) = 0;
@@ -494,6 +508,7 @@ int main(int argc, char** argv){
             // std::cout<< "Trajectory: \n" << trajectory << "\n";
         }
     }
+    exec_time += search_time;
     std::cout<< "Number of Start Nodes: " << no_strt_nodes << "\n";
     std::cout<< "Time per search: " << search_time/no_djk << "\n";
     #ifdef fileWrite
@@ -502,18 +517,23 @@ int main(int argc, char** argv){
     #endif
     
 
+    // Recompute config path based on high workspace path resolution
+    Eigen::MatrixXd traj_hr = IncreasePathResolution(trajectory,&ik_handler);
+
+
+
     // Evaluate trajectory cost
     double max_change = -std::numeric_limits<double>::infinity();
     double path_cost = 0;
-    for (int i=0; i<trajectory.rows()-1;++i){
-        Eigen::ArrayXd jt_diff = (trajectory.row(i+1) - trajectory.row(i)).transpose();
+    for (int i=0; i<traj_hr.rows()-1;++i){
+        Eigen::ArrayXd jt_diff = (traj_hr.row(i+1) - traj_hr.row(i)).transpose();
         path_cost += jt_diff.abs().maxCoeff();
         if (jt_diff.abs().maxCoeff()>max_change)
             max_change = jt_diff.abs().maxCoeff();
         if (jt_diff.abs().maxCoeff()*(180/M_PI) > 130){
             std::cout<< "Max Change: " << jt_diff.abs().maxCoeff()*(180/M_PI) << "\n";
-            std::cout<< "Config-1:" << trajectory.row(i)*(180/M_PI) << "\n";
-            std::cout<< "Config-2:" << trajectory.row(i+1)*(180/M_PI) << "\n";
+            std::cout<< "Config-1:" << traj_hr.row(i)*(180/M_PI) << "\n";
+            std::cout<< "Config-2:" << traj_hr.row(i+1)*(180/M_PI) << "\n";
         }
     }
     #ifdef GRAPH_SEARCH
@@ -521,11 +541,11 @@ int main(int argc, char** argv){
     std::cout<< "Total number of nodes in graph: " << graph.no_nodes << std::endl;
     #endif
     std::cout<< "Maximum Joint Angle Change in Trajectory: " << max_change*(180/M_PI) << "\n";
-    std::cout<< "Number of waypoints: " << wpTol.size() << "\n";
+    std::cout<< "Number of waypoints: " << NumWaypoints << "\n";
     std::cout<< "Number of TCPs: " << no_tcps << "\n";
     std::cout<< "Trajectory Cost: " << path_cost << "\n";
-
-    file_rw::file_write(traj_path,trajectory);
+    std::cout<< "Execution Time: " << exec_time << "\n";
+    file_rw::file_write(traj_path,traj_hr);
     file_rw::file_write(success_flag_path,success_flags);
     std::cout<< "#################################################\n";
 

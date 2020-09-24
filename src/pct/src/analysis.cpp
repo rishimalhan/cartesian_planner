@@ -31,8 +31,8 @@
 #include <pct/graph_description.hpp>
 #include <pct/graph_searches.hpp>
 #include <pct/timer.hpp>
-#include <pct/path_consistency.hpp>
-#include <pct/path_consistency_convergence.hpp>
+// #include <pct/path_consistency.hpp>
+// #include <pct/path_consistency_convergence.hpp>
 
 
 
@@ -389,7 +389,7 @@ int main(int argc, char** argv){
     segment[1] = c1;
     segment[2] = target2;
     segment[3] = c2;
-    std::cout<< "Validity: " << ShortestDistanceCheck(segment, &ik_handler) << "\n";
+    // std::cout<< "Validity: " << ShortestDistanceCheck(segment, &ik_handler) << "\n";
 
     return 0;
 
@@ -543,7 +543,7 @@ int main(int argc, char** argv){
     // std::cout<< "Consistency Status: "<< 
     // path_consistency(seg, &ik_handler, get_dist(seg, &ik_handler)) << "\n";
     // path_consistency_cvg(seg, &ik_handler, get_dist(seg, &ik_handler)) << "\n";
-    JacDrivenPCCheck(seg, jacobians, &ik_handler);
+    // JacDrivenPCCheck(seg, jacobians, &ik_handler);
 
     return 0;
 
