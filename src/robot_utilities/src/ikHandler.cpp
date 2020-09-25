@@ -136,6 +136,10 @@ void ikHandler::setTcpFrame(const Eigen::MatrixXd& _tcpframe){
     robot->TCPFrame = DFMapping::Eigen_to_KDLFrame(_tcpframe);
 };
 
+Eigen::MatrixXd ikHandler::getTcpFrame(){
+    return DFMapping::KDLFrame_to_Eigen(robot->TCPFrame);
+};
+
 Eigen::VectorXd ikHandler::getFFTarget(){
     return target;    
 };
@@ -236,7 +240,6 @@ bool ikHandler::solveIK(Eigen::VectorXd _target){
     target_robBase.block(0,3,3,1) = _target.segment(0,3);
     target_robBase = robBase_T_world*target_robBase;
 
-
     // Solve IK for target wrt robot base frame
     // target is where the flange needs to be wrt robot base
     status = true;
@@ -319,7 +322,6 @@ bool ikHandler::solveIK(Eigen::VectorXd _target){
         target.segment(6,3) = target_robBase.block(0,1,3,1);
         target.segment(9,3) = target_robBase.block(0,2,3,1);
         target.segment(0,3) = target_robBase.block(0,3,3,1);
-
         // Make the Cartesian Axes Perpendicular. Evaluate // by = bz x bx and // bx = by x bz
         // by
         target(6) = (target(10)*target(5)) - (target(11)*target(4));
@@ -332,14 +334,12 @@ bool ikHandler::solveIK(Eigen::VectorXd _target){
         target.segment(3,3) /= target.segment(3,3).norm(); //bx
         target.segment(9,3) /= target.segment(9,3).norm(); //by
         target.segment(6,3) /= target.segment(6,3).norm(); //bz
-
         Eigen::MatrixXd sol_mat;
         ik_analytical::compute_IK(target,status,sol_mat);
         if (!status)
             return status;
         if (urIKPatch)
             apply_URikPatch(sol_mat);
-        
         // std::cout<< "\n\n" << sol_mat << "\n\n";
         status = false; // Make status false again so we can check if solutions exist
         double config_dist = std::numeric_limits<double>::infinity();

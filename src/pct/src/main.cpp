@@ -18,10 +18,10 @@
 #define GRAPH_SEARCH
 // #define SEARCH_ASSERT
 // #define BASELINE
-#define PCT
+#define PCT_PLANNER
 
 
-#define fileWrite
+// #define fileWrite
 
 #include <iostream>
 #include <pct/gen_cvrg_plan.hpp>
@@ -46,8 +46,8 @@
 #include <pct/timer.hpp>
 #include <pct/IncreasePathResolution.hpp>
 #include <pct/geometric_filter.h>
-
-
+#include <gen_utilities/utilities.hpp>
+#include <unordered_set>
 // Test Cases
 // roslaunch pct bootstrap.launch part:=fender tool:=cam_sander_0 viz:=sim
 // roslaunch pct bootstrap.launch part:=step_slab tool:=ferro_sander viz:=sim
@@ -77,7 +77,6 @@ int main(int argc, char** argv){
 
     std::string csv_dir;
     csv_dir = ros::package::getPath("pct") + "/data/csv/";
-
 
     double resolution;
     if(!ros::param::get("/sampling_res",resolution)){
@@ -249,7 +248,7 @@ int main(int argc, char** argv){
     std::vector<Eigen::MatrixXd> wpTol =  gen_wp_with_tolerance(tolerances,resolution, path );
     ROS_INFO( "Search Samples Generated....COMPUTE TIME: %f",  main_timer.elapsed() );
 
-    #ifdef PCT
+    #ifdef PCT_PLANNER
     main_timer.reset();
     // Geometric Filter Harness
     GeometricFilterHarness geo_filter;
@@ -417,12 +416,12 @@ int main(int argc, char** argv){
             reach_map(node_map[i]->depth,node_map[i]->index) = 1;
         #ifdef fileWrite
         file_rw::file_write(csv_dir+"reach_map.csv",reach_map);
-        #endif
-        #endif
+        #endif // fileWrite
+        #endif // DEBUG_MODE_MAIN
 
         std::vector<bool> root_connectivity;
         main_timer.reset();
-        if(!build_graph(&ik_handler, node_map,node_list,&graph,root_connectivity)){
+        if(!build_graph(&ik_handler, ff_frames, &wm, node_map,node_list,&graph,root_connectivity)){
             std::cout<< "Edges could not be created. No solution found\n";
             trajectory.resize(1,ik_handler.OptVarDim);
             trajectory.row(0) << ik_handler.init_guess.transpose();

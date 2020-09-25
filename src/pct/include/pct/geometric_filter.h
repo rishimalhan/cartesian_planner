@@ -167,7 +167,7 @@ class GeometricFilterHarness
                             waypoint_sample
                         );
                         
-                        #ifdef PCT
+                        #ifdef PCT_PLANNER
                         should_take = is_collision_free_(world_T_tcp, flange_frame_T_tcp,true);
                         #endif
                         #ifdef BASELINE

@@ -64,6 +64,7 @@ public:
 
     void setTcpFrame(const Eigen::MatrixXd&);
     Eigen::VectorXd getFFTarget();
+    Eigen::MatrixXd getTcpFrame();
     // For UR series
     void apply_URikPatch(Eigen::MatrixXd &);
     void enable_URikPatch();

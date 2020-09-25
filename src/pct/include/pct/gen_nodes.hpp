@@ -10,13 +10,12 @@
 #ifndef __gen_nodes_hpp__
 #define __gen_nodes_hpp__
 
-#include <robot_utilities/ikHandler.hpp>
 #include <pct/node_description.hpp>
 #include <robot_utilities/world_manager.hpp>
 #include <robot_utilities/Data_Format_Mapping.hpp>
 #include <robot_utilities/transformation_utilities.hpp>
-#include <pct/geometric_filter.h>
 
+#ifdef BASELINE
 bool gen_nodes(ikHandler* ik_handler, WM::WM* wm, std::vector<Eigen::MatrixXd>& ff_frames,
                 std::vector<node*>& node_map, std::vector<Eigen::VectorXi>& node_list,
                 Eigen::MatrixXd& success_flags){
@@ -44,7 +43,8 @@ bool gen_nodes(ikHandler* ik_handler, WM::WM* wm, std::vector<Eigen::MatrixXd>& 
             int no_sols = 0;
             if (ik_handler->solveIK(waypoints.row(j).transpose())){
                 // For every solution create a node
-                for (int sol_no=0; sol_no<ik_handler->solution.cols();++sol_no){
+                // for (int sol_no=0; sol_no<ik_handler->solution.cols();++sol_no){
+                for (int sol_no=0; sol_no<1;++sol_no){
                     // Check for collision
                     std::vector<Eigen::MatrixXd> fk_kdl = ik_handler->robot->get_robot_FK_all_links(ik_handler->solution.col(sol_no));
                     if(!wm->inCollision( fk_kdl )){
@@ -97,6 +97,20 @@ bool gen_nodes(ikHandler* ik_handler, WM::WM* wm, std::vector<Eigen::MatrixXd>& 
     std::cout<< "##############################################################\n\n";
     return status;
 };
+#endif
 
+
+
+
+
+// Redundant Operation
+#ifdef PCT_PLANNER
+bool gen_nodes(ikHandler* ik_handler, WM::WM* wm, std::vector<Eigen::MatrixXd>& ff_frames,
+                std::vector<node*>& node_map, std::vector<Eigen::VectorXi>& node_list,
+                Eigen::MatrixXd& success_flags){
+    ik_handler->setTcpFrame(Eigen::MatrixXd::Identity(4,4));
+    return true;
+}
+#endif
 
 #endif

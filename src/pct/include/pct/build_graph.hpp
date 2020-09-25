@@ -10,48 +10,19 @@
 #ifndef __build_graph_hpp__
 #define __build_graph_hpp__
 
-#include <robot_utilities/ikHandler.hpp>
 #include <pct/node_description.hpp>
 #include <pct/graph_description.hpp>
 #include <Eigen/Eigen>
-// #include <pct/path_consistency.hpp>
-// #include <pct/JacDrivenPCCheck.hpp>
-// #include <pct/ShortestDistanceCheck.hpp>
+#include <robot_utilities/world_manager.hpp>
 
-bool isEdge(ikHandler* ik_handler, const std::vector<node*>& node_map, const int parent, const int child){
+#ifdef PCT_PLANNER
+#include <pct/sample_nodes.hpp>
+#endif
+
+bool isEdge(const std::vector<node*>& node_map, const int parent, const int child){
 
     if (node_map[parent]->family_id != node_map[child]->family_id)
         return false;
-
-    // Path-Consistency Constraint
-    // std::vector<Eigen::VectorXd> seg(4); // x1,q1,x2,q2
-    // seg[0] = node_map[parent]->wp;
-    // seg[1] = node_map[parent]->jt_config;
-    // seg[2] = node_map[child]->wp;
-    // seg[3] = node_map[child]->jt_config;
-    // if (!ShortestDistanceCheck(seg, ik_handler))
-    //     return false;
-
-
-
-    // std::cout<< "Path Consistent Configurations: \n";
-    // std::cout<< seg[1].transpose() * 180 / M_PI << "\n";
-    // std::cout<< seg[3].transpose() * 180 / M_PI << "\n\n";
-
-    // if (!path_consistency(seg, ik_handler, get_dist(seg, ik_handler))) // Returns true if jt configs are path consistent
-        // return false;
-
-    // seg.resize(6);
-    // seg[0] = node_map[parent]->wp;
-    // seg[1] = node_map[parent]->wp_eul;
-    // seg[2] = node_map[parent]->jt_config;
-    // seg[3] = node_map[child]->wp;
-    // seg[4] = node_map[child]->wp_eul;
-    // seg[5] = node_map[child]->jt_config;
-    // std::vector<Eigen::MatrixXd> jacobians(2);
-    // jacobians[0] = node_map[parent]->jacobian;
-    // jacobians[1] = node_map[child]->jacobian;
-    // JacDrivenPCCheck(seg, jacobians, ik_handler);
     return true;
 }
 
@@ -63,11 +34,16 @@ double computeGCost( const std::vector<node*>& node_map, const int parent, const
 }
 
 
+
+
+#ifdef BASELINE
 // Graph is boost library compatible
 // Graphs equal to the number of root nodes are generated
 // CAUTION: root_id is the node id which is used to access node_map.
 // This code assumes that all nodes are valid within joint limits of robot
-bool build_graph(ikHandler* ik_handler, const std::vector<node*>& node_map, const std::vector<Eigen::VectorXi>& node_list,
+bool build_graph(ikHandler* ik_handler, std::vector<Eigen::MatrixXd>& ff_frames,
+                    WM::WM* wm,
+                    const std::vector<node*>& node_map, const std::vector<Eigen::VectorXi>& node_list,
                     boost_graph* boost_graph, std::vector<bool>& root_connectivity){
     boost_graph->no_nodes = node_map.size();
     std::cout<< "\n##############################################################\n";
@@ -96,7 +72,7 @@ bool build_graph(ikHandler* ik_handler, const std::vector<node*>& node_map, cons
         for (int j=0; j<curr_level.size(); ++j){
             for (int k=0; k<next_level.size(); ++k){
                 no_connections_eval++;
-                if ( isEdge(ik_handler, node_map, curr_level(j), next_level(k)) ){
+                if ( isEdge(node_map, curr_level(j), next_level(k)) ){
                     if (i==0) // Mark this root to be connected to graph
                         root_connectivity[j] = true;
                     edges.push_back( Edge(curr_level(j),next_level(k)) );
@@ -137,7 +113,123 @@ bool build_graph(ikHandler* ik_handler, const std::vector<node*>& node_map, cons
 
     boost_graph->no_levels = node_list.size();
     return true;
+};
+#endif // End baseline functions
+
+
+
+
+
+
+
+
+#ifdef PCT_PLANNER
+bool InsertNode( Eigen::VectorXi parents, Eigen::VectorXi children, 
+                    std::vector<Edge>& edges, std::vector<double>& weights,
+                    ikHandler* ik_handler, const std::vector<node*>& node_map,
+                    int& no_connections_eval ){
+    bool atleast_one_edge;
+    for (int i=0; i<parents.size(); ++i){
+        for (int j=0; j<children.size(); ++j){
+            if ( isEdge(node_map, parents(i), children(j)) ){
+                edges.push_back( Edge(parents(i),children(j)) );
+                weights.push_back( computeGCost(node_map, parents(i), children(j)) );
+                atleast_one_edge = true;
+            }
+            no_connections_eval++;
+        }
+    }
+    atleast_one_edge = false;
+    return atleast_one_edge;
 }
 
+// Graph is boost library compatible
+// Graphs equal to the number of root nodes are generated
+// CAUTION: root_id is the node id which is used to access node_map.
+// This code assumes that all nodes are valid within joint limits of robot
+bool build_graph(ikHandler* ik_handler, std::vector<Eigen::MatrixXd>& ff_frames,
+                    WM::WM* wm,
+                    std::vector<node*>& node_map, std::vector<Eigen::VectorXi>& node_list,
+                    boost_graph* boost_graph, std::vector<bool>& root_connectivity){
+    
+    std::cout<< "\n##############################################################\n";
+    std::cout<< "Generating Graph\n";
+    node_map.clear();
+    node_list.clear();
+    int no_connections_eval = 0;
+    std::vector<Edge> edges; edges.clear();
+    std::vector<double> weights; weights.clear();
+    root_connectivity.resize(ff_frames[0].size());
+    for (int i=0; i<ff_frames[0].size(); ++i)
+        root_connectivity[i] = false;
+    std::cout<< "Number of levels in the graph: " << ff_frames.size() << "\n";
+    bool stopping_condition = false;
+    std::vector<std::vector<int>> unvisited_ids(ff_frames.size());
+    for (int i=0; i<ff_frames.size();++i){
+        for (int j=0; j<ff_frames[i].rows();++j)
+            unvisited_ids[i].push_back(j);
+    }
+    int itr = 0;
+    int max_itr = 50;
+    while (!stopping_condition){
+        bool samples_gen = false;
+        // Iterate through each level
+        for (int depth=0; depth<ff_frames.size(); ++depth){
+            // Sample nodes to be added to graph
+            std::vector<int> sampled_nodes;
+            if( !GenNodeSamples(ff_frames, ik_handler, wm, sampled_nodes, unvisited_ids, 
+                             node_map, node_list, depth) )
+                continue;
+            // Discontinuity checker goes here
+            samples_gen = true;
+            // Integrate nodes with graph
+            for (auto node_id : sampled_nodes){
+                Eigen::VectorXi curr_level(1);
+                curr_level(0) = node_id;
+                // Connect to next level
+                if (depth+1<node_list.size()){
+                    InsertNode( curr_level,node_list[depth+1],edges, 
+                        weights,ik_handler,node_map, no_connections_eval );
+                }
+                // Connect to previous level
+                if (depth-1>=0){
+                    InsertNode( node_list[depth-1],curr_level,edges, 
+                        weights,ik_handler,node_map, no_connections_eval );    
+                }
+            }
+        }
+        itr++;
+        if (!samples_gen)
+            stopping_condition = true;
+    }
+    boost_graph->leaf_nodes = node_list[node_list.size()-1];
+    boost_graph->no_nodes = node_map.size();
+    std::cout<< "Total #Edges: " << no_connections_eval << ". Valid #edges: " << edges.size() << "\n";
+    boost_graph->no_edges = edges.size();
 
+    const int num_nodes = node_map.size();
+    int num_arcs = edges.size();
+    graph_t g(edges.begin(), edges.end(), weights.begin(), num_nodes); boost_graph->g = g;
+    std::vector<vertex_descriptor> p(num_vertices(g)); boost_graph->p = p;
+    std::vector<double> d(num_vertices(g)); boost_graph->d = d;
+
+    property_map<graph_t, edge_weight_t>::type weightmap = get(edge_weight, boost_graph->g);
+
+    std::cout<< "##############################################################\n";
+
+    boost_graph->no_levels = node_list.size();
+
+    for (int i=0; i<node_list[0].size();++i){
+        if (out_degree(node_list[0](i),boost_graph->g)>0)
+            root_connectivity[i] = true;
+    }
+
+    return true;
+};
+#endif // End PCT functionality
+
+
+
+
+// End header
 #endif
