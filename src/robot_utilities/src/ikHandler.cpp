@@ -359,10 +359,11 @@ bool ikHandler::solveIK(Eigen::VectorXd _target){
                 double dist = (sol_mat.row(i).transpose() - init_guess).norm();
                 if (dist < config_dist){
                     closest_sol << sol_mat.row(i).transpose();
+                    closest_sol_fam = i;
                     config_dist = dist;
                 }
                 ikFamily.conservativeResize(ctr+1);
-                ikFamily(ctr) = ctr;
+                ikFamily(ctr) = i;
                 solution.conservativeResize(OptVarDim,ctr+1);
                 solution.col(ctr) = sol_mat.row(i).transpose(); 
                 ctr++;

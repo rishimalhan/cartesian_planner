@@ -44,6 +44,7 @@ public:
     Eigen::MatrixXd solution;
     Eigen::MatrixXd unfiltered_sol;
     Eigen::VectorXi ikFamily;
+    int closest_sol_fam;
     bool useNumIK = false;
     int OptVarDim;  // Decision variable dimension
     double f_val;

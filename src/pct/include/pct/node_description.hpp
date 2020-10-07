@@ -22,6 +22,7 @@ struct node{
     int depth; 
     Eigen::VectorXd wp; // xyzbxbybz
     Eigen::VectorXd wp_eul; //xyzrxryrz
+    Eigen::VectorXd wp_qt; //xyzquat
     Eigen::VectorXd wp_quat; //Quaternion
     Eigen::VectorXd wp_ff; // xyzbxbybz of flange wrt rob_base
     Eigen::MatrixXd jacobian;

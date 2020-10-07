@@ -21,7 +21,7 @@
 #define PCT_PLANNER
 
 
-// #define fileWrite
+#define fileWrite
 
 #include <iostream>
 #include <pct/gen_cvrg_plan.hpp>
@@ -48,6 +48,7 @@
 #include <pct/geometric_filter.h>
 #include <gen_utilities/utilities.hpp>
 #include <unordered_set>
+#include <random>
 // Test Cases
 // roslaunch pct bootstrap.launch part:=fender tool:=cam_sander_0 viz:=sim
 // roslaunch pct bootstrap.launch part:=step_slab tool:=ferro_sander viz:=sim
@@ -67,6 +68,8 @@
 
 
 int main(int argc, char** argv){
+    srand(time(0));
+
     ros::init(argc,argv,"pct_main");
     ros::NodeHandle main_handler;
     ros::Publisher cvrg_pub = main_handler.advertise<std_msgs::Bool>("cvrg_status",1000);
@@ -224,7 +227,6 @@ int main(int argc, char** argv){
         path = load_plan(path_file); // Pre computed path file
     }
 
-
     int NumWaypoints = path.rows();
 
 
@@ -248,26 +250,11 @@ int main(int argc, char** argv){
     std::vector<Eigen::MatrixXd> wpTol =  gen_wp_with_tolerance(tolerances,resolution, path );
     ROS_INFO( "Search Samples Generated....COMPUTE TIME: %f",  main_timer.elapsed() );
 
-    #ifdef PCT_PLANNER
-    main_timer.reset();
-    // Geometric Filter Harness
+    // Geometric Filter Harness Initializer
     GeometricFilterHarness geo_filter;
     std::vector<Eigen::MatrixXd> ff_frames = 
     geo_filter.generate_flange_frames( wpTol,tcp_list );
-    exec_time += main_timer.elapsed();
-    ROS_INFO( "Geometric Filter Harness COMPUTE TIME: %f",main_timer.elapsed() );
-    #endif
-
-    #ifdef BASELINE
-    main_timer.reset();
-    // Geometric Filter Harness Bypass
-    GeometricFilterHarness geo_filter;
-    std::vector<Eigen::MatrixXd> ff_frames = 
-    geo_filter.generate_flange_frames( wpTol,tcp_list );
-    exec_time += main_timer.elapsed();
-    ROS_INFO( "Geometric Filter Harness COMPUTE TIME: %f",main_timer.elapsed() );
-    #endif
-
+    
     
     // Get trajectory path
     std::string traj_path;
@@ -401,6 +388,7 @@ int main(int argc, char** argv){
     double no_djk = 0;
     timer search_timer;
 
+    std::cout<< "\nGenerating Nodes\n";
     main_timer.reset();
     if(!gen_nodes(&ik_handler, &wm, ff_frames, node_map, node_list, success_flags)){
         std::cout<< "Nodes could not be generated. No solution found\n";
@@ -421,7 +409,8 @@ int main(int argc, char** argv){
 
         std::vector<bool> root_connectivity;
         main_timer.reset();
-        if(!build_graph(&ik_handler, ff_frames, &wm, node_map,node_list,&graph,root_connectivity)){
+        if(!build_graph(&ik_handler, ff_frames, &wm, &geo_filter,
+                        node_map,node_list,&graph,root_connectivity)){
             std::cout<< "Edges could not be created. No solution found\n";
             trajectory.resize(1,ik_handler.OptVarDim);
             trajectory.row(0) << ik_handler.init_guess.transpose();
@@ -515,38 +504,32 @@ int main(int argc, char** argv){
     #endif
     #endif
     
-
-    // Recompute config path based on high workspace path resolution
-    Eigen::MatrixXd traj_hr = IncreasePathResolution(trajectory,&ik_handler);
-
-
-
     // Evaluate trajectory cost
     double max_change = -std::numeric_limits<double>::infinity();
     double path_cost = 0;
-    for (int i=0; i<traj_hr.rows()-1;++i){
-        Eigen::ArrayXd jt_diff = (traj_hr.row(i+1) - traj_hr.row(i)).transpose();
+    for (int i=0; i<trajectory.rows()-1;++i){
+        Eigen::ArrayXd jt_diff = (trajectory.row(i+1) - trajectory.row(i)).transpose();
         path_cost += jt_diff.abs().maxCoeff();
         if (jt_diff.abs().maxCoeff()>max_change)
             max_change = jt_diff.abs().maxCoeff();
-        if (jt_diff.abs().maxCoeff()*(180/M_PI) > 130){
-            std::cout<< "Max Change: " << jt_diff.abs().maxCoeff()*(180/M_PI) << "\n";
-            std::cout<< "Config-1:" << traj_hr.row(i)*(180/M_PI) << "\n";
-            std::cout<< "Config-2:" << traj_hr.row(i+1)*(180/M_PI) << "\n";
-        }
+        // if (jt_diff.abs().maxCoeff()*(180/M_PI) > 130){
+        //     std::cout<< "Max Change: " << jt_diff.abs().maxCoeff()*(180/M_PI) << "\n";
+        //     std::cout<< "Config-1:" << trajectory.row(i)*(180/M_PI) << "\n";
+        //     std::cout<< "Config-2:" << trajectory.row(i+1)*(180/M_PI) << "\n";
+        // }
     }
     #ifdef GRAPH_SEARCH
     std::cout<< "Total number of edges in graph: " << graph.no_edges << std::endl;
     std::cout<< "Total number of nodes in graph: " << graph.no_nodes << std::endl;
     #endif
-    std::cout<< "Maximum Joint Angle Change in Trajectory: " << max_change*(180/M_PI) << "\n";
+    std::cout<< "Maximum Joint Angle Change in Trajectory: " << max_change*(180/M_PI) << " degrees.\n";
     std::cout<< "Number of waypoints: " << NumWaypoints << "\n";
     std::cout<< "Number of TCPs: " << no_tcps << "\n";
     std::cout<< "Trajectory Cost: " << path_cost << "\n";
     std::cout<< "Execution Time: " << exec_time << "\n";
-    file_rw::file_write(traj_path,traj_hr);
+    file_rw::file_write(traj_path,trajectory);
     file_rw::file_write(success_flag_path,success_flags);
-    std::cout<< "#################################################\n";
+    std::cout<< "##############################################################\n";
 
 
 

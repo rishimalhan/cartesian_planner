@@ -3,7 +3,7 @@ tool_name: "ferro_sander"
 world_T_tool: [0,0,0,0,0,0]
 
 ferro_sander:
-  {
+    {
     ff_T_tool: [0.0,0,0.2893,0,0,0, # Original TCP at center
                 5.000000e-02, 0, 2.893000e-01, 0, 0, 0,
                 4.330127e-02, 2.500000e-02, 2.893000e-01, 0, 0, 0,
@@ -23,4 +23,4 @@ ferro_sander:
     tool_stl_viz_path: "package://pct/data/meshes/ferro_sander.stl",
     # Override
     # ff_T_tool: [0.0,0,0.2893,0,0,0] # Original TCP at center. Overriding multiple tcps
-  }
+    }

@@ -40,17 +40,17 @@ static Eigen::MatrixXd load_plan(std::string file_name){
     Eigen::MatrixXd tool_path = file_rw::file_read_mat(file_name); // Pre computed path file
 
 
-    // new path is to keep alternate
-    Eigen::MatrixXd new_path;
-    int ctr=0;
-    for (int i=0; i<tool_path.rows(); ++i){
-        if (i%2==0){
-            new_path.conservativeResize(ctr+1,12);
-            new_path.row(ctr) = tool_path.row(i);
-            ctr++;
-        }
-    }
-    tool_path = new_path;
+    // // new path is to keep alternate
+    // Eigen::MatrixXd new_path;
+    // int ctr=0;
+    // for (int i=0; i<tool_path.rows(); ++i){
+    //     if (i%2==0){
+    //         new_path.conservativeResize(ctr+1,12);
+    //         new_path.row(ctr) = tool_path.row(i);
+    //         ctr++;
+    //     }
+    // }
+    // tool_path = new_path;
 
 
     // // Linearly interpolate more points within waypoints

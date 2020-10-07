@@ -16,7 +16,7 @@ cvrg_tf_param:
 
 viz_param:
     {
-        rob_speed: 400
+        rob_speed: 20
     }
 
 gen_path: false
@@ -26,3 +26,4 @@ sampling_res: 20 # Degrees
 # theta1 and theta2 bounds
 # Three bounds in total for X Y and Z
 tolerances: [   0,0,0,0,-180,180  ]
+max_pct_itr: 10

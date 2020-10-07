@@ -1,6 +1,6 @@
 # Gear Internal Part
 cvrg_file_paths:
-  {
+    {
     # path_file: !!python/object/apply:string.join [[$(arg pkg_path),"data/csv/gear_ext_deburring.csv"], /],
     # path_file: !!python/object/apply:string.join [[$(arg pkg_path),"data/csv/gear_int_inner_test_edge_chamfering.csv"], /],
     path_file: !!python/object/apply:string.join [[$(arg pkg_path),"data/csv/gear_int.csv"], /],
@@ -9,7 +9,7 @@ cvrg_file_paths:
     joint_states: !!python/object/apply:string.join [[$(arg pkg_path),"data/csv/joint_states.csv"], /], # Path to save the trajectory
     mesh_path: !!python/object/apply:string.join [[$(arg pkg_path),"data/meshes/gear_int.stl"], /],
     mesh_viz_path: "package://pct/data/meshes/gear_int.stl",
-  }
+    }
 
 cvrg_tf_param:
     {
@@ -18,7 +18,7 @@ cvrg_tf_param:
 
 viz_param:
     {
-        rob_speed: 400
+        rob_speed: 5
     }
 
 gen_path: false
@@ -27,4 +27,9 @@ sampling_res: 20 # Degrees
 # The first two values in tolerances are angle
 # theta1 and theta2 bounds
 # Three bounds in total for X Y and Z
-tolerances: [ -70,70,-70,70,0,0 ]
+tolerances: [ -70,70,-70,70,-180,180 ]
+max_pct_itr: 1
+
+# Jiffy lube
+# United motors
+# Geico

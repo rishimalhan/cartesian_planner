@@ -19,7 +19,7 @@ class GeometricFilterHarness
         Eigen::VectorXd world_T_ff;
 
         // Generate Waypoint xyz_bxbybz from transform
-        Eigen::VectorXd generate_xyz_rxryrz_from_transform(Eigen::Matrix4d transform){
+        Eigen::VectorXd generate_xyz_bxbybz_from_transform(Eigen::Matrix4d transform){
             Eigen::VectorXd waypoint(12);
             waypoint.segment(0,3) = transform.block(0,3,3,1);
             waypoint.segment(3,3) = transform.block(0,0,3,1);
@@ -56,18 +56,18 @@ class GeometricFilterHarness
             transform.block(0,2,3,1) = vec.segment(9,3);
             return transform;
         }
-        bool is_collision_free_(Eigen::Matrix4d const& world_T_tcp,
-                                Eigen::Matrix4d const& flange_frame_T_tcp,
-                                bool check_coll
-                                )// should be const, but WM is not const correct
+        void GenToolFrame(Eigen::Matrix4d const& world_T_tcp,
+                                Eigen::Matrix4d const& flange_frame_T_tcp){
+            auto world_T_tool = world_T_tcp * flange_frame_T_tcp.inverse();
+            world_T_ff = generate_xyz_bxbybz_from_transform(world_T_tool);
+        };
+    public:
+        bool is_tool_collision_free_(Eigen::VectorXd const& tf)
         {
             // TODO:
             // Take the world_T_tool transform from rosparam 
             // Since tool origin and flange could have diff transform
-            auto world_T_tool = world_T_tcp * flange_frame_T_tcp.inverse();
-            world_T_ff = generate_xyz_rxryrz_from_transform(world_T_tool);
-            if (!check_coll)
-                return true;
+            auto world_T_tool = generate_transform_from_xyz_bxbybz_(tf);
             std::vector<Eigen::MatrixXd> tool_tf;
             tool_tf.push_back(world_T_tool);
             auto ret_val = wm.inCollision(tool_tf);
@@ -82,7 +82,7 @@ class GeometricFilterHarness
             // std::cout<< "Collision Status: " << ret_val << "\n";
             return (ret_val == 0);
         }
-    public:
+        
         GeometricFilterHarness()
         {
             world_T_ff.resize(12);
@@ -152,7 +152,7 @@ class GeometricFilterHarness
             std::vector<Eigen::MatrixXd> flange_frames; flange_frames.clear();
             int const NUM_COLS = 12;
             bool should_take;
-            int num_samples_counter = 0;
+            // int num_samples_counter = 0;
             int level_counter = 0;
             int no_valid_samples = 0;
             for (auto const& waypoint_samples_single_level : waypoint_samples_all_levels){
@@ -167,31 +167,25 @@ class GeometricFilterHarness
                             waypoint_sample
                         );
                         
-                        #ifdef PCT_PLANNER
-                        should_take = is_collision_free_(world_T_tcp, flange_frame_T_tcp,true);
-                        #endif
-                        #ifdef BASELINE
-                        should_take = is_collision_free_(world_T_tcp, flange_frame_T_tcp,false);
-                        #endif
-                        if (should_take)
-                        {
-                            
-                            tmp.conservativeResize(counter+1, NUM_COLS);
-                            tmp.row(counter) = world_T_ff;
-                            counter++;
-                            no_valid_samples++;
-                        }
-                        num_samples_counter++;
+                        GenToolFrame(world_T_tcp, flange_frame_T_tcp);
+                        tmp.conservativeResize(counter+1, NUM_COLS);
+                        tmp.row(counter) = world_T_ff;
+                        counter++;
+                        // no_valid_samples++;
+                        // num_samples_counter++;
                         // ROS_DEBUG_STREAM((should_take?"$":"X") << "----- when testing " << tcp_name << ", level " << level_counter << ", row_id " << row_id);    
                     }
                 }
                 flange_frames.push_back(tmp);
                 level_counter++;
             }
-            auto reduction_percent = 100 * (double)(num_samples_counter-no_valid_samples)/ num_samples_counter;
-            ROS_INFO_STREAM(std::setw(25) << "Reduction: " << std::setw(20) << std::setprecision(4) << reduction_percent << " %");
-            ROS_INFO_STREAM(std::setw(25) << "Accepted sample count: " << std::setw(20) << std::setprecision(4) << no_valid_samples);
-            ROS_INFO_STREAM(std::setw(25) << "Total sample count: " << std::setw(20) << std::setprecision(4) << num_samples_counter);
+            
+            ROS_INFO_STREAM( "Initialization of tool collision checker complete" );
+            ROS_INFO_STREAM( "Generation of flange frames complete" );
+            // auto reduction_percent = 100 * (double)(num_samples_counter-no_valid_samples)/ num_samples_counter;
+            // ROS_INFO_STREAM(std::setw(25) << "Reduction: " << std::setw(20) << std::setprecision(4) << reduction_percent << " %");
+            // ROS_INFO_STREAM(std::setw(25) << "Accepted sample count: " << std::setw(20) << std::setprecision(4) << no_valid_samples);
+            // ROS_INFO_STREAM(std::setw(25) << "Total sample count: " << std::setw(20) << std::setprecision(4) << num_samples_counter);
 
             return flange_frames;
         }

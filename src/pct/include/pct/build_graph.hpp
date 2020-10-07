@@ -14,6 +14,7 @@
 #include <pct/graph_description.hpp>
 #include <Eigen/Eigen>
 #include <robot_utilities/world_manager.hpp>
+#include <pct/geometric_filter.h>
 
 #ifdef PCT_PLANNER
 #include <pct/sample_nodes.hpp>
@@ -42,7 +43,7 @@ double computeGCost( const std::vector<node*>& node_map, const int parent, const
 // CAUTION: root_id is the node id which is used to access node_map.
 // This code assumes that all nodes are valid within joint limits of robot
 bool build_graph(ikHandler* ik_handler, std::vector<Eigen::MatrixXd>& ff_frames,
-                    WM::WM* wm,
+                    WM::WM* wm, GeometricFilterHarness* geo_filter,
                     const std::vector<node*>& node_map, const std::vector<Eigen::VectorXi>& node_list,
                     boost_graph* boost_graph, std::vector<bool>& root_connectivity){
     boost_graph->no_nodes = node_map.size();
@@ -148,7 +149,7 @@ bool InsertNode( Eigen::VectorXi parents, Eigen::VectorXi children,
 // CAUTION: root_id is the node id which is used to access node_map.
 // This code assumes that all nodes are valid within joint limits of robot
 bool build_graph(ikHandler* ik_handler, std::vector<Eigen::MatrixXd>& ff_frames,
-                    WM::WM* wm,
+                    WM::WM* wm, GeometricFilterHarness* geo_filter,
                     std::vector<node*>& node_map, std::vector<Eigen::VectorXi>& node_list,
                     boost_graph* boost_graph, std::vector<bool>& root_connectivity){
     
@@ -170,17 +171,27 @@ bool build_graph(ikHandler* ik_handler, std::vector<Eigen::MatrixXd>& ff_frames,
             unvisited_ids[i].push_back(j);
     }
     int itr = 0;
-    int max_itr = 50;
+    int max_itr;
+    if(!ros::param::get("/max_pct_itr",max_itr)){
+        std::cout<< "Unable to Obtain Maximum Iterations\n";
+        return 0;
+    }
+    FFSampler sampler(ff_frames.size());
     while (!stopping_condition){
         bool samples_gen = false;
         // Iterate through each level
         for (int depth=0; depth<ff_frames.size(); ++depth){
             // Sample nodes to be added to graph
             std::vector<int> sampled_nodes;
-            if( !GenNodeSamples(ff_frames, ik_handler, wm, sampled_nodes, unvisited_ids, 
-                             node_map, node_list, depth) )
+            if( !sampler.GenNodeSamples(ff_frames, ik_handler, wm, geo_filter, sampled_nodes, unvisited_ids, 
+                             node_map, node_list, depth) ){
+                if (node_list[depth].size()==0){
+                    // std::cout<< sampler.graph_stats << "\n";
+                    return false;
+                }
                 continue;
-            // Discontinuity checker goes here
+            }
+                
             samples_gen = true;
             // Integrate nodes with graph
             for (auto node_id : sampled_nodes){
@@ -198,10 +209,25 @@ bool build_graph(ikHandler* ik_handler, std::vector<Eigen::MatrixXd>& ff_frames,
                 }
             }
         }
+        if (edges.size() > 35000000){ // Safe limit for not blowing up memory
+            std::cout<< "\n!!!CAUTION!!!\n";
+            std::cout<< "Number of edges exceed the threshold of 35 million.\n";
+            std::cout<< "Memory space more than 5 gb will be required.\n";
+            std::cout<< "Next safe limit is 50 million with 8 gb memory space.\n";
+            std::cout<< "Terminating Planning\n";
+            std::cout<< "##############################################################\n\n";
+            return false;
+        }
         itr++;
-        if (!samples_gen)
+        // if (!samples_gen)
+        if (itr>=max_itr)
             stopping_condition = true;
     }
+    #ifdef fileWrite
+    std::string csv_dir;
+    csv_dir = ros::package::getPath("pct") + "/data/csv/";
+    file_rw::file_write(csv_dir+"graph_stats.csv",sampler.graph_stats);
+    #endif
     boost_graph->leaf_nodes = node_list[node_list.size()-1];
     boost_graph->no_nodes = node_map.size();
     std::cout<< "Total #Edges: " << no_connections_eval << ". Valid #edges: " << edges.size() << "\n";
