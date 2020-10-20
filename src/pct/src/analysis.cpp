@@ -380,6 +380,8 @@ int main(int argc, char** argv){
     target2.segment(6,3) = fk2.block(0,1,3,1);
     target2.segment(9,3) = fk2.block(0,2,3,1);
 
+    ik_handler.solveIK(target1);
+
 
     Eigen::VectorXd dx = (target2 - target1) / 100;
     ik_handler.init_guess = c1;
@@ -415,10 +417,10 @@ int main(int argc, char** argv){
     //     if (!ik_handler.IsWithinLimits(c1))
     //         continue;
 
-    //     theta = DFMapping::Eigen_to_KDLJoints(c1);
-    //     robot.Jac_KDL(theta,jac_kdl);
-    //     jac = DFMapping::KDLJacobian_to_Eigen(jac_kdl);
-    //     double manip = (jac*jac.transpose()).determinant();
+        // theta = DFMapping::Eigen_to_KDLJoints(c1);
+        // robot.Jac_KDL(theta,jac_kdl);
+        // jac = DFMapping::KDLJacobian_to_Eigen(jac_kdl);
+        // double manip = (jac*jac.transpose()).determinant();
 
     //     if (manip < 0.2)
     //         continue;

@@ -15,7 +15,6 @@
 #include <robot_utilities/Data_Format_Mapping.hpp>
 #include <robot_utilities/transformation_utilities.hpp>
 
-#ifdef BASELINE
 bool gen_nodes(ikHandler* ik_handler, WM::WM* wm, std::vector<Eigen::MatrixXd>& ff_frames,
                 std::vector<node*>& node_map, std::vector<Eigen::VectorXi>& node_list,
                 Eigen::MatrixXd& success_flags){
@@ -43,8 +42,7 @@ bool gen_nodes(ikHandler* ik_handler, WM::WM* wm, std::vector<Eigen::MatrixXd>& 
             int no_sols = 0;
             if (ik_handler->solveIK(waypoints.row(j).transpose())){
                 // For every solution create a node
-                // for (int sol_no=0; sol_no<ik_handler->solution.cols();++sol_no){
-                for (int sol_no=0; sol_no<1;++sol_no){
+                for (int sol_no=0; sol_no<ik_handler->solution.cols();++sol_no){
                     // Check for collision
                     std::vector<Eigen::MatrixXd> fk_kdl = ik_handler->robot->get_robot_FK_all_links(ik_handler->solution.col(sol_no));
                     if(!wm->inCollision( fk_kdl )){
@@ -56,7 +54,6 @@ bool gen_nodes(ikHandler* ik_handler, WM::WM* wm, std::vector<Eigen::MatrixXd>& 
                         node* curr_node = new node;
                         curr_node->id = id_cnt;
                         curr_node->jt_config = ik_handler->solution.col(sol_no);
-                        curr_node->family_id = ik_handler->ikFamily(sol_no);
                         curr_node->depth = i;
                         curr_node->wp = waypoints.row(j).transpose();
                         // curr_node->jacobian = jac;
@@ -97,20 +94,4 @@ bool gen_nodes(ikHandler* ik_handler, WM::WM* wm, std::vector<Eigen::MatrixXd>& 
     std::cout<< "##############################################################\n\n";
     return status;
 };
-#endif
-
-
-
-
-
-// Redundant Operation
-#ifdef PCT_PLANNER
-bool gen_nodes(ikHandler* ik_handler, WM::WM* wm, std::vector<Eigen::MatrixXd>& ff_frames,
-                std::vector<node*>& node_map, std::vector<Eigen::VectorXi>& node_list,
-                Eigen::MatrixXd& success_flags){
-    ik_handler->setTcpFrame(Eigen::MatrixXd::Identity(4,4));
-    return true;
-}
-#endif
-
 #endif

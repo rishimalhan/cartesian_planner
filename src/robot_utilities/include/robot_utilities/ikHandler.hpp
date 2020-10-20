@@ -35,6 +35,7 @@ private:
     Eigen::MatrixXd world_T_robBase;
     Eigen::MatrixXd robBase_T_world;
     Eigen::MatrixXd permutations;
+
 public:
     bool urIKPatch;
     Eigen::VectorXd closest_sol;
@@ -43,8 +44,6 @@ public:
     SerialLink_Manipulator::SerialLink_Manipulator* robot;
     Eigen::MatrixXd solution;
     Eigen::MatrixXd unfiltered_sol;
-    Eigen::VectorXi ikFamily;
-    int closest_sol_fam;
     bool useNumIK = false;
     int OptVarDim;  // Decision variable dimension
     double f_val;

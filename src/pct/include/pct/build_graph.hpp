@@ -16,13 +16,9 @@
 #include <robot_utilities/world_manager.hpp>
 #include <pct/geometric_filter.h>
 
-#ifdef PCT_PLANNER
-#include <pct/sample_nodes.hpp>
-#endif
-
 bool isEdge(const std::vector<node*>& node_map, const int parent, const int child){
 
-    if (node_map[parent]->family_id != node_map[child]->family_id)
+    if ((node_map[child]->jt_config - node_map[parent]->jt_config).array().abs().maxCoeff() > 1.57)
         return false;
     return true;
 }
@@ -35,9 +31,6 @@ double computeGCost( const std::vector<node*>& node_map, const int parent, const
 }
 
 
-
-
-#ifdef BASELINE
 // Graph is boost library compatible
 // Graphs equal to the number of root nodes are generated
 // CAUTION: root_id is the node id which is used to access node_map.
@@ -115,147 +108,4 @@ bool build_graph(ikHandler* ik_handler, std::vector<Eigen::MatrixXd>& ff_frames,
     boost_graph->no_levels = node_list.size();
     return true;
 };
-#endif // End baseline functions
-
-
-
-
-
-
-
-
-#ifdef PCT_PLANNER
-bool InsertNode( Eigen::VectorXi parents, Eigen::VectorXi children, 
-                    std::vector<Edge>& edges, std::vector<double>& weights,
-                    ikHandler* ik_handler, const std::vector<node*>& node_map,
-                    int& no_connections_eval ){
-    bool atleast_one_edge;
-    for (int i=0; i<parents.size(); ++i){
-        for (int j=0; j<children.size(); ++j){
-            if ( isEdge(node_map, parents(i), children(j)) ){
-                edges.push_back( Edge(parents(i),children(j)) );
-                weights.push_back( computeGCost(node_map, parents(i), children(j)) );
-                atleast_one_edge = true;
-            }
-            no_connections_eval++;
-        }
-    }
-    atleast_one_edge = false;
-    return atleast_one_edge;
-}
-
-// Graph is boost library compatible
-// Graphs equal to the number of root nodes are generated
-// CAUTION: root_id is the node id which is used to access node_map.
-// This code assumes that all nodes are valid within joint limits of robot
-bool build_graph(ikHandler* ik_handler, std::vector<Eigen::MatrixXd>& ff_frames,
-                    WM::WM* wm, GeometricFilterHarness* geo_filter,
-                    std::vector<node*>& node_map, std::vector<Eigen::VectorXi>& node_list,
-                    boost_graph* boost_graph, std::vector<bool>& root_connectivity){
-    
-    std::cout<< "\n##############################################################\n";
-    std::cout<< "Generating Graph\n";
-    node_map.clear();
-    node_list.clear();
-    int no_connections_eval = 0;
-    std::vector<Edge> edges; edges.clear();
-    std::vector<double> weights; weights.clear();
-    root_connectivity.resize(ff_frames[0].size());
-    for (int i=0; i<ff_frames[0].size(); ++i)
-        root_connectivity[i] = false;
-    std::cout<< "Number of levels in the graph: " << ff_frames.size() << "\n";
-    bool stopping_condition = false;
-    std::vector<std::vector<int>> unvisited_ids(ff_frames.size());
-    for (int i=0; i<ff_frames.size();++i){
-        for (int j=0; j<ff_frames[i].rows();++j)
-            unvisited_ids[i].push_back(j);
-    }
-    int itr = 0;
-    int max_itr;
-    if(!ros::param::get("/max_pct_itr",max_itr)){
-        std::cout<< "Unable to Obtain Maximum Iterations\n";
-        return 0;
-    }
-    FFSampler sampler(ff_frames.size());
-    while (!stopping_condition){
-        bool samples_gen = false;
-        // Iterate through each level
-        for (int depth=0; depth<ff_frames.size(); ++depth){
-            // Sample nodes to be added to graph
-            std::vector<int> sampled_nodes;
-            if( !sampler.GenNodeSamples(ff_frames, ik_handler, wm, geo_filter, sampled_nodes, unvisited_ids, 
-                             node_map, node_list, depth) ){
-                if (node_list[depth].size()==0){
-                    // std::cout<< sampler.graph_stats << "\n";
-                    return false;
-                }
-                continue;
-            }
-                
-            samples_gen = true;
-            // Integrate nodes with graph
-            for (auto node_id : sampled_nodes){
-                Eigen::VectorXi curr_level(1);
-                curr_level(0) = node_id;
-                // Connect to next level
-                if (depth+1<node_list.size()){
-                    InsertNode( curr_level,node_list[depth+1],edges, 
-                        weights,ik_handler,node_map, no_connections_eval );
-                }
-                // Connect to previous level
-                if (depth-1>=0){
-                    InsertNode( node_list[depth-1],curr_level,edges, 
-                        weights,ik_handler,node_map, no_connections_eval );    
-                }
-            }
-        }
-        if (edges.size() > 35000000){ // Safe limit for not blowing up memory
-            std::cout<< "\n!!!CAUTION!!!\n";
-            std::cout<< "Number of edges exceed the threshold of 35 million.\n";
-            std::cout<< "Memory space more than 5 gb will be required.\n";
-            std::cout<< "Next safe limit is 50 million with 8 gb memory space.\n";
-            std::cout<< "Terminating Planning\n";
-            std::cout<< "##############################################################\n\n";
-            return false;
-        }
-        itr++;
-        // if (!samples_gen)
-        if (itr>=max_itr)
-            stopping_condition = true;
-    }
-    #ifdef fileWrite
-    std::string csv_dir;
-    csv_dir = ros::package::getPath("pct") + "/data/csv/";
-    file_rw::file_write(csv_dir+"graph_stats.csv",sampler.graph_stats);
-    #endif
-    boost_graph->leaf_nodes = node_list[node_list.size()-1];
-    boost_graph->no_nodes = node_map.size();
-    std::cout<< "Total #Edges: " << no_connections_eval << ". Valid #edges: " << edges.size() << "\n";
-    boost_graph->no_edges = edges.size();
-
-    const int num_nodes = node_map.size();
-    int num_arcs = edges.size();
-    graph_t g(edges.begin(), edges.end(), weights.begin(), num_nodes); boost_graph->g = g;
-    std::vector<vertex_descriptor> p(num_vertices(g)); boost_graph->p = p;
-    std::vector<double> d(num_vertices(g)); boost_graph->d = d;
-
-    property_map<graph_t, edge_weight_t>::type weightmap = get(edge_weight, boost_graph->g);
-
-    std::cout<< "##############################################################\n";
-
-    boost_graph->no_levels = node_list.size();
-
-    for (int i=0; i<node_list[0].size();++i){
-        if (out_degree(node_list[0](i),boost_graph->g)>0)
-            root_connectivity[i] = true;
-    }
-
-    return true;
-};
-#endif // End PCT functionality
-
-
-
-
-// End header
 #endif

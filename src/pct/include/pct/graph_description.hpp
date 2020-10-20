@@ -18,6 +18,7 @@
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/dijkstra_shortest_paths.hpp>
 #include <boost/property_map/property_map.hpp>
+#include <boost/config.hpp>
 
 #include <Eigen/Eigen>
 
@@ -27,6 +28,8 @@ typedef adjacency_list < vecS, vecS, directedS,
         no_property, property < edge_weight_t, double > > graph_t;
 typedef graph_traits < graph_t >::vertex_descriptor vertex_descriptor;
 typedef std::pair<int, int> Edge;
+typedef boost::property<boost::edge_weight_t, double> EdgeWeightProperty;
+
 
 struct boost_graph{
     graph_t g;

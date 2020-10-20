@@ -8,7 +8,7 @@
 // 
 // E:222600800 Breakdown
 // N:651705 E:125212950 Breakdown
-// N:434470 E:55650200 Works nut 7 GB memory
+// N:434470 E:55650200 Works but 7 GB memory
 // N:347576 E:35616128 Safe limit 4 GB memory
 
 
@@ -21,7 +21,7 @@
 #define PCT_PLANNER
 
 
-#define fileWrite
+// #define fileWrite
 
 #include <iostream>
 #include <pct/gen_cvrg_plan.hpp>
@@ -39,8 +39,10 @@
 #include <robot_utilities/world_manager.hpp>
 #include <pct/ss_searches.hpp>
 #include <pct/node_description.hpp>
+#ifdef BASELINE
 #include <pct/gen_nodes.hpp>
 #include <pct/build_graph.hpp>
+#endif
 #include <pct/graph_description.hpp>
 #include <pct/graph_searches.hpp>
 #include <pct/timer.hpp>
@@ -48,6 +50,9 @@
 #include <pct/geometric_filter.h>
 #include <gen_utilities/utilities.hpp>
 #include <unordered_set>
+#ifdef PCT_PLANNER
+#include <pct/PCTplanner.hpp>
+#endif
 #include <random>
 // Test Cases
 // roslaunch pct bootstrap.launch part:=fender tool:=cam_sander_0 viz:=sim
@@ -66,6 +71,16 @@
 // Tool transforms and planner.yaml config file
 // Remember to switch useNumIK back to false if done using it
 
+
+double ComputeManip(Eigen::VectorXd c, ikHandler& ik_handler){
+    KDL::JntArray theta;
+    KDL::Jacobian jac_kdl;
+    theta = DFMapping::Eigen_to_KDLJoints(c);
+    ik_handler.robot->Jac_KDL(theta,jac_kdl);
+    Eigen::MatrixXd jac = DFMapping::KDLJacobian_to_Eigen(jac_kdl);
+    double manip = (jac*jac.transpose()).determinant();
+    return manip;
+};
 
 int main(int argc, char** argv){
     srand(time(0));
@@ -245,6 +260,10 @@ int main(int argc, char** argv){
     }
     tolerances *= (M_PI/180);
 
+    // Add a piece of code here that randomly selects 10-20% of points
+    // and makes the tolerances zero to make the problem tougher
+
+
     std::cout<< "Generating Search Samples....\n";
     main_timer.reset();
     std::vector<Eigen::MatrixXd> wpTol =  gen_wp_with_tolerance(tolerances,resolution, path );
@@ -254,8 +273,7 @@ int main(int argc, char** argv){
     GeometricFilterHarness geo_filter;
     std::vector<Eigen::MatrixXd> ff_frames = 
     geo_filter.generate_flange_frames( wpTol,tcp_list );
-    
-    
+
     // Get trajectory path
     std::string traj_path;
     ros::param::get("/cvrg_file_paths/joint_states",traj_path);
@@ -375,6 +393,8 @@ int main(int argc, char** argv){
 
 
     #ifdef GRAPH_SEARCH
+
+    #ifdef BASELINE
     // Graph Search
     Eigen::MatrixXi path_idx(NumWaypoints,1);
     Eigen::MatrixXi tcp_idx(NumWaypoints,1);
@@ -502,8 +522,97 @@ int main(int argc, char** argv){
     #ifdef fileWrite
     file_rw::file_write(csv_dir+"strt_discontinuities.csv",strt_discnt);
     #endif
+    #endif // Baseline ends
+
+
+
+
+
+
+
+
+
+
+
+    #ifdef PCT_PLANNER
+    std::vector<node*> node_map;
+    std::vector<Eigen::VectorXi> node_list;
+    success_flags = Eigen::MatrixXd::Ones(NumWaypoints,1)*0;
+    boost_graph graph;
+    double search_time = 0;
+    double no_strt_nodes;
+    double no_djk = 0;
+
+    main_timer.reset();
+    ROS_INFO_STREAM("Building and Refining Graph");
+    BuildRefineGraph(&ik_handler, ff_frames, &wm, &geo_filter, node_map, node_list, &graph);
+    return 0;
+    ROS_INFO( "Graph generation COMPUTE TIME: %f", main_timer.elapsed() );
+    exec_time += main_timer.elapsed();
+
+    // Search
+    timer search_timer;
+    Eigen::VectorXi strt_nodes = node_list[0];
+    no_strt_nodes = strt_nodes.size();
+    search_timer.start();
+    double lowest_cost = std::numeric_limits<double>::infinity();
+    main_timer.reset();
+    // Run Search For Multiple Start Configs
+    for (int i=0; i<strt_nodes.size(); ++i){
+        int root_node = strt_nodes(i);
+        Eigen::VectorXd root_config = node_map[root_node]->jt_config;
+        #ifdef SEARCH_ASSERT
+        std::cout<< "Robot Config in Degrees: " << root_config.transpose()*(180/M_PI) << "\n";
+        #endif
+        // Change the start vertex in graph
+        vertex_descriptor s = vertex(root_node, graph.g); graph.s = s;
+        Eigen::VectorXi id_path;
+        search_timer.reset();
+        bool search_success = graph_searches::djikstra(&graph,id_path);
+        no_djk += 1;
+        search_time += search_timer.elapsed();
+
+        if(search_success){ // Get the shortest path to a leaf node in terms of node ids
+            // Generate Trajectory
+            Eigen::MatrixXd curr_traj(NumWaypoints, robot.NrOfJoints);
+            Eigen::MatrixXi curr_tcp_idx(NumWaypoints,1);
+            for(int k=0; k<id_path.size(); ++k){
+                curr_traj.row(k) = node_map[id_path(k)]->jt_config.transpose();
+                curr_tcp_idx(k,0) = node_map[id_path(k)]->tcp_id;
+            }
+            // Evaluate trajectory cost
+            double path_cost = 0;
+            for (int k=0; k<curr_traj.rows()-1;++k){
+                Eigen::ArrayXd jt_diff = (curr_traj.row(k+1) - curr_traj.row(k)).transpose();
+                path_cost += jt_diff.abs().maxCoeff();
+            }
+            if (path_cost<lowest_cost){
+                #ifdef SEARCH_ASSERT
+                std::cout<< "Found Path With Lower Cost. Current Path Cost: " << path_cost << "\n\n";
+                #endif
+                lowest_cost = path_cost;
+                trajectory = curr_traj;
+            }
+            success_flags = Eigen::MatrixXd::Ones(NumWaypoints,1);
+        }
+        else{
+            #ifdef SEARCH_ASSERT
+            ROS_WARN_STREAM( "Discontinuity detected for this configuration\n" );
+            #endif
+        }
+    }
+    exec_time += search_time;
+    ROS_INFO( "Search COMPUTE TIME: %f", main_timer.elapsed() );
     #endif
+
+
+    #endif // Graph search
     
+
+
+
+
+
     // Evaluate trajectory cost
     double max_change = -std::numeric_limits<double>::infinity();
     double path_cost = 0;
