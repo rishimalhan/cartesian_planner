@@ -54,6 +54,7 @@
 #include <pct/PCTplanner.hpp>
 #endif
 #include <random>
+
 // Test Cases
 // roslaunch pct bootstrap.launch part:=fender tool:=cam_sander_0 viz:=sim
 // roslaunch pct bootstrap.launch part:=step_slab tool:=ferro_sander viz:=sim
@@ -102,6 +103,7 @@ int main(int argc, char** argv){
         return 0;
     }
     resolution *= (M_PI / 180);
+
 
     ///////////////// CAUTION ///////////////////////////////////////
     // WHEN CHANGING A 6DOF ROBOT FOR ANALYTICAL IK, MAKE SURE CHANGES ARE MADE
@@ -273,6 +275,7 @@ int main(int argc, char** argv){
     GeometricFilterHarness geo_filter;
     std::vector<Eigen::MatrixXd> ff_frames = 
     geo_filter.generate_flange_frames( wpTol,tcp_list );
+
 
     // Get trajectory path
     std::string traj_path;
@@ -546,7 +549,6 @@ int main(int argc, char** argv){
     main_timer.reset();
     ROS_INFO_STREAM("Building and Refining Graph");
     BuildRefineGraph(&ik_handler, ff_frames, &wm, &geo_filter, node_map, node_list, &graph);
-    return 0;
     ROS_INFO( "Graph generation COMPUTE TIME: %f", main_timer.elapsed() );
     exec_time += main_timer.elapsed();
 

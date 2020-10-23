@@ -17,6 +17,8 @@
 #include <pct/geometric_filter.h>
 #include <pct/sample_nodes.hpp>
 #include <pct/graph_description.hpp>
+#include <unordered_set>
+#include "nabo/nabo.h"
 
 class Actions{
 private:
@@ -68,8 +70,7 @@ private:
 
     void GreedyProgression(int strt, int end, std::vector<Eigen::MatrixXd>& ff_frames,
                         ikHandler* ik_handler, WM::WM* wm, GeometricFilterHarness* geo_filter,
-                        std::vector<std::vector<int>>& unvisited_src, std::vector<node*>& node_map,
-                        std::vector<Eigen::VectorXi>& node_list,
+                        std::vector<node*>& node_map, std::vector<Eigen::VectorXi>& node_list,
                         std::vector<Edge>& edges, std::vector<double>& weights, boost_graph* boost_graph
                         ){
         int a = 1;
@@ -87,8 +88,12 @@ private:
                              node_map, node_list, depth, isCreated, graph_metrics, isSource, boost_graph);
             if (sampled_nodes.size()==0){
                 if (isSource)
-                    if (unvisited_src[depth].size()!=0)
-                        continue;
+                    if (depth==0)
+                        if (unvisited_src[depth].size()!=0)
+                            continue;
+                    if (depth==no_levels-1)
+                        if (unvisited_src[1].size()!=0)
+                            continue;
                 return; // Couldn't go through all levels
             }
             // Integrate nodes with graph
@@ -115,6 +120,7 @@ private:
 
 
 public:
+    int infeasibility;
     int no_levels;
     // Vector to store graph performance metrics
     // Total number of edges, Total number of valid edges, Total number of nodes,
@@ -130,7 +136,20 @@ public:
     Eigen::VectorXi root_nodes;
 
     Actions(std::vector<Eigen::MatrixXd>& ff_frames){
+        infeasibility = sampler.infeasibility;
         no_levels = ff_frames.size();
+        sampler.M.resize(no_levels);
+        // Nabo initializer
+        sampler.kdtrees.resize(no_levels);
+
+        for (int i=0; i<no_levels; ++i){
+            sampler.M[i].resize(7,ff_frames[i].rows());
+            for (int j=0; j<ff_frames[i].rows(); ++j)
+                sampler.M[i].col(j) = sampler.GetQTWp( ff_frames[i].row(j).transpose() ).cast<float>();
+            sampler.kdtrees[i] = Nabo::NNSearchF::createKDTreeLinearHeap(sampler.M[i]);
+        }
+        
+
         graph_metrics = Eigen::VectorXi::Zero(6);
         cost_tracker.clear();
         edge_tracker.clear();
@@ -152,6 +171,11 @@ public:
             isCreated[i] = Eigen::MatrixXi::Ones(ff_frames[i].rows(),8) * -1; // Since 8 solutions are possible
     };
 
+    ~Actions(){// cleanup kd-tree
+        for (int i=0; i<no_levels; ++i)
+            delete sampler.kdtrees[i];
+    }
+
     bool GreedyProgression(std::vector<Eigen::MatrixXd>& ff_frames,
                         ikHandler* ik_handler, WM::WM* wm, GeometricFilterHarness* geo_filter,
                         std::vector<node*>& node_map, std::vector<Eigen::VectorXi>& node_list,
@@ -160,15 +184,16 @@ public:
         if (unvisited_src[0].size()!=0){
             AreSamplesGen = true;
             GreedyProgression(0, ff_frames.size()-1, ff_frames,ik_handler,wm, geo_filter,
-                            unvisited_src, node_map, node_list, edges, weights, boost_graph
+                            node_map, node_list, edges, weights, boost_graph
                             );
         }
         if (unvisited_src[1].size()!=0){
             AreSamplesGen = true;
             GreedyProgression(ff_frames.size()-1, 0, ff_frames,ik_handler,wm, geo_filter,
-                            unvisited_src, node_map, node_list, edges, weights, boost_graph
+                            node_map, node_list, edges, weights, boost_graph
                             );
         }
+        infeasibility = sampler.infeasibility;
         return AreSamplesGen;
     };
 
@@ -201,18 +226,19 @@ public:
                     std::vector<Eigen::VectorXi>& node_list, boost_graph* boost_graph,
                     std::vector<Edge>& edges, std::vector<double>& weights){
         // Generate a random level index
-        int depth = 1 + ( std::rand() % ( no_levels-1 ) );
-        Eigen::VectorXi sampled_nodes = sampler.RandomSample(ff_frames, ik_handler, wm, geo_filter, 
+        int last_index = no_levels-2;
+        int depth = 1 + ( std::rand() % ( last_index ) );
+        sampler.RandomSample(ff_frames, ik_handler, wm, geo_filter, 
                     node_map, node_list, depth, isCreated,
                     graph_metrics, boost_graph );
-        if (sampled_nodes.size()==0)
-            return false;
-        if (node_list[depth-1].size()!=0)
-            MakeConnections( node_list[depth-1],sampled_nodes,edges, 
-                        weights,ik_handler,node_map, boost_graph );
-        if (node_list[depth+1].size()!=0)
-            MakeConnections( sampled_nodes, node_list[depth+1],edges, 
-                        weights,ik_handler,node_map, boost_graph );
+        // if (sampled_nodes.size()==0)
+        //     return false;
+        // if (node_list[depth-1].size()!=0)
+        //     MakeConnections( node_list[depth-1],sampled_nodes,edges, 
+        //                 weights,ik_handler,node_map, boost_graph );
+        // if (node_list[depth+1].size()!=0)
+        //     MakeConnections( sampled_nodes, node_list[depth+1],edges, 
+        //                 weights,ik_handler,node_map, boost_graph );
 
         return true;
     };

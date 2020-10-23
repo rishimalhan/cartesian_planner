@@ -38,45 +38,46 @@ bool BuildRefineGraph(ikHandler* ik_handler, std::vector<Eigen::MatrixXd>& ff_fr
     }
     
     Actions actions(ff_frames);
-
     graph_t g;
     boost_graph->g = g;
 
     // Determine Conditions and assign probability to actions
     std::vector<double> prob_range(3);
-    prob_range[0] = 1.0;
-    prob_range[1] = 1.0;
-    prob_range[2] = 1.0;
+    prob_range[0] = 0.2;
+    prob_range[1] = 0.8;
+    prob_range[2] = 0.8;
 
     // Take action
-    while (itr<max_itr){
+    while (itr<max_itr || actions.root_nodes.size()==0){
         // Sample from distribution
         double probability = (double) std::rand() / RAND_MAX;
-
-        if (probability <= prob_range[0])
+        if (itr==0)
+            probability = 0.0;
+        if (probability <= prob_range[0]){
+            ROS_INFO_STREAM("Action-1");
             actions.GreedyProgression(ff_frames,ik_handler,wm,geo_filter,node_map,
                                 node_list,edges,weights, boost_graph);
-        if (probability <= prob_range[1])
+        }
+        if (probability <= prob_range[1]){
+            ROS_INFO_STREAM("Action-2");
             actions.InterConnections( ik_handler, node_map, node_list,
                                         edges, weights, boost_graph);
-        if (probability <= prob_range[2])
+        }
+        if (probability <= prob_range[2]){
+            ROS_INFO_STREAM("Action-3");
             actions.NodeAdditions(ff_frames, ik_handler, wm, geo_filter, node_map,
                     node_list, boost_graph, edges, weights);
+        }
         itr ++;
+        ROS_WARN_STREAM("EOF Iteration: " << itr << ". G Stats: " 
+                << actions.graph_metrics.transpose() << "\n");
+        if (actions.infeasibility){
+            ROS_WARN_STREAM("All IKs infeasible at a level");
+            return false;
+        }
     }
-    // actions.InterConnection();
-    // actions.GraphSearch();
-    // Eigen::VectorXi root_nodes;
-    // for (int i=0; i<actions.isCreated[0].rows(); ++i){
-    //     for (int j=0; j<8; ++j){
-    //         if (actions.isCreated[0](i,j)!=-1){
-    //             root_nodes.conservativeResize(root_nodes.size()+1);
-    //             root_nodes(root_nodes.size()-1) = actions.isCreated[0](i,j);
-    //         }
-    //     }
-    // }
+    
     node_list[0] = actions.root_nodes;
-    ROS_WARN_STREAM( node_list[0].transpose() );
 
     if (edges.size() > 35000000){ // Safe limit for not blowing up memory
         std::cout<< "\n!!!CAUTION!!!\n";
@@ -88,18 +89,16 @@ bool BuildRefineGraph(ikHandler* ik_handler, std::vector<Eigen::MatrixXd>& ff_fr
         return false;
     }
 
-    // boost_graph->no_edges = edges.size();
-    // boost_graph->no_nodes = node_map.size();
     boost_graph->no_nodes = num_vertices(boost_graph->g);
     boost_graph->no_edges = num_edges(boost_graph->g);
-    ROS_WARN_STREAM( boost_graph->no_nodes );
-    ROS_WARN_STREAM( boost_graph->no_edges );
+    // ROS_WARN_STREAM( "No nodes in graph: " << boost_graph->no_nodes );
+    // ROS_WARN_STREAM( "No edges in graph: " << boost_graph->no_edges );
     // const int num_nodes = node_map.size();
     // int num_arcs = edges.size();
     // graph_t g(edges.begin(), edges.end(), weights.begin(), num_nodes); boost_graph->g = g;
-    std::vector<vertex_descriptor> p(num_vertices(g)); boost_graph->p = p;
-    std::vector<double> d(num_vertices(g)); boost_graph->d = d;
-    // property_map<graph_t, edge_weight_t>::type weightmap = get(edge_weight, boost_graph->g);
+    // std::vector<vertex_descriptor> p(num_vertices(g)); boost_graph->p = p;
+    std::vector<double> d(num_vertices(boost_graph->g)); boost_graph->d = d;
+    property_map<graph_t, edge_weight_t>::type weightmap = get(edge_weight, boost_graph->g);
 
     boost_graph->no_levels = node_list.size();
     boost_graph->leaf_nodes = node_list[node_list.size()-1];
