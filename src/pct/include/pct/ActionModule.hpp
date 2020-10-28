@@ -24,6 +24,8 @@ class Actions{
 private:
     FFSampler sampler;
     
+
+
     bool isEdge(const std::vector<node*>& node_map, const int parent, const int child){
         if ((node_map[child]->jt_config - node_map[parent]->jt_config).array().abs().maxCoeff() > 1.57)
             return false;
@@ -39,7 +41,7 @@ private:
     bool MakeConnections( Eigen::VectorXi parents, Eigen::VectorXi children, 
                     std::vector<Edge>& edges, std::vector<double>& weights,
                     ikHandler* ik_handler, const std::vector<node*>& node_map, boost_graph* boost_graph){
-        bool atleast_one_edge;
+        bool atleast_one_edge = false;
         for (int i=0; i<parents.size(); ++i){
             for (int j=0; j<children.size(); ++j){
                 graph_metrics(0)++;
@@ -64,14 +66,14 @@ private:
                 }
             }
         }
-        atleast_one_edge = false;
         return atleast_one_edge;
     };
 
     void GreedyProgression(int strt, int end, std::vector<Eigen::MatrixXd>& ff_frames,
                         ikHandler* ik_handler, WM::WM* wm, GeometricFilterHarness* geo_filter,
                         std::vector<node*>& node_map, std::vector<Eigen::VectorXi>& node_list,
-                        std::vector<Edge>& edges, std::vector<double>& weights, boost_graph* boost_graph
+                        std::vector<Edge>& edges, std::vector<double>& weights, 
+                        boost_graph* boost_graph, int& total_depth
                         ){
         int a = 1;
         if (strt > end)
@@ -80,6 +82,7 @@ private:
         Eigen::VectorXi prev_nodes;
         int depth = strt;
         bool isSource = true;
+        total_depth = 0;
         // Iterate through each level from start to end
         while (depth >= 0 && depth <= ff_frames.size()-1){
             // Sample nodes to be added to graph
@@ -99,17 +102,20 @@ private:
             // Integrate nodes with graph
             if (a==1){ // Fwd progression
                 if (depth > 0)
-                    MakeConnections( prev_nodes,sampled_nodes,edges, 
-                        weights,ik_handler,node_map, boost_graph );
+                    if (!MakeConnections( prev_nodes,sampled_nodes,edges, 
+                        weights,ik_handler,node_map, boost_graph ))
+                        return; // Couldn't go through all levels
             }
             if (a==-1){ // Bckwd progression
                 if (depth < ff_frames.size()-1)
-                    MakeConnections( sampled_nodes,prev_nodes,edges, 
-                        weights,ik_handler,node_map, boost_graph );
+                    if (!MakeConnections( sampled_nodes,prev_nodes,edges, 
+                        weights,ik_handler,node_map, boost_graph ))
+                        return; // Couldn't go through all levels
             }
             prev_nodes = sampled_nodes;
             depth += a;
             isSource = false;
+            total_depth++;
         }
     };
 
@@ -123,9 +129,22 @@ public:
     int infeasibility;
     int no_levels;
     // Vector to store graph performance metrics
-    // Total number of edges, Total number of valid edges, Total number of nodes,
-    // Total number of valid nodes, Total number of sources, Valid sources
-    Eigen::VectorXi graph_metrics;
+    // 0: Total number of edges
+    // 1: Total number of valid edges
+    // 2: Total number of nodes
+    // 3: Total number of valid nodes
+    // 4: Total number of fwd sources
+    // 5: Valid fwd sources
+    // 6: Avg fwd depth
+    // 7: Max fwd depth
+    // 8: Total fwd depth
+    // 9: Total number of bck sources
+    // 10: Valid bck sources
+    // 11: Avg bck depth
+    // 12: Max bck depth
+    // 13: Total bck depth
+
+    Eigen::VectorXd graph_metrics;
     // Cost tracker to track total edge cost for each level
     std::vector<double> cost_tracker;
     // Edge tracker to track number of edges for each level
@@ -150,7 +169,7 @@ public:
         }
         
 
-        graph_metrics = Eigen::VectorXi::Zero(6);
+        graph_metrics = Eigen::VectorXd::Zero(14);
         cost_tracker.clear();
         edge_tracker.clear();
         cost_tracker.resize(ff_frames.size());
@@ -168,7 +187,8 @@ public:
         isCreated.clear();
         isCreated.resize(ff_frames.size());
         for (int i=0; i<ff_frames.size(); ++i)
-            isCreated[i] = Eigen::MatrixXi::Ones(ff_frames[i].rows(),8) * -1; // Since 8 solutions are possible
+            // Since 8 solutions are possible. First Column is if waypoint is reachable
+            isCreated[i] = Eigen::MatrixXi::Ones(ff_frames[i].rows(),9) * -1; 
     };
 
     ~Actions(){// cleanup kd-tree
@@ -179,19 +199,37 @@ public:
     bool GreedyProgression(std::vector<Eigen::MatrixXd>& ff_frames,
                         ikHandler* ik_handler, WM::WM* wm, GeometricFilterHarness* geo_filter,
                         std::vector<node*>& node_map, std::vector<Eigen::VectorXi>& node_list,
-                        std::vector<Edge>& edges, std::vector<double>& weights, boost_graph* boost_graph){
+                        std::vector<Edge>& edges, std::vector<double>& weights, boost_graph* boost_graph,
+                        string type){
         bool AreSamplesGen = false;
-        if (unvisited_src[0].size()!=0){
-            AreSamplesGen = true;
-            GreedyProgression(0, ff_frames.size()-1, ff_frames,ik_handler,wm, geo_filter,
-                            node_map, node_list, edges, weights, boost_graph
-                            );
+        int total_depth;
+        if (type=="fwd"){
+            if (unvisited_src[0].size()!=0){
+                AreSamplesGen = true;
+                GreedyProgression(0, ff_frames.size()-1, ff_frames,ik_handler,wm, geo_filter,
+                                node_map, node_list, edges, weights, boost_graph, total_depth
+                                );
+                // Avg Fwd Depth
+                graph_metrics(6) = ((graph_metrics(5)-1)*graph_metrics(6) 
+                                + total_depth)/graph_metrics(5);
+                // Max Fwd Depth
+                if (total_depth > graph_metrics(7))
+                    graph_metrics(7) = total_depth;
+            }
         }
-        if (unvisited_src[1].size()!=0){
-            AreSamplesGen = true;
-            GreedyProgression(ff_frames.size()-1, 0, ff_frames,ik_handler,wm, geo_filter,
-                            node_map, node_list, edges, weights, boost_graph
-                            );
+        if (type=="bck"){
+            if (unvisited_src[1].size()!=0){
+                AreSamplesGen = true;
+                GreedyProgression(ff_frames.size()-1, 0, ff_frames,ik_handler,wm, geo_filter,
+                                node_map, node_list, edges, weights, boost_graph, total_depth
+                                );
+                // Avg Bck Depth
+                graph_metrics(11) = ((graph_metrics(10)-1)*graph_metrics(11) 
+                                + total_depth)/graph_metrics(10);
+                // Max Bck Depth
+                if (total_depth > graph_metrics(12))
+                    graph_metrics(12) = total_depth;
+            }
         }
         infeasibility = sampler.infeasibility;
         return AreSamplesGen;
@@ -199,13 +237,17 @@ public:
 
     bool InterConnections(ikHandler* ik_handler, std::vector<node*>& node_map, 
                         std::vector<Eigen::VectorXi>& node_list,
-                        std::vector<Edge>& edges, std::vector<double>& weights, boost_graph* boost_graph){
+                        std::vector<Edge>& edges, std::vector<double>& weights, boost_graph* boost_graph,
+                        std::vector<double>& path_costs){
         // Find the level with maximum cost from tracker and make interconnections
-        // int max_index = std::distance(cost_tracker.begin(),
-        //                     std::max_element( cost_tracker.begin(), cost_tracker.end() ));
-
-        // Generate a random level index
-        int index = 0 + ( std::rand() % ( no_levels ) );
+        // Create Bias
+        int index;
+        if ( std::accumulate(path_costs.begin(),path_costs.end(),0) > 1e-5 )
+            index = std::distance(path_costs.begin(),
+                                std::max_element( path_costs.begin(), path_costs.end() ));
+        else
+            // Generate a random level index
+            index = 0 + ( std::rand() % ( no_levels ) );
         
         // Connection with nodes above
         if (index-1 >= 0){

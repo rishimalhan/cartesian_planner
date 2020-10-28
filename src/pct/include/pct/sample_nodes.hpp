@@ -40,7 +40,7 @@ node* generate_node(Eigen::VectorXd joint_cfg,
 bool GreedySamples(std::vector<std::vector<int>>& unvisited_src,
                     std::vector<Eigen::MatrixXi>& isCreated,
                     std::vector<Eigen::MatrixXd>& ff_frames, int depth, Eigen::VectorXd& waypoint,
-                    int& optID, Eigen::VectorXi& graph_metrics, bool isSource, int trial_itr ){
+                    int& optID, Eigen::VectorXd& graph_metrics, bool isSource, int& trial_itr ){
     if (isSource){
         int src_id;
         if (depth==0)
@@ -54,25 +54,34 @@ bool GreedySamples(std::vector<std::vector<int>>& unvisited_src,
         unvisited_src[src_id].erase( it );
         // Get the corresponding waypoint
         waypoint = ff_frames[depth].row(ff_frame_id).transpose();
-        graph_metrics(4)++;
+        if (src_id==0)
+            graph_metrics(4)++;
+        if (src_id==1)
+            graph_metrics(9)++;
         optID = ff_frame_id;
         // Check if a node has already been created
-        if (isCreated[depth](optID,0) != -1)
+        if (isCreated[depth](optID,0) == 1)
             return false;
         return true;
     }
     
     // To speed up add an option to remove element from kdtree
 
-    // OptID defined here
-    Eigen::VectorXi indices(trial_itr+1);
-    Eigen::VectorXf dists2(trial_itr+1);
-    kdtrees[depth]->knn(prev_wp.cast<float>(), indices, dists2, trial_itr+1);
-    optID = indices(trial_itr);
-
+    while(trial_itr < ff_frames[depth].rows()){
+        // OptID defined here
+        Eigen::VectorXi indices(trial_itr+1);
+        Eigen::VectorXf dists2(trial_itr+1);
+        kdtrees[depth]->knn(prev_wp.cast<float>(), indices, dists2, trial_itr+1);
+        optID = indices(trial_itr);
+        if (isCreated[depth](optID,0) == 0){
+            trial_itr++;
+            continue;
+        }
+        break;
+    }
     waypoint = ff_frames[depth].row(optID).transpose();
     // Check if a node has already been created
-    if (isCreated[depth](optID,0) != -1)
+    if (isCreated[depth](optID,0) == 1)
         return false;
     return true;
 };
@@ -99,7 +108,7 @@ Eigen::VectorXi GenNodeSamples(std::vector<Eigen::MatrixXd>& ff_frames, ikHandle
                     std::vector<std::vector<int>>& unvisited_src, std::vector<node*>& node_map,
                     std::vector<Eigen::VectorXi>& node_list,  
                     int depth, std::vector<Eigen::MatrixXi>& isCreated, 
-                    Eigen::VectorXi& graph_metrics, bool isSource, boost_graph* boost_graph){
+                    Eigen::VectorXd& graph_metrics, bool isSource, boost_graph* boost_graph){
     int optID;
     Eigen::VectorXi sampled_nodes;
     Eigen::VectorXd waypoint;
@@ -111,7 +120,7 @@ Eigen::VectorXi GenNodeSamples(std::vector<Eigen::MatrixXd>& ff_frames, ikHandle
             prev_index = optID;
             prev_depth = depth;
             // Node already exists so we return the existing node ids
-            for (int i=0; i<isCreated[depth].cols(); ++i){
+            for (int i=1; i<isCreated[depth].cols(); ++i){
                 if ( isCreated[depth](optID,i)!=-1 ){
                     sampled_nodes.conservativeResize(sampled_nodes.size()+1);
                     sampled_nodes(sampled_nodes.size()-1) = isCreated[depth](optID,i);
@@ -125,6 +134,7 @@ Eigen::VectorXi GenNodeSamples(std::vector<Eigen::MatrixXd>& ff_frames, ikHandle
         // Solve IK and check for collision
         // If valid solution, then create a node out of it
         int no_sols = 0;
+        isCreated[depth](optID,0) = 0; // If this is not set back to 1 then wp is bogus
         if ( ik_handler->solveIK(waypoint) ){
             // For every solution create a node
             for (int sol_no=0; sol_no<ik_handler->solution.cols();++sol_no){
@@ -135,8 +145,6 @@ Eigen::VectorXi GenNodeSamples(std::vector<Eigen::MatrixXd>& ff_frames, ikHandle
                 if (geo_filter->is_tool_collision_free_(waypoint)){
                     if(!wm->inCollision( fk_kdl )){
                         graph_metrics(3)++;
-                        if (isSource)
-                            graph_metrics(5)++;
                         int node_id = node_map.size();
                         node* new_node = generate_node(ik_handler->solution.col(sol_no), 
                                             node_id, depth, waypoint,ik_handler);
@@ -145,14 +153,22 @@ Eigen::VectorXi GenNodeSamples(std::vector<Eigen::MatrixXd>& ff_frames, ikHandle
                         sampled_nodes(sampled_nodes.size()-1) = node_id;
                         node_list[depth].conservativeResize(node_list[depth].size()+1);
                         node_list[depth](node_list[depth].size()-1) = node_id;
-                        isCreated[depth](optID,sol_no) = node_id;
+                        isCreated[depth](optID,sol_no+1) = node_id;
+                        isCreated[depth](optID,0) = 1; // Ik exists here
                         boost_graph->p.push_back(vertex(node_id,boost_graph->g));
                     }
                 }
             }
         }
-        if (isSource)
+        if (isSource){
+            if (sampled_nodes.size()!=0){
+                if (depth==0)
+                    graph_metrics(5)++;
+                else
+                    graph_metrics(10)++;
+            }
             return sampled_nodes;
+        }
         if (sampled_nodes.size()!=0)
             return sampled_nodes;
         trial_itr++;
@@ -167,7 +183,7 @@ bool RandomSample(std::vector<Eigen::MatrixXd>& ff_frames, ikHandler* ik_handler
                     WM::WM* wm, GeometricFilterHarness* geo_filter, std::vector<node*>& node_map,
                     std::vector<Eigen::VectorXi>& node_list,  
                     int depth, std::vector<Eigen::MatrixXi>& isCreated,
-                    Eigen::VectorXi& graph_metrics, boost_graph* boost_graph){
+                    Eigen::VectorXd& graph_metrics, boost_graph* boost_graph){
     Eigen::VectorXi sampled_nodes;
     Eigen::VectorXd waypoint;
     std::vector<int> unvisited_samples; unvisited_samples.clear();
@@ -180,7 +196,7 @@ bool RandomSample(std::vector<Eigen::MatrixXd>& ff_frames, ikHandler* ik_handler
         auto ff_frame_id = unvisited_samples[index];
         vector<int>::iterator it = unvisited_samples.begin() + index;
         unvisited_samples.erase( it );
-        if (isCreated[depth](ff_frame_id,0)!=-1)
+        if (isCreated[depth](ff_frame_id,0)!=-1) // If node is unvisited then proceed
             continue;
         waypoint = ff_frames[depth].row(ff_frame_id).transpose();
 
@@ -205,7 +221,8 @@ bool RandomSample(std::vector<Eigen::MatrixXd>& ff_frames, ikHandler* ik_handler
                         sampled_nodes(sampled_nodes.size()-1) = node_id;
                         node_list[depth].conservativeResize(node_list[depth].size()+1);
                         node_list[depth](node_list[depth].size()-1) = node_id;
-                        isCreated[depth](ff_frame_id,sol_no) = node_id;
+                        isCreated[depth](ff_frame_id,sol_no+1) = node_id;
+                        isCreated[depth](ff_frame_id,0) = 1;
                         boost_graph->p.push_back(vertex(node_id,boost_graph->g));
                     }
                 }

@@ -60,4 +60,4 @@ rob_config: [0,0,0,0,0,0]
 # Three bounds in total for X Y and Z
 tolerances: [ -40,40,-40,40,-180,180 ]
 sampling_res: 20 # Degrees
-max_pct_itr: 1
+max_pct_itr: 15

@@ -548,63 +548,69 @@ int main(int argc, char** argv){
 
     main_timer.reset();
     ROS_INFO_STREAM("Building and Refining Graph");
-    BuildRefineGraph(&ik_handler, ff_frames, &wm, &geo_filter, node_map, node_list, &graph);
-    ROS_INFO( "Graph generation COMPUTE TIME: %f", main_timer.elapsed() );
-    exec_time += main_timer.elapsed();
-
-    // Search
-    timer search_timer;
-    Eigen::VectorXi strt_nodes = node_list[0];
-    no_strt_nodes = strt_nodes.size();
-    search_timer.start();
-    double lowest_cost = std::numeric_limits<double>::infinity();
-    main_timer.reset();
-    // Run Search For Multiple Start Configs
-    for (int i=0; i<strt_nodes.size(); ++i){
-        int root_node = strt_nodes(i);
-        Eigen::VectorXd root_config = node_map[root_node]->jt_config;
-        #ifdef SEARCH_ASSERT
-        std::cout<< "Robot Config in Degrees: " << root_config.transpose()*(180/M_PI) << "\n";
-        #endif
-        // Change the start vertex in graph
-        vertex_descriptor s = vertex(root_node, graph.g); graph.s = s;
-        Eigen::VectorXi id_path;
-        search_timer.reset();
-        bool search_success = graph_searches::djikstra(&graph,id_path);
-        no_djk += 1;
-        search_time += search_timer.elapsed();
-
-        if(search_success){ // Get the shortest path to a leaf node in terms of node ids
-            // Generate Trajectory
-            Eigen::MatrixXd curr_traj(NumWaypoints, robot.NrOfJoints);
-            Eigen::MatrixXi curr_tcp_idx(NumWaypoints,1);
-            for(int k=0; k<id_path.size(); ++k){
-                curr_traj.row(k) = node_map[id_path(k)]->jt_config.transpose();
-                curr_tcp_idx(k,0) = node_map[id_path(k)]->tcp_id;
-            }
-            // Evaluate trajectory cost
-            double path_cost = 0;
-            for (int k=0; k<curr_traj.rows()-1;++k){
-                Eigen::ArrayXd jt_diff = (curr_traj.row(k+1) - curr_traj.row(k)).transpose();
-                path_cost += jt_diff.abs().maxCoeff();
-            }
-            if (path_cost<lowest_cost){
-                #ifdef SEARCH_ASSERT
-                std::cout<< "Found Path With Lower Cost. Current Path Cost: " << path_cost << "\n\n";
-                #endif
-                lowest_cost = path_cost;
-                trajectory = curr_traj;
-            }
-            success_flags = Eigen::MatrixXd::Ones(NumWaypoints,1);
-        }
-        else{
-            #ifdef SEARCH_ASSERT
-            ROS_WARN_STREAM( "Discontinuity detected for this configuration\n" );
-            #endif
-        }
+    if (!BuildRefineGraph(&ik_handler, ff_frames, &wm, &geo_filter, node_map, node_list, &graph)){
+        std::cout<< "Edges could not be created. No solution found\n";
+        trajectory.resize(1,ik_handler.OptVarDim);
+        trajectory.row(0) << ik_handler.init_guess.transpose();
     }
-    exec_time += search_time;
-    ROS_INFO( "Search COMPUTE TIME: %f", main_timer.elapsed() );
+    else{
+        ROS_INFO( "Graph generation COMPUTE TIME: %f", main_timer.elapsed() );
+        exec_time += main_timer.elapsed();
+
+        // Search
+        timer search_timer;
+        Eigen::VectorXi strt_nodes = node_list[0];
+        no_strt_nodes = strt_nodes.size();
+        search_timer.start();
+        double lowest_cost = std::numeric_limits<double>::infinity();
+        main_timer.reset();
+        // Run Search For Multiple Start Configs
+        for (int i=0; i<strt_nodes.size(); ++i){
+            int root_node = strt_nodes(i);
+            Eigen::VectorXd root_config = node_map[root_node]->jt_config;
+            #ifdef SEARCH_ASSERT
+            std::cout<< "Robot Config in Degrees: " << root_config.transpose()*(180/M_PI) << "\n";
+            #endif
+            // Change the start vertex in graph
+            vertex_descriptor s = vertex(root_node, graph.g); graph.s = s;
+            Eigen::VectorXi id_path;
+            search_timer.reset();
+            bool search_success = graph_searches::djikstra(&graph,id_path);
+            no_djk += 1;
+            search_time += search_timer.elapsed();
+
+            if(search_success){ // Get the shortest path to a leaf node in terms of node ids
+                // Generate Trajectory
+                Eigen::MatrixXd curr_traj(NumWaypoints, robot.NrOfJoints);
+                Eigen::MatrixXi curr_tcp_idx(NumWaypoints,1);
+                for(int k=0; k<id_path.size(); ++k){
+                    curr_traj.row(k) = node_map[id_path(k)]->jt_config.transpose();
+                    curr_tcp_idx(k,0) = node_map[id_path(k)]->tcp_id;
+                }
+                // Evaluate trajectory cost
+                double path_cost = 0;
+                for (int k=0; k<curr_traj.rows()-1;++k){
+                    Eigen::ArrayXd jt_diff = (curr_traj.row(k+1) - curr_traj.row(k)).transpose();
+                    path_cost += jt_diff.abs().maxCoeff();
+                }
+                if (path_cost<lowest_cost){
+                    #ifdef SEARCH_ASSERT
+                    std::cout<< "Found Path With Lower Cost. Current Path Cost: " << path_cost << "\n\n";
+                    #endif
+                    lowest_cost = path_cost;
+                    trajectory = curr_traj;
+                }
+                success_flags = Eigen::MatrixXd::Ones(NumWaypoints,1);
+            }
+            else{
+                #ifdef SEARCH_ASSERT
+                ROS_WARN_STREAM( "Discontinuity detected for this configuration\n" );
+                #endif
+            }
+        }
+        exec_time += search_time;
+        ROS_INFO( "Search COMPUTE TIME: %f", main_timer.elapsed() );
+    }
     #endif
 
 

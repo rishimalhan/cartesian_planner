@@ -50,9 +50,11 @@ cvrg_tf_param:
 
 viz_param:
     {
-        rob_speed: 100
+        rob_speed: 10
     }
 
+tolerances: [ 0,0,0,0,-180,180 ]
 gen_path: true
 rob_config: [0,0,0,0,0,0]
 sampling_res: 10 # Degrees
+max_pct_itr: 20
