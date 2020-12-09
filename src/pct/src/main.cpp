@@ -54,6 +54,7 @@
 #include <pct/PCTplanner.hpp>
 #endif
 #include <random>
+#include <pct/SaveGraphStats.hpp>
 
 // Test Cases
 // roslaunch pct bootstrap.launch part:=fender tool:=cam_sander_0 viz:=sim
@@ -228,7 +229,7 @@ int main(int argc, char** argv){
     world_T_part.block(0,0,3,3) = rtf::eul2rot(tf_eigen.segment(3,3).transpose(),"XYZ");
     world_T_part.block(0,3,3,1) = tf_eigen.segment(0,3);
     std::vector<Eigen::MatrixXd> zero_fk = robot.get_robot_FK_all_links( Eigen::MatrixXd::Ones(robot.NrOfJoints,1)*0 );
-    wm.addTool(toolstl_path);
+    // wm.addTool(toolstl_path);
     wm.prepareSelfCollisionPatch(zero_fk);
     wm.addWorkpiece(wp_path, world_T_part);
 
@@ -254,6 +255,15 @@ int main(int argc, char** argv){
         ROS_WARN("Unable to Obtain Waypoint Tolerances");
         return 1;
     }
+    // Add 7 0 tolerance points at 25% intervals to constraint problem
+    int idx1 = floor(NumWaypoints/8);
+    int idx2 = idx1 + floor(NumWaypoints/8);
+    int idx3 = idx2 + floor(NumWaypoints/8);
+    int idx4 = idx3 + floor(NumWaypoints/8);
+    int idx5 = idx4 + floor(NumWaypoints/8);
+    int idx6 = idx5 + floor(NumWaypoints/8);
+    int idx7 = idx6 + floor(NumWaypoints/8);
+    
     Eigen::MatrixXd tolerances(path.rows(),tolerances_vec.size());
     for (int i=0; i<path.rows(); ++i){
         for (int j=0; j<tolerances_vec.size(); ++j){
@@ -261,6 +271,17 @@ int main(int argc, char** argv){
         }
     }
     tolerances *= (M_PI/180);
+
+    double tol_constr;
+    ros::param::get("/tol_constraint",tol_constr);
+
+    tolerances.row(idx1) = tolerances.row(idx1)*tol_constr;
+    tolerances.row(idx2) = tolerances.row(idx2)*tol_constr;
+    tolerances.row(idx3) = tolerances.row(idx3)*tol_constr;
+    tolerances.row(idx4) = tolerances.row(idx4)*tol_constr;
+    tolerances.row(idx5) = tolerances.row(idx5)*tol_constr;
+    tolerances.row(idx6) = tolerances.row(idx6)*tol_constr;
+    tolerances.row(idx7) = tolerances.row(idx7)*tol_constr;
 
     // Add a piece of code here that randomly selects 10-20% of points
     // and makes the tolerances zero to make the problem tougher
@@ -286,7 +307,18 @@ int main(int argc, char** argv){
     ros::param::get("/cvrg_file_paths/success_flags",success_flag_path);
 
 
+    std::vector<double> x(68);
+    std::string x_path = ros::package::getPath("pct") + "/data/decision_variable/" + 
+                            "random_nobias_opt_x.csv";
+    // std::string x_path = ros::package::getPath("pct") + "/data/decision_variable/" + 
+    //                         "pitr_nobias_opt_x.csv";
+    std::vector<std::vector<double>> X = file_rw::file_read_vec(x_path);
+    x = X[0];
 
+    // for (int i=0; i<x.size(); ++i)
+    //     x[i] = 0.5;
+
+    ros::param::set("/decision_var",x);
     
 
 // ////////////////////////////////////////////////////////////////////
@@ -413,7 +445,7 @@ int main(int argc, char** argv){
 
     std::cout<< "\nGenerating Nodes\n";
     main_timer.reset();
-    if(!gen_nodes(&ik_handler, &wm, ff_frames, node_map, node_list, success_flags)){
+    if(!gen_nodes(&ik_handler, &wm, &geo_filter, ff_frames, node_map, node_list, success_flags)){
         std::cout<< "Nodes could not be generated. No solution found\n";
         trajectory.resize(1,ik_handler.OptVarDim);
         trajectory.row(0) << ik_handler.init_guess.transpose();
@@ -611,6 +643,21 @@ int main(int argc, char** argv){
         exec_time += search_time;
         ROS_INFO( "Search COMPUTE TIME: %f", main_timer.elapsed() );
     }
+    // Saving closest configuration to solution
+    Eigen::MatrixXd opt_configs = file_rw::file_read_mat(
+        csv_dir+"../test_case_specific_data/gear/opt_states.csv");
+    Eigen::MatrixXd closest_configs(opt_configs.rows(),6);
+    for (int i=0; i<opt_configs.rows(); ++i){
+        double max_dist = std::numeric_limits<float>::infinity();
+        for (int j=0; j<node_list[i].size(); ++j){
+            if ( (opt_configs.row(i)-node_map[node_list[i](j)]->jt_config.transpose()).norm() <
+                    max_dist ){
+                closest_configs.row(i) = node_map[node_list[i](j)]->jt_config.transpose();
+                max_dist = (opt_configs.row(i)-node_map[node_list[i](j)]->jt_config.transpose()).norm();
+            }
+        }
+    }
+    file_rw::file_write(csv_dir+"closest_configs.csv",closest_configs);
     #endif
 
 
@@ -619,6 +666,8 @@ int main(int argc, char** argv){
 
 
 
+    // Path cost Vector
+    Eigen::MatrixXd cost_vec(ff_frames.size()-1,1);
 
 
     // Evaluate trajectory cost
@@ -629,12 +678,14 @@ int main(int argc, char** argv){
         path_cost += jt_diff.abs().maxCoeff();
         if (jt_diff.abs().maxCoeff()>max_change)
             max_change = jt_diff.abs().maxCoeff();
+        cost_vec(i,0) = (trajectory.row(i+1) - trajectory.row(i)).norm();
         // if (jt_diff.abs().maxCoeff()*(180/M_PI) > 130){
         //     std::cout<< "Max Change: " << jt_diff.abs().maxCoeff()*(180/M_PI) << "\n";
         //     std::cout<< "Config-1:" << trajectory.row(i)*(180/M_PI) << "\n";
         //     std::cout<< "Config-2:" << trajectory.row(i+1)*(180/M_PI) << "\n";
         // }
     }
+    file_rw::file_write(csv_dir+"cost_vec.csv",cost_vec);
     #ifdef GRAPH_SEARCH
     std::cout<< "Total number of edges in graph: " << graph.no_edges << std::endl;
     std::cout<< "Total number of nodes in graph: " << graph.no_nodes << std::endl;
@@ -649,6 +700,7 @@ int main(int argc, char** argv){
     std::cout<< "##############################################################\n";
 
 
+    // SaveGraphStats(&graph, node_list, ff_frames);
 
     std_msgs::Bool msg;
     msg.data = true;

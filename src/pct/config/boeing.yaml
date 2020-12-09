@@ -57,4 +57,5 @@ tolerances: [ 0,0,0,0,-180,180 ]
 gen_path: true
 rob_config: [0,0,0,0,0,0]
 sampling_res: 10 # Degrees
-max_pct_itr: 20
+max_pct_time: 10
+tol_constraint: 0.2

@@ -18,6 +18,7 @@ public:
     static void file_write(std::string, const std::vector< std::vector<int> >&);
     static void file_write(std::string, const std::vector< std::vector<float> >&);
     static void file_write(std::string, const std::vector< std::vector<double> >&);
+    static void file_write(std::string, const std::vector<double>&);
     
 	// write data to file from matrix
     static void file_write(std::string, const Eigen::MatrixXd&);

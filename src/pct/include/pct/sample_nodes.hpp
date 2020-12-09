@@ -67,7 +67,7 @@ bool GreedySamples(std::vector<std::vector<int>>& unvisited_src,
     
     // To speed up add an option to remove element from kdtree
 
-    while(trial_itr < ff_frames[depth].rows()){
+    while(trial_itr < ff_frames[depth].rows()-1){
         // OptID defined here
         Eigen::VectorXi indices(trial_itr+1);
         Eigen::VectorXf dists2(trial_itr+1);
@@ -113,7 +113,7 @@ Eigen::VectorXi GenNodeSamples(std::vector<Eigen::MatrixXd>& ff_frames, ikHandle
     Eigen::VectorXi sampled_nodes;
     Eigen::VectorXd waypoint;
     int trial_itr = 0;
-    while (trial_itr < ff_frames[depth].rows()){
+    while (trial_itr < ff_frames[depth].rows()-1){
         if(!GreedySamples(unvisited_src,isCreated, ff_frames,depth,waypoint,
                             optID, graph_metrics, isSource, trial_itr)){
             prev_wp = GetQTWp(waypoint);
@@ -196,13 +196,14 @@ bool RandomSample(std::vector<Eigen::MatrixXd>& ff_frames, ikHandler* ik_handler
         auto ff_frame_id = unvisited_samples[index];
         vector<int>::iterator it = unvisited_samples.begin() + index;
         unvisited_samples.erase( it );
-        if (isCreated[depth](ff_frame_id,0)!=-1) // If node is unvisited then proceed
+        if (isCreated[depth](ff_frame_id,0)!=-1) // Only proceed if node is unevaluated
             continue;
         waypoint = ff_frames[depth].row(ff_frame_id).transpose();
 
         // Solve IK and check for collision
         // If valid solution, then create a node out of it
         int no_sols = 0;
+        isCreated[depth](ff_frame_id,0) = 0; // If this is not set back to 1 then wp is bogus
         if ( ik_handler->solveIK(waypoint) ){
             // For every solution create a node
             for (int sol_no=0; sol_no<ik_handler->solution.cols();++sol_no){
@@ -230,8 +231,72 @@ bool RandomSample(std::vector<Eigen::MatrixXd>& ff_frames, ikHandler* ik_handler
         }
         if (sampled_nodes.size()==0)
             continue;
+        else
+            return true;
     }
-    return true;
+    if (sampled_nodes.size()==0){
+        ROS_WARN_STREAM("**********ALERT***************");
+        ROS_WARN_STREAM("All nodes evaluated");
+    }
+
+    return false;
+};
+
+void NearestNode(ikHandler* ik_handler, WM::WM* wm, Eigen::VectorXd waypoint,
+                std::vector<Eigen::MatrixXd>& ff_frames, int depth,
+                std::vector<Eigen::MatrixXi>& isCreated,
+                boost_graph* boost_graph,
+                GeometricFilterHarness* geo_filter, std::vector<node*>& node_map,
+                    std::vector<Eigen::VectorXi>& node_list){
+    // int trial_itr = 0;
+    // int optID;
+    // bool node_created = false;
+    // int counter = 0;
+    int no_neigh = 20;
+    Eigen::VectorXd wp_quat = GetQTWp(waypoint);
+    // while( (trial_itr < ff_frames[depth].rows()-1) && !node_created ){
+    // while( counter < 2000 && trial_itr < ff_frames[depth].rows()-1 ){
+    Eigen::VectorXi indices(no_neigh);
+    Eigen::VectorXf dists2(no_neigh);
+    kdtrees[depth]->knn(wp_quat.cast<float>(), indices, dists2, no_neigh);
+    for (int i=0; i<indices.size(); ++i){
+        int optID = indices(i);
+        if (isCreated[depth](optID,0) == 0)
+            continue;
+        
+        if (isCreated[depth](optID,0) == 1)
+            continue;
+
+        if (isCreated[depth](optID,0) == -1){
+            // Create the node
+            // Solve IK and check for collision
+            // If valid solution, then create a node out of it
+            Eigen::VectorXd neigh_wp = ff_frames[depth].row(optID).transpose();
+            int no_sols = 0;
+            isCreated[depth](optID,0) = 0; // If this is not set back to 1 then wp is under collision
+            if ( ik_handler->solveIK(neigh_wp) ){
+                // For every solution create a node
+                for (int sol_no=0; sol_no<ik_handler->solution.cols();++sol_no){
+                    // Check for collision
+                    std::vector<Eigen::MatrixXd> fk_kdl = 
+                    ik_handler->robot->get_robot_FK_all_links(ik_handler->solution.col(sol_no));
+                    if (geo_filter->is_tool_collision_free_(neigh_wp)){
+                        if(!wm->inCollision( fk_kdl )){
+                            int node_id = node_map.size();
+                            node* new_node = generate_node(ik_handler->solution.col(sol_no), 
+                                                node_id, depth, neigh_wp,ik_handler);
+                            node_map.push_back(new_node);
+                            node_list[depth].conservativeResize(node_list[depth].size()+1);
+                            node_list[depth](node_list[depth].size()-1) = node_id;
+                            isCreated[depth](optID,sol_no+1) = node_id;
+                            isCreated[depth](optID,0) = 1;
+                            boost_graph->p.push_back(vertex(node_id,boost_graph->g));
+                        }
+                    }
+                }
+            }
+        }
+    }
 };
 
 };

@@ -161,6 +161,26 @@ void file_rw::file_write(std::string file_name, const std::vector< std::vector<d
 
 ////////////////////////////////////////////////////////////
 
+void file_rw::file_write(std::string file_name, const std::vector<double>& vec)
+{
+    std::ofstream out_file;
+    out_file.open(file_name.c_str(),std::ios::out);
+    for (long i=0;i<vec.size();++i)
+    {
+        if (i!=vec.size()-1)
+        {
+            out_file << vec[i] << ",";    
+        }
+        else
+        {
+            out_file << vec[i] << std::endl;       
+        }
+    }
+    out_file.close();
+}
+
+////////////////////////////////////////////////////////////
+
 void file_rw::file_write(std::string file_name, const Eigen::MatrixXd& mat)
 {
     std::ofstream out_file;

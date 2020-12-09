@@ -14,8 +14,10 @@
 #include <robot_utilities/world_manager.hpp>
 #include <robot_utilities/Data_Format_Mapping.hpp>
 #include <robot_utilities/transformation_utilities.hpp>
+#include <pct/geometric_filter.h>
 
-bool gen_nodes(ikHandler* ik_handler, WM::WM* wm, std::vector<Eigen::MatrixXd>& ff_frames,
+bool gen_nodes(ikHandler* ik_handler, WM::WM* wm, GeometricFilterHarness* geo_filter,
+                std::vector<Eigen::MatrixXd>& ff_frames,
                 std::vector<node*>& node_map, std::vector<Eigen::VectorXi>& node_list,
                 Eigen::MatrixXd& success_flags){
     std::cout<< "\n\n##############################################################\n";
@@ -28,11 +30,14 @@ bool gen_nodes(ikHandler* ik_handler, WM::WM* wm, std::vector<Eigen::MatrixXd>& 
     // node_map will carry descriptions of all nodes
     // node_list will carry the structure. i.e node ids at every depth which will be used to build graph
     int id_cnt = 0;
+    int tot_count = 0;
     // KDL::JntArray theta;
     // KDL::Jacobian jac_kdl;
     // Eigen::MatrixXd jac;
     ik_handler->setTcpFrame(Eigen::MatrixXd::Identity(4,4));
     for (int i=0; i<ff_frames.size(); ++i){
+        int tot_nodes_lvl = 0;
+        int valid_nodes_lvl = 0;
         Eigen::VectorXi nodes_at_depth;
         int ctr = 0;
         Eigen::MatrixXd waypoints = ff_frames[i];
@@ -42,10 +47,13 @@ bool gen_nodes(ikHandler* ik_handler, WM::WM* wm, std::vector<Eigen::MatrixXd>& 
             int no_sols = 0;
             if (ik_handler->solveIK(waypoints.row(j).transpose())){
                 // For every solution create a node
-                for (int sol_no=0; sol_no<ik_handler->solution.cols();++sol_no){
+                for (int sol_no=0; sol_no<ik_handler->solution.cols(); ++sol_no){
+                    tot_count++;
+                    tot_nodes_lvl++;
                     // Check for collision
                     std::vector<Eigen::MatrixXd> fk_kdl = ik_handler->robot->get_robot_FK_all_links(ik_handler->solution.col(sol_no));
-                    if(!wm->inCollision( fk_kdl )){
+                    if( !wm->inCollision( fk_kdl ) && 
+                        geo_filter->is_tool_collision_free_(waypoints.row(j).transpose()) ){
                     // if(true){
                         // theta = DFMapping::Eigen_to_KDLJoints(ik_handler->solution.col(sol_no));
                         // ik_handler->robot->Jac_KDL(theta,jac_kdl);
@@ -74,6 +82,7 @@ bool gen_nodes(ikHandler* ik_handler, WM::WM* wm, std::vector<Eigen::MatrixXd>& 
                         nodes_at_depth.conservativeResize(ctr+1);
                         nodes_at_depth(ctr) = curr_node->id; ctr++;
                         id_cnt++;
+                        valid_nodes_lvl++;
                     }
                 }
             }
@@ -82,15 +91,17 @@ bool gen_nodes(ikHandler* ik_handler, WM::WM* wm, std::vector<Eigen::MatrixXd>& 
             std::cout<< "All waypoints unreachable within tolerances at index: " << i << ". Base index is 0.\n";
             success_flags(i) = 0;
             status = false;
-            // std::cout<< "##############################################################\n\n";
-            // return false;
+            std::cout<< "##############################################################\n\n";
+            return false;
         }
         else{
             // std::cout<< "Node ids: " << nodes_at_depth.transpose() << "\n\n";
             node_list.push_back(nodes_at_depth);
         }
+        // std::cout << (double)valid_nodes_lvl / tot_nodes_lvl << "\n";
     }
-    std::cout<< "Total Number of Nodes: " << id_cnt << "\n"; 
+    std::cout<< "Total Number of Valid Nodes: " << id_cnt << "\n"; 
+    std::cout<< "Total Number of Nodes: " << tot_count << "\n";
     std::cout<< "##############################################################\n\n";
     return status;
 };

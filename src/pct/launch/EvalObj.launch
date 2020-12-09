@@ -1,0 +1,3 @@
+<launch>
+    <node pkg="pct" name="obj" type="obj" output="screen"/>
+</launch>

@@ -255,6 +255,15 @@ set(DEP_LIBS ${catkin_LIBRARIES}
 add_executable(main src/main.cpp)
 target_link_libraries(main ${DEP_LIBS})
 
+add_executable(obj src/ObjFunc.cpp)
+target_link_libraries(obj ${DEP_LIBS})
+
+add_executable(param_est src/ParameterEstimation.cpp)
+target_link_libraries(param_est ${DEP_LIBS})
+
+add_executable(x_eval src/x_evaluator.cpp)
+target_link_libraries(x_eval ${DEP_LIBS})
+
 add_executable(analysis src/analysis.cpp)
 target_link_libraries(analysis ${DEP_LIBS})
 

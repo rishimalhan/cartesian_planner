@@ -26,4 +26,5 @@ sampling_res: 20 # Degrees
 # theta1 and theta2 bounds
 # Three bounds in total for X Y and Z
 tolerances: [   0,0,0,0,-180,180  ]
-max_pct_itr: 10
+max_pct_time: 5
+tol_constraint: 1.0
