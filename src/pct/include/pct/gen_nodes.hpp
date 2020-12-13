@@ -27,9 +27,20 @@ bool gen_nodes(ikHandler* ik_handler, WM::WM* wm, GeometricFilterHarness* geo_fi
     success_flags = Eigen::MatrixXd::Ones(NumWaypoints,1)*1; // All reachable. Mark them 0 if they are not
     bool status = true;
     
+    // Dummy root and leaf
+    node* root_node = new node;
+    root_node->id = 0;
+    root_node->depth = -1;
+    node_map.push_back(root_node);
+
+    node* leaf_node = new node;
+    leaf_node->id = 1;
+    leaf_node->depth = ff_frames.size();
+    node_map.push_back(leaf_node);
+
     // node_map will carry descriptions of all nodes
     // node_list will carry the structure. i.e node ids at every depth which will be used to build graph
-    int id_cnt = 0;
+    int id_cnt = 2;
     int tot_count = 0;
     // KDL::JntArray theta;
     // KDL::Jacobian jac_kdl;

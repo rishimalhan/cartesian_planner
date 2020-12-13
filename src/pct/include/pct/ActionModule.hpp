@@ -41,12 +41,12 @@ private:
                     ikHandler* ik_handler, const std::vector<node*>& node_map, boost_graph* boost_graph){
         bool atleast_one_edge = false;
 
-        int diff = node_map.size() - truth_mat.rows();
-        truth_mat.conservativeResize(node_map.size(),2);
-        truth_mat.block(truth_mat.rows()-diff,0,diff,2) = Eigen::MatrixXi::Zero(diff,2);
+        // int diff = node_map.size() - truth_mat.rows();
+        // truth_mat.conservativeResize(node_map.size(),2);
+        // truth_mat.block(truth_mat.rows()-diff,0,diff,2) = Eigen::MatrixXi::Zero(diff,2);
         for (int i=0; i<parents.size(); ++i){
             for (int j=0; j<children.size(); ++j){
-                graph_metrics(0)++;
+                // graph_metrics(0)++;
                 if ( isEdge(node_map, parents(i), children(j)) ){
                     if ( node_map[parents(i)]->depth==0 ){
                         bool add_root = true;
@@ -58,7 +58,7 @@ private:
                             root_nodes(root_nodes.size()-1) = parents(i);
                         }
                     }
-                    graph_metrics(1)++;
+                    // graph_metrics(1)++;
                     // edges.push_back( Edge(parents(i),children(j)) );
                     double cost = computeGCost(node_map, parents(i), children(j));
                     // weights.push_back( cost );
@@ -66,13 +66,13 @@ private:
                                 boost_graph->p[children(j)],EdgeWeightProperty(cost),boost_graph->g );
                     atleast_one_edge = true;
 
-                    // Update stats
-                    truth_mat(parents(i),1) = true;
-                    truth_mat(children(j),0) = true;
-                    if ( truth_mat(parents(i),0)&&truth_mat(parents(i),1) )
-                        bc_count(node_map[parents(i)]->depth)++;
-                    if ( truth_mat(children(j),0)&&truth_mat(children(j),1) )
-                        bc_count(node_map[children(j)]->depth)++;
+                    // // Update stats
+                    // truth_mat(parents(i),1) = true;
+                    // truth_mat(children(j),0) = true;
+                    // if ( truth_mat(parents(i),0)&&truth_mat(parents(i),1) )
+                    //     bc_count(node_map[parents(i)]->depth)++;
+                    // if ( truth_mat(children(j),0)&&truth_mat(children(j),1) )
+                    //     bc_count(node_map[children(j)]->depth)++;
 
                     // if ( min_transition_cost(node_map[parents(i)]->depth,0)>cost )
                     //     min_transition_cost(node_map[parents(i)]->depth,0) = cost;
@@ -158,8 +158,6 @@ public:
     Eigen::MatrixXi truth_mat;
     // Min cost to go to next level for a level
     Eigen::VectorXd min_transition_cost;
-
-
 
     // Vector to store graph performance metrics
     // 0: Total number of edges
@@ -374,10 +372,10 @@ public:
                 std::vector<Eigen::MatrixXd>& ff_frames, int depth,
                 boost_graph* boost_graph,
                 GeometricFilterHarness* geo_filter, std::vector<node*>& node_map,
-                    std::vector<Eigen::VectorXi>& node_list){
+                    std::vector<Eigen::VectorXi>& node_list, int n){
         sampler.NearestNode(ik_handler, wm, waypoint,
                 ff_frames, depth, isCreated, boost_graph, geo_filter,
-                node_map, node_list);
+                node_map, node_list, n);
     };
 
     bool NodeAdditions(std::vector<Eigen::MatrixXd>& ff_frames, ikHandler* ik_handler,

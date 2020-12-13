@@ -17,8 +17,8 @@
 // #define DEBUG_PATH_CONSISTENCY
 #define GRAPH_SEARCH
 // #define SEARCH_ASSERT
-// #define BASELINE
-#define PCT_PLANNER
+#define BASELINE
+// #define PCT_PLANNER
 
 
 // #define fileWrite

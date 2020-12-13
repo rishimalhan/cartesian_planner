@@ -102,6 +102,12 @@ Eigen::VectorXd GetQTWp(Eigen::VectorXd waypoint){
     return wp_qt;
 };
 
+Eigen::VectorXd GetWp(Eigen::VectorXd waypoint){
+    Eigen::VectorXd wp(12);
+    wp.segment(0,3) = waypoint.segment(0,3);
+    wp.segment(3,9) = rtf::eul2bxbybz(rtf::qt2eul(waypoint.segment(3,4).transpose(), "ZYX")).row(0).transpose();
+    return wp;  
+}
 
 Eigen::VectorXi GenNodeSamples(std::vector<Eigen::MatrixXd>& ff_frames, ikHandler* ik_handler,
                     WM::WM* wm, GeometricFilterHarness* geo_filter,
@@ -142,8 +148,10 @@ Eigen::VectorXi GenNodeSamples(std::vector<Eigen::MatrixXd>& ff_frames, ikHandle
                 // Check for collision
                 std::vector<Eigen::MatrixXd> fk_kdl = 
                 ik_handler->robot->get_robot_FK_all_links(ik_handler->solution.col(sol_no));
-                if (geo_filter->is_tool_collision_free_(waypoint)){
-                    if(!wm->inCollision( fk_kdl )){
+                // if (geo_filter->is_tool_collision_free_(waypoint)){
+                if (true){
+                    // if(!wm->inCollision( fk_kdl )){
+                    if (true){
                         graph_metrics(3)++;
                         int node_id = node_map.size();
                         node* new_node = generate_node(ik_handler->solution.col(sol_no), 
@@ -234,10 +242,10 @@ bool RandomSample(std::vector<Eigen::MatrixXd>& ff_frames, ikHandler* ik_handler
         else
             return true;
     }
-    if (sampled_nodes.size()==0){
-        ROS_WARN_STREAM("**********ALERT***************");
-        ROS_WARN_STREAM("All nodes evaluated");
-    }
+    // if (sampled_nodes.size()==0){
+    //     ROS_WARN_STREAM("**********ALERT***************");
+    //     ROS_WARN_STREAM("All nodes evaluated");
+    // }
 
     return false;
 };
@@ -247,18 +255,25 @@ void NearestNode(ikHandler* ik_handler, WM::WM* wm, Eigen::VectorXd waypoint,
                 std::vector<Eigen::MatrixXi>& isCreated,
                 boost_graph* boost_graph,
                 GeometricFilterHarness* geo_filter, std::vector<node*>& node_map,
-                    std::vector<Eigen::VectorXi>& node_list){
+                    std::vector<Eigen::VectorXi>& node_list, int n){
     // int trial_itr = 0;
     // int optID;
     // bool node_created = false;
     // int counter = 0;
-    int no_neigh = 20;
+    Eigen::MatrixXd wps(101,12);
+    wps.row(0) = waypoint.transpose();
+    int no_neigh = n;
     Eigen::VectorXd wp_quat = GetQTWp(waypoint);
     // while( (trial_itr < ff_frames[depth].rows()-1) && !node_created ){
     // while( counter < 2000 && trial_itr < ff_frames[depth].rows()-1 ){
     Eigen::VectorXi indices(no_neigh);
     Eigen::VectorXf dists2(no_neigh);
     kdtrees[depth]->knn(wp_quat.cast<float>(), indices, dists2, no_neigh);
+
+    for (int i=0; i<indices.size(); ++i){
+        wps.row(i+1) = GetWp(ff_frames[depth].row(indices(i)).transpose()).transpose();
+    }
+
     for (int i=0; i<indices.size(); ++i){
         int optID = indices(i);
         if (isCreated[depth](optID,0) == 0)
@@ -297,6 +312,11 @@ void NearestNode(ikHandler* ik_handler, WM::WM* wm, Eigen::VectorXd waypoint,
             }
         }
     }
+
+    std::string csv_dir;
+    csv_dir = ros::package::getPath("pct") + "/data/csv/";
+    file_rw::file_write(csv_dir+"../test_case_specific_data/frames" + std::to_string(depth) + ".csv",
+                                ff_frames[depth]);
 };
 
 };

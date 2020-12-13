@@ -46,12 +46,12 @@ bool build_graph(ikHandler* ik_handler, std::vector<Eigen::MatrixXd>& ff_frames,
     int no_connections_eval = 0;
     std::vector<Edge> edges; edges.clear();
     std::vector<double> weights; weights.clear();
-    root_connectivity.resize(node_list[0].size());
-    for (int i=0; i<node_list[0].size(); ++i)
-        root_connectivity[i] = false;
+    // root_connectivity.resize(node_list[0].size());
+    // for (int i=0; i<node_list[0].size(); ++i)
+    //     root_connectivity[i] = false;
     std::cout<< "Number of levels in the graph: " << node_list.size() << "\n";
 
-    for (int i=0; i<node_list.size()-1; ++i){
+    for (int i=0; i<node_list.size(); ++i){
         // Nodes at the current level
         Eigen::VectorXi curr_level = node_list[i];
         // Nodes at the next level
@@ -64,11 +64,17 @@ bool build_graph(ikHandler* ik_handler, std::vector<Eigen::MatrixXd>& ff_frames,
 
         // For each node at current level, build edges for each node at next level
         for (int j=0; j<curr_level.size(); ++j){
+            // Connect dummy root
+            if (i==0){
+                edges.push_back( Edge(0,curr_level(j)) );
+                weights.push_back( 0 );
+            }
+
             for (int k=0; k<next_level.size(); ++k){
                 no_connections_eval++;
                 if ( isEdge(node_map, curr_level(j), next_level(k)) ){
-                    if (i==0) // Mark this root to be connected to graph
-                        root_connectivity[j] = true;
+                    // if (i==0) // Mark this root to be connected to graph
+                    //     root_connectivity[j] = true;
                     edges.push_back( Edge(curr_level(j),next_level(k)) );
                     weights.push_back( computeGCost(node_map, curr_level(j), next_level(k)) );
                 }
