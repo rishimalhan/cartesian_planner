@@ -52,14 +52,20 @@ bool build_graph(ikHandler* ik_handler, std::vector<Eigen::MatrixXd>& ff_frames,
     std::cout<< "Number of levels in the graph: " << node_list.size() << "\n";
 
     for (int i=0; i<node_list.size(); ++i){
+        // Connect dummy leaf
+        if (i==node_list.size()-1){
+            Eigen::VectorXi curr_level = node_list[i];
+            for (int j=0; j<curr_level.size(); ++j){
+                edges.push_back( Edge(curr_level(j),1) );
+                weights.push_back( 0 );
+            }
+            continue;
+        }
+
         // Nodes at the current level
         Eigen::VectorXi curr_level = node_list[i];
         // Nodes at the next level
         Eigen::VectorXi next_level = node_list[i+1];
-        // Store the leaf nodes for generating path
-        if (i==node_list.size()-2)
-            boost_graph->leaf_nodes = node_list[i+1];
-
         int prev_edge_size = edges.size(); // This is a checking for discontinuity; 
 
         // For each node at current level, build edges for each node at next level

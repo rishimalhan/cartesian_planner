@@ -37,27 +37,33 @@ private:
     };
 
     bool MakeConnections( Eigen::VectorXi parents, Eigen::VectorXi children, 
-                    std::vector<Edge>& edges, std::vector<double>& weights,
                     ikHandler* ik_handler, const std::vector<node*>& node_map, boost_graph* boost_graph){
         bool atleast_one_edge = false;
 
-        // int diff = node_map.size() - truth_mat.rows();
-        // truth_mat.conservativeResize(node_map.size(),2);
-        // truth_mat.block(truth_mat.rows()-diff,0,diff,2) = Eigen::MatrixXi::Zero(diff,2);
+        // Connect dummy root
+        if (node_map[parents(0)]->depth==0)
+            for (int i=0; i<parents.size(); ++i)
+                add_edge( boost_graph->p[0], boost_graph->p[parents(i)],
+                            EdgeWeightProperty(0),boost_graph->g );
+        if (node_map[parents(0)]->depth==boost_graph->no_levels-1)
+            for (int i=0; i<parents.size(); ++i)
+                add_edge( boost_graph->p[parents(i)], boost_graph->p[1],
+                            EdgeWeightProperty(0),boost_graph->g );
+        
+        // Connect dummy leaf
+        if (node_map[children(0)]->depth==boost_graph->no_levels-1)
+            for (int j=0; j<children.size(); ++j)
+                add_edge( boost_graph->p[children(j)], boost_graph->p[1],
+                            EdgeWeightProperty(0),boost_graph->g );
+        if (node_map[children(0)]->depth==0)
+            for (int j=0; j<children.size(); ++j)
+                add_edge( boost_graph->p[0], boost_graph->p[children(j)],
+                            EdgeWeightProperty(0),boost_graph->g );
+            
         for (int i=0; i<parents.size(); ++i){
             for (int j=0; j<children.size(); ++j){
                 // graph_metrics(0)++;
                 if ( isEdge(node_map, parents(i), children(j)) ){
-                    if ( node_map[parents(i)]->depth==0 ){
-                        bool add_root = true;
-                        for (int k=0; k<root_nodes.size();++k)
-                            if (root_nodes(k)==parents(i))
-                                add_root = false;
-                        if (add_root){
-                            root_nodes.conservativeResize(root_nodes.size()+1);
-                            root_nodes(root_nodes.size()-1) = parents(i);
-                        }
-                    }
                     // graph_metrics(1)++;
                     // edges.push_back( Edge(parents(i),children(j)) );
                     double cost = computeGCost(node_map, parents(i), children(j));
@@ -65,26 +71,6 @@ private:
                     add_edge( boost_graph->p[parents(i)],
                                 boost_graph->p[children(j)],EdgeWeightProperty(cost),boost_graph->g );
                     atleast_one_edge = true;
-
-                    // // Update stats
-                    // truth_mat(parents(i),1) = true;
-                    // truth_mat(children(j),0) = true;
-                    // if ( truth_mat(parents(i),0)&&truth_mat(parents(i),1) )
-                    //     bc_count(node_map[parents(i)]->depth)++;
-                    // if ( truth_mat(children(j),0)&&truth_mat(children(j),1) )
-                    //     bc_count(node_map[children(j)]->depth)++;
-
-                    // if ( min_transition_cost(node_map[parents(i)]->depth,0)>cost )
-                    //     min_transition_cost(node_map[parents(i)]->depth,0) = cost;
-                    // if ( min_transition_cost(node_map[children(j)]->depth,1)>cost )
-                    //     min_transition_cost(node_map[children(j)]->depth,1) = cost;
-
-                    // min_transition_cost(node_map[parents(i)]->depth,2) = 
-                    //         min_transition_cost(node_map[parents(i)]->depth,0) + 
-                    //         min_transition_cost(node_map[parents(i)]->depth,1);
-                    // min_transition_cost(node_map[children(j)]->depth,2) = 
-                    //         min_transition_cost(node_map[children(j)]->depth,0) + 
-                    //         min_transition_cost(node_map[children(j)]->depth,1);
                 }
             }
         }
@@ -94,7 +80,6 @@ private:
     void GreedyProgression(int strt, int end, std::vector<Eigen::MatrixXd>& ff_frames,
                         ikHandler* ik_handler, WM::WM* wm, GeometricFilterHarness* geo_filter,
                         std::vector<node*>& node_map, std::vector<Eigen::VectorXi>& node_list,
-                        std::vector<Edge>& edges, std::vector<double>& weights, 
                         boost_graph* boost_graph, int& total_depth
                         ){
         int a = 1;
@@ -124,14 +109,12 @@ private:
             // Integrate nodes with graph
             if (a==1){ // Fwd progression
                 if (depth > 0)
-                    if (!MakeConnections( prev_nodes,sampled_nodes,edges, 
-                        weights,ik_handler,node_map, boost_graph ))
+                    if (!MakeConnections( prev_nodes,sampled_nodes,ik_handler,node_map, boost_graph ))
                         return; // Couldn't go through all levels
             }
             if (a==-1){ // Bckwd progression
                 if (depth < ff_frames.size()-1)
-                    if (!MakeConnections( sampled_nodes,prev_nodes,edges, 
-                        weights,ik_handler,node_map, boost_graph ))
+                    if (!MakeConnections( sampled_nodes,prev_nodes,ik_handler,node_map, boost_graph ))
                         return; // Couldn't go through all levels
             }
             prev_nodes = sampled_nodes;
@@ -177,9 +160,9 @@ public:
 
     Eigen::VectorXd graph_metrics;
     // Cost tracker to track total edge cost for each level
-    std::vector<double> cost_tracker;
+    // std::vector<double> cost_tracker;
     // Edge tracker to track number of edges for each level
-    std::vector<int> edge_tracker;
+    // std::vector<int> edge_tracker;
 
     std::vector<std::vector<int>> unvisited_src;
     std::vector<Eigen::MatrixXi> isCreated;
@@ -190,10 +173,10 @@ public:
         no_levels = ff_frames.size();
         sampler.M.resize(no_levels);
 
-        bc_count = Eigen::VectorXd::Zero(no_levels); // UC, LC, BC
-        bc_count(0) = 1e8;
-        bc_count(no_levels-1) = 1e8;
-        min_transition_cost = Eigen::VectorXd::Ones(no_levels)*1e8;
+        // bc_count = Eigen::VectorXd::Zero(no_levels); // UC, LC, BC
+        // bc_count(0) = 1e8;
+        // bc_count(no_levels-1) = 1e8;
+        // min_transition_cost = Eigen::VectorXd::Ones(no_levels)*1e8;
 
         // Nabo initializer
         sampler.kdtrees.resize(no_levels);
@@ -207,15 +190,15 @@ public:
         
 
         graph_metrics = Eigen::VectorXd::Zero(14);
-        cost_tracker.clear();
-        edge_tracker.clear();
-        cost_tracker.resize(ff_frames.size());
-        edge_tracker.resize(ff_frames.size());
+        // cost_tracker.clear();
+        // edge_tracker.clear();
+        // cost_tracker.resize(ff_frames.size());
+        // edge_tracker.resize(ff_frames.size());
         unvisited_src.resize(2);
-        for (int i=0; i<ff_frames.size(); ++i){
-            cost_tracker[i] = 0;
-            edge_tracker[i] = 0;
-        }
+        // for (int i=0; i<ff_frames.size(); ++i){
+        //     cost_tracker[i] = 0;
+        //     edge_tracker[i] = 0;
+        // }
         for (int i=0; i<ff_frames[0].rows(); ++i)
             unvisited_src[0].push_back(i);
         for (int i=0; i<ff_frames[ff_frames.size()-1].rows(); ++i)
@@ -236,36 +219,35 @@ public:
     bool GreedyProgression(std::vector<Eigen::MatrixXd>& ff_frames,
                         ikHandler* ik_handler, WM::WM* wm, GeometricFilterHarness* geo_filter,
                         std::vector<node*>& node_map, std::vector<Eigen::VectorXi>& node_list,
-                        std::vector<Edge>& edges, std::vector<double>& weights, boost_graph* boost_graph,
-                        string type){
+                        boost_graph* boost_graph, string type){
         bool AreSamplesGen = false;
         int total_depth;
         if (type=="fwd"){
             if (unvisited_src[0].size()!=0){
                 AreSamplesGen = true;
                 GreedyProgression(0, ff_frames.size()-1, ff_frames,ik_handler,wm, geo_filter,
-                                node_map, node_list, edges, weights, boost_graph, total_depth
+                                node_map, node_list, boost_graph, total_depth
                                 );
-                // Avg Fwd Depth
-                graph_metrics(6) = ((graph_metrics(5)-1)*graph_metrics(6) 
-                                + total_depth)/graph_metrics(5);
-                // Max Fwd Depth
-                if (total_depth > graph_metrics(7))
-                    graph_metrics(7) = total_depth;
+                // // Avg Fwd Depth
+                // graph_metrics(6) = ((graph_metrics(5)-1)*graph_metrics(6) 
+                //                 + total_depth)/graph_metrics(5);
+                // // Max Fwd Depth
+                // if (total_depth > graph_metrics(7))
+                //     graph_metrics(7) = total_depth;
             }
         }
         if (type=="bck"){
             if (unvisited_src[1].size()!=0){
                 AreSamplesGen = true;
                 GreedyProgression(ff_frames.size()-1, 0, ff_frames,ik_handler,wm, geo_filter,
-                                node_map, node_list, edges, weights, boost_graph, total_depth
+                                node_map, node_list, boost_graph, total_depth
                                 );
-                // Avg Bck Depth
-                graph_metrics(11) = ((graph_metrics(10)-1)*graph_metrics(11) 
-                                + total_depth)/graph_metrics(10);
-                // Max Bck Depth
-                if (total_depth > graph_metrics(12))
-                    graph_metrics(12) = total_depth;
+                // // Avg Bck Depth
+                // graph_metrics(11) = ((graph_metrics(10)-1)*graph_metrics(11) 
+                //                 + total_depth)/graph_metrics(10);
+                // // Max Bck Depth
+                // if (total_depth > graph_metrics(12))
+                //     graph_metrics(12) = total_depth;
             }
         }
         infeasibility = sampler.infeasibility;
@@ -344,27 +326,20 @@ public:
         index = 0 + ( std::rand() % ( no_levels ) );
         // Connection with nodes above
         if (index-1 >= 0){
-            MakeConnections( node_list[index-1],node_list[index],edges, 
-                        weights,ik_handler,node_map, boost_graph );
+            MakeConnections( node_list[index-1],node_list[index],ik_handler,node_map, boost_graph );
         }
 
         if (index+1 <= no_levels-1){
-            MakeConnections( node_list[index],node_list[index+1],edges, 
-                        weights,ik_handler,node_map, boost_graph );
+            MakeConnections( node_list[index],node_list[index+1],ik_handler,node_map, boost_graph );
         }
 
         return true;
     };
 
     bool EdgeConnections(ikHandler* ik_handler, std::vector<Eigen::VectorXi>& node_list,
-                    boost_graph* boost_graph, std::vector<Edge>& edges, std::vector<double>& weights,
-                    std::vector<node*>& node_map){
-        for (int index=0; index<node_list.size(); ++index){
-            if (index+1 <= no_levels-1){
-                MakeConnections( node_list[index],node_list[index+1],edges, 
-                            weights,ik_handler,node_map, boost_graph );
-            }
-        }
+                    boost_graph* boost_graph, std::vector<node*>& node_map){
+        for (int index=0; index<node_list.size()-1; ++index)
+            MakeConnections( node_list[index],node_list[index+1],ik_handler,node_map, boost_graph );
         return true;
     };
 
@@ -380,49 +355,46 @@ public:
 
     bool NodeAdditions(std::vector<Eigen::MatrixXd>& ff_frames, ikHandler* ik_handler,
                     WM::WM* wm, GeometricFilterHarness* geo_filter, std::vector<node*>& node_map,
-                    std::vector<Eigen::VectorXi>& node_list, boost_graph* boost_graph,
-                    std::vector<Edge>& edges, std::vector<double>& weights,
-                    double path_cost, std::vector<double> path_costs,
-                    Eigen::MatrixXd& cost_grad){
-        bool use_bias = false;
-        if (use_bias){
-            // // Create Bias
-            Eigen::VectorXd node_counts(node_list.size());
-            for (int i=0; i<node_list.size(); ++i)
-                node_counts(i) = node_list[i].size();
-            Eigen::VectorXd score;
-            if (cost_grad.col(0).norm()>1e-8 && cost_grad.col(1).norm()>1e-8){
-                Eigen::VectorXd temp1 = cost_grad.col(0);
-                temp1 = (temp1 / temp1.maxCoeff()) * 0.25;
-                Eigen::VectorXd temp2 = cost_grad.col(1);
-                temp2 = (temp2 / temp2.maxCoeff()) * 0.25;
-                Eigen::VectorXd temp3 = node_counts.array().inverse();
-                temp3 = (temp3 / temp3.maxCoeff()) * 0.5;
-                score = temp1 + temp2 + temp3;
-                Eigen::VectorXd sorted_conn;
-                Eigen::VectorXi sorted_index;
-                sort_vec(score,sorted_conn,sorted_index);
-                int effective_levels = floor(0.3*no_levels);
-                int samples = floor( no_levels / effective_levels );
-                for (int index=0; index<effective_levels; ++index)
-                    for (int i=0; i<samples; ++i)
-                        sampler.RandomSample(ff_frames, ik_handler, wm, geo_filter, 
-                            node_map, node_list, sorted_index(index), isCreated,
-                            graph_metrics, boost_graph );
-            }
-            else{
-                for (int index=0; index<no_levels; ++index)
-                    sampler.RandomSample(ff_frames, ik_handler, wm, geo_filter, 
-                        node_map, node_list, index, isCreated,
-                        graph_metrics, boost_graph );
-            }
-        }
-        else{
-            for (int index=0; index<no_levels; ++index)
-                sampler.RandomSample(ff_frames, ik_handler, wm, geo_filter, 
-                    node_map, node_list, index, isCreated,
-                    graph_metrics, boost_graph );
-        }
+                    std::vector<Eigen::VectorXi>& node_list, boost_graph* boost_graph){
+        // bool use_bias = false;
+        // if (use_bias){
+        //     // // Create Bias
+        //     Eigen::VectorXd node_counts(node_list.size());
+        //     for (int i=0; i<node_list.size(); ++i)
+        //         node_counts(i) = node_list[i].size();
+        //     Eigen::VectorXd score;
+        //     if (cost_grad.col(0).norm()>1e-8 && cost_grad.col(1).norm()>1e-8){
+        //         Eigen::VectorXd temp1 = cost_grad.col(0);
+        //         temp1 = (temp1 / temp1.maxCoeff()) * 0.25;
+        //         Eigen::VectorXd temp2 = cost_grad.col(1);
+        //         temp2 = (temp2 / temp2.maxCoeff()) * 0.25;
+        //         Eigen::VectorXd temp3 = node_counts.array().inverse();
+        //         temp3 = (temp3 / temp3.maxCoeff()) * 0.5;
+        //         score = temp1 + temp2 + temp3;
+        //         Eigen::VectorXd sorted_conn;
+        //         Eigen::VectorXi sorted_index;
+        //         sort_vec(score,sorted_conn,sorted_index);
+        //         int effective_levels = floor(0.3*no_levels);
+        //         int samples = floor( no_levels / effective_levels );
+        //         for (int index=0; index<effective_levels; ++index)
+        //             for (int i=0; i<samples; ++i)
+        //                 sampler.RandomSample(ff_frames, ik_handler, wm, geo_filter, 
+        //                     node_map, node_list, sorted_index(index), isCreated,
+        //                     graph_metrics, boost_graph );
+        //     }
+        //     else{
+        //         for (int index=0; index<no_levels; ++index)
+        //             sampler.RandomSample(ff_frames, ik_handler, wm, geo_filter, 
+        //                 node_map, node_list, index, isCreated,
+        //                 graph_metrics, boost_graph );
+        //     }
+        // }
+        // else{
+        for (int index=0; index<no_levels; ++index)
+            sampler.RandomSample(ff_frames, ik_handler, wm, geo_filter, 
+                node_map, node_list, index, isCreated,
+                graph_metrics, boost_graph );
+        // }
 
         // // Create probabilities for top 2 bottlenecks
         // Eigen::VectorXd probs(5);

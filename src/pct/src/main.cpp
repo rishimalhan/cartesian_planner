@@ -17,8 +17,8 @@
 // #define DEBUG_PATH_CONSISTENCY
 #define GRAPH_SEARCH
 // #define SEARCH_ASSERT
-#define BASELINE
-// #define PCT_PLANNER
+// #define BASELINE
+#define PCT_PLANNER
 
 
 // #define fileWrite
@@ -433,14 +433,11 @@ int main(int argc, char** argv){
     // Graph Search
     Eigen::MatrixXi path_idx(NumWaypoints,1);
     Eigen::MatrixXi tcp_idx(NumWaypoints,1);
-    Eigen::MatrixXi strt_discnt;
     std::vector<node*> node_map;
     std::vector<Eigen::VectorXi> node_list;
     success_flags = Eigen::MatrixXd::Ones(NumWaypoints,1)*0;
     boost_graph graph;
     double search_time = 0;
-    double no_strt_nodes;
-    double no_djk = 0;
     timer search_timer;
 
     std::cout<< "\nGenerating Nodes\n";
@@ -471,92 +468,39 @@ int main(int argc, char** argv){
             trajectory.row(0) << ik_handler.init_guess.transpose();
         }
         else{
+            trajectory.resize(NumWaypoints,robot.NrOfJoints);
+            tcp_idx.resize(NumWaypoints,1);
             exec_time += main_timer.elapsed();
             ROS_INFO( "Graph generation COMPUTE TIME: %f", main_timer.elapsed() );
-            Eigen::VectorXi strt_nodes = node_list[0];
-            double lowest_cost = std::numeric_limits<double>::infinity();
-            strt_discnt = Eigen::MatrixXi::Ones(strt_nodes.size(),1); // For debugging
-            no_strt_nodes = strt_nodes.size();
+            
+            // Change the start vertex in graph
+            vertex_descriptor s = vertex(0, graph.g); graph.s = s;
+            Eigen::VectorXi id_path;
+
             search_timer.start();
-            // Run Search For Multiple Start Configs
-            for (int i=0; i<strt_nodes.size(); ++i){
-                if (!root_connectivity[i]){
-                    strt_discnt(i) = 0;
-                    continue;
-                }
-                int root_node = strt_nodes(i);
-                Eigen::VectorXd root_config = node_map[root_node]->jt_config;
-                #ifdef SEARCH_ASSERT
-                std::cout<< "Robot Config in Degrees: " << root_config.transpose()*(180/M_PI) << "\n";
-                #endif
-                // Change the start vertex in graph
-                vertex_descriptor s = vertex(root_node, graph.g); graph.s = s;
-                Eigen::VectorXi id_path;
-                search_timer.reset();
-                bool search_success = graph_searches::djikstra(&graph,id_path);
-                no_djk += 1;
-                search_time += search_timer.elapsed();
+            bool search_success = graph_searches::djikstra(&graph,id_path);
+            search_time += search_timer.elapsed();
 
-                if(search_success){ // Get the shortest path to a leaf node in terms of node ids
-                    // Generate Trajectory
-                    Eigen::MatrixXd curr_traj(NumWaypoints, robot.NrOfJoints);
-                    Eigen::MatrixXi curr_tcp_idx(NumWaypoints,1);
-                    for(int k=0; k<id_path.size(); ++k){
-                        curr_traj.row(k) = node_map[id_path(k)]->jt_config.transpose();
-                        curr_tcp_idx(k,0) = node_map[id_path(k)]->tcp_id;
-                    }
-                    // Evaluate trajectory cost
-                    double path_cost = 0;
-                    for (int k=0; k<curr_traj.rows()-1;++k){
-                        Eigen::ArrayXd jt_diff = (curr_traj.row(k+1) - curr_traj.row(k)).transpose();
-                        path_cost += jt_diff.abs().maxCoeff();
-                    }
-                    if (path_cost<lowest_cost){
-                        #ifdef SEARCH_ASSERT
-                        std::cout<< "Found Path With Lower Cost. Current Path Cost: " << path_cost << "\n\n";
-                        #endif
-                        lowest_cost = path_cost;
-                        trajectory = curr_traj;
-                        tcp_idx = curr_tcp_idx;
-
-                        #ifdef DEBUG_MODE_MAIN
-                        // Extras for research
-                        Eigen::MatrixXd path_cost_mat(1,1);
-                        path_cost_mat<< path_cost;
-                        // Convert all pathsToleaf to node indexes
-                        Eigen::MatrixXi pathsToleaf(graph.paths.rows(),graph.paths.cols());
-                        for (int k=0; k<graph.paths.rows(); ++k)
-                            for (int l=0; l<graph.paths.cols(); ++l)
-                                pathsToleaf(k,l) = node_map[graph.paths(k,l)]->index;
-                        #ifdef fileWrite
-                        file_rw::file_write(csv_dir+"tcp_idx.csv",tcp_idx);
-                        file_rw::file_write(csv_dir+"path_cost.csv",path_cost_mat);
-                        file_rw::file_write(csv_dir+"pathsToLeaf.csv",pathsToleaf);
-                        #endif
-                        // char x;
-                        // std::cin>> x;
-                        //
-                        #endif
-                    }
-                    success_flags = Eigen::MatrixXd::Ones(NumWaypoints,1);
+            if(search_success){ // Get the shortest path to a leaf node in terms of node ids
+                // Generate Trajectory
+                for(int k=0; k<id_path.size(); ++k){
+                    trajectory.row(k) = node_map[id_path(k)]->jt_config.transpose();
+                    tcp_idx(k,0) = node_map[id_path(k)]->tcp_id;
                 }
-                else{
-                    strt_discnt(i) = 0;
-                    #ifdef SEARCH_ASSERT
-                    std::cout<< "Discontinuity detected for this configuration\n\n";
-                    #endif
+                // Evaluate trajectory cost
+                double path_cost = 0;
+                for (int k=0; k<trajectory.rows()-1;++k){
+                    Eigen::ArrayXd jt_diff = (trajectory.row(k+1) - trajectory.row(k)).transpose();
+                    path_cost += jt_diff.abs().maxCoeff();
                 }
+                success_flags = Eigen::MatrixXd::Ones(NumWaypoints,1);
             }
 
             // std::cout<< "Trajectory: \n" << trajectory << "\n";
         }
     }
     exec_time += search_time;
-    std::cout<< "Number of Start Nodes: " << no_strt_nodes << "\n";
-    std::cout<< "Time per search: " << search_time/no_djk << "\n";
-    #ifdef fileWrite
-    file_rw::file_write(csv_dir+"strt_discontinuities.csv",strt_discnt);
-    #endif
+    std::cout<< "Time for graph search: " << search_time << "\n";
     #endif // Baseline ends
 
 
@@ -575,8 +519,20 @@ int main(int argc, char** argv){
     success_flags = Eigen::MatrixXd::Ones(NumWaypoints,1)*0;
     boost_graph graph;
     double search_time = 0;
-    double no_strt_nodes;
-    double no_djk = 0;
+    Eigen::MatrixXi path_idx(NumWaypoints,1);
+    Eigen::MatrixXi tcp_idx(NumWaypoints,1);
+    timer search_timer;
+
+    // Dummy root and leaf
+    node* root_node = new node;
+    root_node->id = 0;
+    root_node->depth = -1;
+    node_map.push_back(root_node);
+
+    node* leaf_node = new node;
+    leaf_node->id = 1;
+    leaf_node->depth = ff_frames.size();
+    node_map.push_back(leaf_node);
 
     main_timer.reset();
     ROS_INFO_STREAM("Building and Refining Graph");
@@ -586,88 +542,41 @@ int main(int argc, char** argv){
         trajectory.row(0) << ik_handler.init_guess.transpose();
     }
     else{
-        ROS_INFO( "Graph generation COMPUTE TIME: %f", main_timer.elapsed() );
+        trajectory.resize(NumWaypoints,robot.NrOfJoints);
+        tcp_idx.resize(NumWaypoints,1);
         exec_time += main_timer.elapsed();
+        ROS_INFO( "Graph generation COMPUTE TIME: %f", main_timer.elapsed() );
+        
+        // Change the start vertex in graph
+        vertex_descriptor s = vertex(0, graph.g); graph.s = s;
+        Eigen::VectorXi id_path;
 
-        // Search
-        timer search_timer;
-        Eigen::VectorXi strt_nodes = node_list[0];
-        no_strt_nodes = strt_nodes.size();
         search_timer.start();
-        double lowest_cost = std::numeric_limits<double>::infinity();
-        main_timer.reset();
-        // Run Search For Multiple Start Configs
-        for (int i=0; i<strt_nodes.size(); ++i){
-            int root_node = strt_nodes(i);
-            Eigen::VectorXd root_config = node_map[root_node]->jt_config;
-            #ifdef SEARCH_ASSERT
-            std::cout<< "Robot Config in Degrees: " << root_config.transpose()*(180/M_PI) << "\n";
-            #endif
-            // Change the start vertex in graph
-            vertex_descriptor s = vertex(root_node, graph.g); graph.s = s;
-            Eigen::VectorXi id_path;
-            search_timer.reset();
-            bool search_success = graph_searches::djikstra(&graph,id_path);
-            no_djk += 1;
-            search_time += search_timer.elapsed();
+        bool search_success = graph_searches::djikstra(&graph,id_path);
+        search_time += search_timer.elapsed();
 
-            if(search_success){ // Get the shortest path to a leaf node in terms of node ids
-                // Generate Trajectory
-                Eigen::MatrixXd curr_traj(NumWaypoints, robot.NrOfJoints);
-                Eigen::MatrixXi curr_tcp_idx(NumWaypoints,1);
-                for(int k=0; k<id_path.size(); ++k){
-                    curr_traj.row(k) = node_map[id_path(k)]->jt_config.transpose();
-                    curr_tcp_idx(k,0) = node_map[id_path(k)]->tcp_id;
-                }
-                // Evaluate trajectory cost
-                double path_cost = 0;
-                for (int k=0; k<curr_traj.rows()-1;++k){
-                    Eigen::ArrayXd jt_diff = (curr_traj.row(k+1) - curr_traj.row(k)).transpose();
-                    path_cost += jt_diff.abs().maxCoeff();
-                }
-                if (path_cost<lowest_cost){
-                    #ifdef SEARCH_ASSERT
-                    std::cout<< "Found Path With Lower Cost. Current Path Cost: " << path_cost << "\n\n";
-                    #endif
-                    lowest_cost = path_cost;
-                    trajectory = curr_traj;
-                }
-                success_flags = Eigen::MatrixXd::Ones(NumWaypoints,1);
+        if(search_success){ // Get the shortest path to a leaf node in terms of node ids
+            // Generate Trajectory
+            for(int k=0; k<id_path.size(); ++k){
+                trajectory.row(k) = node_map[id_path(k)]->jt_config.transpose();
+                tcp_idx(k,0) = node_map[id_path(k)]->tcp_id;
             }
-            else{
-                #ifdef SEARCH_ASSERT
-                ROS_WARN_STREAM( "Discontinuity detected for this configuration\n" );
-                #endif
+            // Evaluate trajectory cost
+            double path_cost = 0;
+            for (int k=0; k<trajectory.rows()-1;++k){
+                Eigen::ArrayXd jt_diff = (trajectory.row(k+1) - trajectory.row(k)).transpose();
+                path_cost += jt_diff.abs().maxCoeff();
             }
+            success_flags = Eigen::MatrixXd::Ones(NumWaypoints,1);
         }
         exec_time += search_time;
         ROS_INFO( "Search COMPUTE TIME: %f", main_timer.elapsed() );
     }
-    // Saving closest configuration to solution
-    Eigen::MatrixXd opt_configs = file_rw::file_read_mat(
-        csv_dir+"../test_case_specific_data/gear/opt_states.csv");
-    Eigen::MatrixXd closest_configs(opt_configs.rows(),6);
-    for (int i=0; i<opt_configs.rows(); ++i){
-        double max_dist = std::numeric_limits<float>::infinity();
-        for (int j=0; j<node_list[i].size(); ++j){
-            if ( (opt_configs.row(i)-node_map[node_list[i](j)]->jt_config.transpose()).norm() <
-                    max_dist ){
-                closest_configs.row(i) = node_map[node_list[i](j)]->jt_config.transpose();
-                max_dist = (opt_configs.row(i)-node_map[node_list[i](j)]->jt_config.transpose()).norm();
-            }
-        }
-    }
-    file_rw::file_write(csv_dir+"closest_configs.csv",closest_configs);
     #endif
 
 
     #endif // Graph search
     
-
-
-
-    // Path cost Vector
-    Eigen::MatrixXd cost_vec(ff_frames.size()-1,1);
 
 
     // Evaluate trajectory cost
@@ -678,14 +587,7 @@ int main(int argc, char** argv){
         path_cost += jt_diff.abs().maxCoeff();
         if (jt_diff.abs().maxCoeff()>max_change)
             max_change = jt_diff.abs().maxCoeff();
-        cost_vec(i,0) = (trajectory.row(i+1) - trajectory.row(i)).norm();
-        // if (jt_diff.abs().maxCoeff()*(180/M_PI) > 130){
-        //     std::cout<< "Max Change: " << jt_diff.abs().maxCoeff()*(180/M_PI) << "\n";
-        //     std::cout<< "Config-1:" << trajectory.row(i)*(180/M_PI) << "\n";
-        //     std::cout<< "Config-2:" << trajectory.row(i+1)*(180/M_PI) << "\n";
-        // }
     }
-    file_rw::file_write(csv_dir+"cost_vec.csv",cost_vec);
     #ifdef GRAPH_SEARCH
     std::cout<< "Total number of edges in graph: " << graph.no_edges << std::endl;
     std::cout<< "Total number of nodes in graph: " << graph.no_nodes << std::endl;

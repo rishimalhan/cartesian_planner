@@ -148,10 +148,10 @@ Eigen::VectorXi GenNodeSamples(std::vector<Eigen::MatrixXd>& ff_frames, ikHandle
                 // Check for collision
                 std::vector<Eigen::MatrixXd> fk_kdl = 
                 ik_handler->robot->get_robot_FK_all_links(ik_handler->solution.col(sol_no));
-                // if (geo_filter->is_tool_collision_free_(waypoint)){
-                if (true){
-                    // if(!wm->inCollision( fk_kdl )){
-                    if (true){
+                if (geo_filter->is_tool_collision_free_(waypoint)){
+                // if (true){
+                    if(!wm->inCollision( fk_kdl )){
+                    // if (true){
                         graph_metrics(3)++;
                         int node_id = node_map.size();
                         node* new_node = generate_node(ik_handler->solution.col(sol_no), 
