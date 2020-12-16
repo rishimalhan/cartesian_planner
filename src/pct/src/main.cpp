@@ -105,7 +105,6 @@ int main(int argc, char** argv){
     }
     resolution *= (M_PI / 180);
 
-
     ///////////////// CAUTION ///////////////////////////////////////
     // WHEN CHANGING A 6DOF ROBOT FOR ANALYTICAL IK, MAKE SURE CHANGES ARE MADE
     // IN IK GATEWAY HEADER AND APPROPRIATE CPP IS INCLUDED
@@ -426,19 +425,19 @@ int main(int argc, char** argv){
     // }
     // std::cout<< trajectory << "\n";
 
+    double path_cost;
 
     #ifdef GRAPH_SEARCH
 
     #ifdef BASELINE
     // Graph Search
     Eigen::MatrixXi path_idx(NumWaypoints,1);
-    Eigen::MatrixXi tcp_idx(NumWaypoints,1);
+    // Eigen::MatrixXi tcp_idx(NumWaypoints,1);
     std::vector<node*> node_map;
     std::vector<Eigen::VectorXi> node_list;
     success_flags = Eigen::MatrixXd::Ones(NumWaypoints,1)*0;
     boost_graph graph;
     double search_time = 0;
-    timer search_timer;
 
     std::cout<< "\nGenerating Nodes\n";
     main_timer.reset();
@@ -469,7 +468,7 @@ int main(int argc, char** argv){
         }
         else{
             trajectory.resize(NumWaypoints,robot.NrOfJoints);
-            tcp_idx.resize(NumWaypoints,1);
+            // tcp_idx.resize(NumWaypoints,1);
             exec_time += main_timer.elapsed();
             ROS_INFO( "Graph generation COMPUTE TIME: %f", main_timer.elapsed() );
             
@@ -477,22 +476,15 @@ int main(int argc, char** argv){
             vertex_descriptor s = vertex(0, graph.g); graph.s = s;
             Eigen::VectorXi id_path;
 
-            search_timer.start();
-            bool search_success = graph_searches::djikstra(&graph,id_path);
-            search_time += search_timer.elapsed();
+            main_timer.reset();
+            bool search_success = graph_searches::djikstra(&graph, id_path, path_cost);
+            search_time += main_timer.elapsed();
 
             if(search_success){ // Get the shortest path to a leaf node in terms of node ids
                 // Generate Trajectory
-                for(int k=0; k<id_path.size(); ++k){
+                for(int k=0; k<id_path.size(); ++k)
                     trajectory.row(k) = node_map[id_path(k)]->jt_config.transpose();
-                    tcp_idx(k,0) = node_map[id_path(k)]->tcp_id;
-                }
-                // Evaluate trajectory cost
-                double path_cost = 0;
-                for (int k=0; k<trajectory.rows()-1;++k){
-                    Eigen::ArrayXd jt_diff = (trajectory.row(k+1) - trajectory.row(k)).transpose();
-                    path_cost += jt_diff.abs().maxCoeff();
-                }
+                    // tcp_idx(k,0) = node_map[id_path(k)]->tcp_id;
                 success_flags = Eigen::MatrixXd::Ones(NumWaypoints,1);
             }
 
@@ -521,7 +513,7 @@ int main(int argc, char** argv){
     double search_time = 0;
     Eigen::MatrixXi path_idx(NumWaypoints,1);
     Eigen::MatrixXi tcp_idx(NumWaypoints,1);
-    timer search_timer;
+    Eigen::VectorXd cost_hist;
 
     // Dummy root and leaf
     node* root_node = new node;
@@ -536,14 +528,15 @@ int main(int argc, char** argv){
 
     main_timer.reset();
     ROS_INFO_STREAM("Building and Refining Graph");
-    if (!BuildRefineGraph(&ik_handler, ff_frames, &wm, &geo_filter, node_map, node_list, &graph)){
+    if (!BuildRefineGraph(&ik_handler, ff_frames, &wm, &geo_filter, 
+                    node_map, node_list, &graph, cost_hist)){
         std::cout<< "Edges could not be created. No solution found\n";
         trajectory.resize(1,ik_handler.OptVarDim);
         trajectory.row(0) << ik_handler.init_guess.transpose();
     }
     else{
-        trajectory.resize(NumWaypoints,robot.NrOfJoints);
-        tcp_idx.resize(NumWaypoints,1);
+        trajectory.resize(NumWaypoints,ik_handler.OptVarDim);
+        // tcp_idx.resize(NumWaypoints,1);
         exec_time += main_timer.elapsed();
         ROS_INFO( "Graph generation COMPUTE TIME: %f", main_timer.elapsed() );
         
@@ -551,40 +544,29 @@ int main(int argc, char** argv){
         vertex_descriptor s = vertex(0, graph.g); graph.s = s;
         Eigen::VectorXi id_path;
 
-        search_timer.start();
-        bool search_success = graph_searches::djikstra(&graph,id_path);
-        search_time += search_timer.elapsed();
+        main_timer.reset();
+        bool search_success = graph_searches::djikstra(&graph, id_path, path_cost);
+        search_time += main_timer.elapsed();
 
         if(search_success){ // Get the shortest path to a leaf node in terms of node ids
             // Generate Trajectory
-            for(int k=0; k<id_path.size(); ++k){
+            for(int k=0; k<id_path.size(); ++k)
                 trajectory.row(k) = node_map[id_path(k)]->jt_config.transpose();
-                tcp_idx(k,0) = node_map[id_path(k)]->tcp_id;
-            }
-            // Evaluate trajectory cost
-            double path_cost = 0;
-            for (int k=0; k<trajectory.rows()-1;++k){
-                Eigen::ArrayXd jt_diff = (trajectory.row(k+1) - trajectory.row(k)).transpose();
-                path_cost += jt_diff.abs().maxCoeff();
-            }
+                // tcp_idx(k,0) = node_map[id_path(k)]->tcp_id;
             success_flags = Eigen::MatrixXd::Ones(NumWaypoints,1);
         }
         exec_time += search_time;
-        ROS_INFO( "Search COMPUTE TIME: %f", main_timer.elapsed() );
+        ROS_INFO( "Search COMPUTE TIME: %f", search_time );
     }
     #endif
 
 
     #endif // Graph search
     
-
-
     // Evaluate trajectory cost
     double max_change = -std::numeric_limits<double>::infinity();
-    double path_cost = 0;
     for (int i=0; i<trajectory.rows()-1;++i){
         Eigen::ArrayXd jt_diff = (trajectory.row(i+1) - trajectory.row(i)).transpose();
-        path_cost += jt_diff.abs().maxCoeff();
         if (jt_diff.abs().maxCoeff()>max_change)
             max_change = jt_diff.abs().maxCoeff();
     }
@@ -603,6 +585,9 @@ int main(int argc, char** argv){
 
 
     // SaveGraphStats(&graph, node_list, ff_frames);
+
+    main_timer.end();
+
 
     std_msgs::Bool msg;
     msg.data = true;

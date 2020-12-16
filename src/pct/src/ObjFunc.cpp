@@ -177,11 +177,8 @@ int main(int argc, char** argv){
     tolerances.row(idx6) = tolerances.row(idx6)*tol_constr;
     tolerances.row(idx7) = tolerances.row(idx7)*tol_constr;
 
-    
-
-
-
-    std::cout<< "Generating Search Samples....\n";
+    // Add a piece of code here that randomly selects 10-20% of points
+    // and makes the tolerances zero to make the problem tougher
     std::vector<Eigen::MatrixXd> wpTol =  gen_wp_with_tolerance(tolerances,resolution, path );
 
     // Geometric Filter Harness Initializer
@@ -189,55 +186,81 @@ int main(int argc, char** argv){
     std::vector<Eigen::MatrixXd> ff_frames = 
     geo_filter.generate_flange_frames( wpTol,tcp_list );
 
+
+
+
+    std::vector<double> x(68);
+    std::string x_path = ros::package::getPath("pct") + "/data/decision_variable/" + 
+                            "random_nobias_opt_x.csv";
+    std::vector<std::vector<double>> X = file_rw::file_read_vec(x_path);
+    x = X[0];
+    ros::param::set("/decision_var",x);
+
+
     double cost = 0;
     int no_sols = 0;
     double exec_time = 0;
-    for (int itr=0; itr<10; itr++){
+    int max_trials = 20;
+    Eigen::MatrixXd cost_histories;
+    timer main_timer;
+
+    for (int itr=0; itr<max_trials; ++itr){
+        ROS_WARN_STREAM("\nRun: " << itr);
         std::vector<node*> node_map;
         std::vector<Eigen::VectorXi> node_list;
         boost_graph graph;
-        double no_strt_nodes;
+        double search_time = 0;
+        Eigen::MatrixXi path_idx(NumWaypoints,1);
+        Eigen::MatrixXi tcp_idx(NumWaypoints,1);
+        Eigen::VectorXd cost_hist;
+        double path_cost;
+        Eigen::MatrixXd trajectory;
 
-        timer exec_timer;
-        exec_timer.start();
+        // Dummy root and leaf
+        node* root_node = new node;
+        root_node->id = 0;
+        root_node->depth = -1;
+        node_map.push_back(root_node);
+
+        node* leaf_node = new node;
+        leaf_node->id = 1;
+        leaf_node->depth = ff_frames.size();
+        node_map.push_back(leaf_node);
+
+        main_timer.reset();
         ROS_INFO_STREAM("Building and Refining Graph");
-        if (!BuildRefineGraph(&ik_handler, ff_frames, &wm, &geo_filter, node_map, node_list, &graph)){
-            continue;
+        if (!BuildRefineGraph(&ik_handler, ff_frames, &wm, &geo_filter, 
+                    node_map, node_list, &graph, cost_hist)){
+            std::cout<< "Edges could not be created. No solution found\n";
+            trajectory.resize(1,ik_handler.OptVarDim);
+            trajectory.row(0) << ik_handler.init_guess.transpose();
         }
         else{
-            exec_time += exec_timer.elapsed();
-            // Search
-            Eigen::VectorXi strt_nodes = node_list[0];
-            no_strt_nodes = strt_nodes.size();
-            double lowest_cost = std::numeric_limits<double>::infinity();
-            // Run Search For Multiple Start Configs
-            for (int i=0; i<strt_nodes.size(); ++i){
-                int root_node = strt_nodes(i);
-                Eigen::VectorXd root_config = node_map[root_node]->jt_config;
-                // Change the start vertex in graph
-                vertex_descriptor s = vertex(root_node, graph.g); graph.s = s;
-                Eigen::VectorXi id_path;
-                bool search_success = graph_searches::djikstra(&graph,id_path);
+            trajectory.resize(NumWaypoints,ik_handler.OptVarDim);
+            ROS_INFO( "Graph generation COMPUTE TIME: %f", main_timer.elapsed() );
+            
+            // Change the start vertex in graph
+            vertex_descriptor s = vertex(0, graph.g); graph.s = s;
+            Eigen::VectorXi id_path;
 
-                if(search_success){ // Get the shortest path to a leaf node in terms of node ids
-                    // Generate Trajectory
-                    Eigen::MatrixXd curr_traj(NumWaypoints, robot.NrOfJoints);
-                    for(int k=0; k<id_path.size(); ++k)
-                        curr_traj.row(k) = node_map[id_path(k)]->jt_config.transpose();
-                    // Evaluate trajectory cost
-                    double path_cost = 0;
-                    for (int k=0; k<curr_traj.rows()-1;++k){
-                        Eigen::ArrayXd jt_diff = (curr_traj.row(k+1) - curr_traj.row(k)).transpose();
-                        path_cost += jt_diff.abs().maxCoeff();
-                    }
-                    if (path_cost<lowest_cost)
-                        lowest_cost = path_cost;
-                }
+            bool search_success = graph_searches::djikstra(&graph, id_path, path_cost);
+            exec_time += main_timer.elapsed();
+
+            if(search_success){ // Get the shortest path to a leaf node in terms of node ids
+                ROS_INFO_STREAM("Search Successful");
+                // Generate Trajectory
+                for(int k=0; k<id_path.size(); ++k)
+                    trajectory.row(k) = node_map[id_path(k)]->jt_config.transpose();
+                cost += path_cost;
+                no_sols++;
+                cost_histories.conservativeResize( no_sols, cost_hist.size() );
+                cost_histories.row(no_sols-1) = cost_hist.transpose();
+                ROS_INFO_STREAM("Cost history for run #" << itr << " is: " << cost_hist.transpose());
             }
-            cost += lowest_cost;
-            no_sols++;
         }
     }
+    file_rw::file_write( csv_dir+"../test_case_specific_data/cost_histories.csv",cost_histories );
+
     ros::param::set("/obj_val",cost / no_sols);
     ros::param::set("/exec_time",exec_time / no_sols);
     return 0;

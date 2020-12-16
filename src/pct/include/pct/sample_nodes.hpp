@@ -40,27 +40,44 @@ node* generate_node(Eigen::VectorXd joint_cfg,
 bool GreedySamples(std::vector<std::vector<int>>& unvisited_src,
                     std::vector<Eigen::MatrixXi>& isCreated,
                     std::vector<Eigen::MatrixXd>& ff_frames, int depth, Eigen::VectorXd& waypoint,
-                    int& optID, Eigen::VectorXd& graph_metrics, bool isSource, int& trial_itr ){
+                    int& optID, Eigen::VectorXd& graph_metrics, bool isSource, int& trial_itr, bool diversity ){
     if (isSource){
+        int ff_frame_id;
         int src_id;
         if (depth==0)
             src_id = 0;
         else
             src_id = 1;
+        // if (!diversity){
         // Generate a random ff_frame index
         int index = 0 + ( std::rand() % ( unvisited_src[src_id].size() ) );
-        auto ff_frame_id = unvisited_src[src_id][index];
+        ff_frame_id = unvisited_src[src_id][index];
         vector<int>::iterator it = unvisited_src[src_id].begin() + index;
         unvisited_src[src_id].erase( it );
+        // }
+        // else{
+        //     EIgen::VectorXd root;
+        //     if (src_id==0)
+        //         root = best_source;
+        //     if (src_id==1)
+        //         root = best_sink;
+        //     int no_neigh = floor(ff_frames[depth].rows()*0.3);
+        //     Eigen::VectorXi indices(no_neigh);
+        //     Eigen::VectorXd dists2(no_neigh);
+        //     kdtrees[depth]->knn(GetQTWp(root), indices, dists2, no_neigh);
+        //     // Pick farthest point
+        //     ff_frame_id = indices(indices.size()-1);
+        // }
+        
         // Get the corresponding waypoint
         waypoint = ff_frames[depth].row(ff_frame_id).transpose();
-        if (src_id==0)
-            graph_metrics(4)++;
-        if (src_id==1)
-            graph_metrics(9)++;
+        // if (src_id==0)
+        //     graph_metrics(4)++;
+        // if (src_id==1)
+        //     graph_metrics(9)++;
         optID = ff_frame_id;
         // Check if a node has already been created
-        if (isCreated[depth](optID,0) == 1)
+        if (isCreated[depth](ff_frame_id,0) == 1)
             return false;
         return true;
     }
@@ -70,8 +87,8 @@ bool GreedySamples(std::vector<std::vector<int>>& unvisited_src,
     while(trial_itr < ff_frames[depth].rows()-1){
         // OptID defined here
         Eigen::VectorXi indices(trial_itr+1);
-        Eigen::VectorXf dists2(trial_itr+1);
-        kdtrees[depth]->knn(prev_wp.cast<float>(), indices, dists2, trial_itr+1);
+        Eigen::VectorXd dists2(trial_itr+1);
+        kdtrees[depth]->knn(prev_wp, indices, dists2, trial_itr+1);
         optID = indices(trial_itr);
         if (isCreated[depth](optID,0) == 0){
             trial_itr++;
@@ -87,8 +104,10 @@ bool GreedySamples(std::vector<std::vector<int>>& unvisited_src,
 };
 
 public:
-std::vector<Nabo::NNSearchF*> kdtrees;
-std::vector<Eigen::MatrixXf> M;
+Eigen::VectorXd best_source;
+Eigen::VectorXd best_sink;
+std::vector<Nabo::NNSearchD*> kdtrees;
+std::vector<Eigen::MatrixXd> M;
 Eigen::MatrixXi graph_stats;
 bool infeasibility;
 int max_samples;
@@ -114,14 +133,14 @@ Eigen::VectorXi GenNodeSamples(std::vector<Eigen::MatrixXd>& ff_frames, ikHandle
                     std::vector<std::vector<int>>& unvisited_src, std::vector<node*>& node_map,
                     std::vector<Eigen::VectorXi>& node_list,  
                     int depth, std::vector<Eigen::MatrixXi>& isCreated, 
-                    Eigen::VectorXd& graph_metrics, bool isSource, boost_graph* boost_graph){
+                    Eigen::VectorXd& graph_metrics, bool isSource, boost_graph* boost_graph, bool diversity){
     int optID;
     Eigen::VectorXi sampled_nodes;
     Eigen::VectorXd waypoint;
     int trial_itr = 0;
     while (trial_itr < ff_frames[depth].rows()-1){
         if(!GreedySamples(unvisited_src,isCreated, ff_frames,depth,waypoint,
-                            optID, graph_metrics, isSource, trial_itr)){
+                            optID, graph_metrics, isSource, trial_itr, diversity)){
             prev_wp = GetQTWp(waypoint);
             prev_index = optID;
             prev_depth = depth;
@@ -168,15 +187,15 @@ Eigen::VectorXi GenNodeSamples(std::vector<Eigen::MatrixXd>& ff_frames, ikHandle
                 }
             }
         }
-        if (isSource){
-            if (sampled_nodes.size()!=0){
-                if (depth==0)
-                    graph_metrics(5)++;
-                else
-                    graph_metrics(10)++;
-            }
-            return sampled_nodes;
-        }
+        // if (isSource){
+        //     if (sampled_nodes.size()!=0){
+        //         if (depth==0)
+        //             graph_metrics(5)++;
+        //         else
+        //             graph_metrics(10)++;
+        //     }
+        //     return sampled_nodes;
+        // }
         if (sampled_nodes.size()!=0)
             return sampled_nodes;
         trial_itr++;
@@ -220,7 +239,9 @@ bool RandomSample(std::vector<Eigen::MatrixXd>& ff_frames, ikHandler* ik_handler
                 std::vector<Eigen::MatrixXd> fk_kdl = 
                 ik_handler->robot->get_robot_FK_all_links(ik_handler->solution.col(sol_no));
                 if (geo_filter->is_tool_collision_free_(waypoint)){
+                // if (true){
                     if(!wm->inCollision( fk_kdl )){
+                    // if (true){
                         graph_metrics(3)++;
                         int node_id = node_map.size();
                         node* new_node = generate_node(ik_handler->solution.col(sol_no), 
@@ -255,24 +276,23 @@ void NearestNode(ikHandler* ik_handler, WM::WM* wm, Eigen::VectorXd waypoint,
                 std::vector<Eigen::MatrixXi>& isCreated,
                 boost_graph* boost_graph,
                 GeometricFilterHarness* geo_filter, std::vector<node*>& node_map,
-                    std::vector<Eigen::VectorXi>& node_list, int n){
+                    std::vector<Eigen::VectorXi>& node_list, int no_neigh){
     // int trial_itr = 0;
     // int optID;
     // bool node_created = false;
     // int counter = 0;
-    Eigen::MatrixXd wps(101,12);
-    wps.row(0) = waypoint.transpose();
-    int no_neigh = n;
+    // Eigen::MatrixXd wps(101,12);
+    // wps.row(0) = waypoint.transpose();
     Eigen::VectorXd wp_quat = GetQTWp(waypoint);
     // while( (trial_itr < ff_frames[depth].rows()-1) && !node_created ){
     // while( counter < 2000 && trial_itr < ff_frames[depth].rows()-1 ){
     Eigen::VectorXi indices(no_neigh);
-    Eigen::VectorXf dists2(no_neigh);
-    kdtrees[depth]->knn(wp_quat.cast<float>(), indices, dists2, no_neigh);
+    Eigen::VectorXd dists2(no_neigh);
+    kdtrees[depth]->knn(wp_quat, indices, dists2, no_neigh);
 
-    for (int i=0; i<indices.size(); ++i){
-        wps.row(i+1) = GetWp(ff_frames[depth].row(indices(i)).transpose()).transpose();
-    }
+    // for (int i=0; i<indices.size(); ++i){
+    //     wps.row(i+1) = GetWp(ff_frames[depth].row(indices(i)).transpose()).transpose();
+    // }
 
     for (int i=0; i<indices.size(); ++i){
         int optID = indices(i);
@@ -299,7 +319,7 @@ void NearestNode(ikHandler* ik_handler, WM::WM* wm, Eigen::VectorXd waypoint,
                         if(!wm->inCollision( fk_kdl )){
                             int node_id = node_map.size();
                             node* new_node = generate_node(ik_handler->solution.col(sol_no), 
-                                                node_id, depth, neigh_wp,ik_handler);
+                                                node_id, depth, neigh_wp, ik_handler);
                             node_map.push_back(new_node);
                             node_list[depth].conservativeResize(node_list[depth].size()+1);
                             node_list[depth](node_list[depth].size()-1) = node_id;
@@ -312,11 +332,10 @@ void NearestNode(ikHandler* ik_handler, WM::WM* wm, Eigen::VectorXd waypoint,
             }
         }
     }
-
-    std::string csv_dir;
-    csv_dir = ros::package::getPath("pct") + "/data/csv/";
-    file_rw::file_write(csv_dir+"../test_case_specific_data/frames" + std::to_string(depth) + ".csv",
-                                ff_frames[depth]);
+    // std::string csv_dir;
+    // csv_dir = ros::package::getPath("pct") + "/data/csv/";
+    // file_rw::file_write(csv_dir+"../test_case_specific_data/frames" + std::to_string(depth) + ".csv",
+    //                             ff_frames[depth]);
 };
 
 };

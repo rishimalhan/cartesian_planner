@@ -15,7 +15,7 @@
 
 namespace graph_searches{
 
-    bool djikstra(boost_graph* graph, Eigen::VectorXi& path){
+    bool djikstra(boost_graph* graph, Eigen::VectorXi& path, double& path_cost){
         #ifdef SEARCH_ASSERT
         std::cout<< "\n##############################################################\n";
         std::cout<< "Running Djikstra.........\n";
@@ -23,7 +23,7 @@ namespace graph_searches{
         dijkstra_shortest_paths(graph->g, graph->s,
                   predecessor_map(boost::make_iterator_property_map(graph->p.begin(), get(boost::vertex_index, graph->g))).
                   distance_map(boost::make_iterator_property_map(graph->d.begin(), get(boost::vertex_index, graph->g))));
-
+        path_cost = graph->d[ 1 ];
         bool leaf_connected = false;
         path.resize(graph->no_levels);
         double lowest_cost = std::numeric_limits<double>::infinity();
@@ -43,14 +43,15 @@ namespace graph_searches{
             id = graph->p[ id ];
             path(row_no) = id;
         }
-         
+
         #ifdef SEARCH_ASSERT
-        std::cout<< "Path Cost: " << graph->d[ leaf_nodes(index) ] << "\n";
+        std::cout<< "Path Cost: " << graph->d[ 1 ] << "\n";
         #endif
 
         #ifdef SEARCH_ASSERT
         std::cout<< "##############################################################\n";
         #endif
+
         return true;
     };
 

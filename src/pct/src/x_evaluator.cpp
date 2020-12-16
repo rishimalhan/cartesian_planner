@@ -23,9 +23,9 @@ int main(int argc, char** argv){
     srand(time(0));
 
     std::vector<std::string> test_cases;
-    test_cases.push_back("roslaunch pct bootstrap.launch part:=bath_tub tool:=ferro_sander viz:=false");
-    test_cases.push_back("roslaunch pct bootstrap.launch part:=step_slab tool:=ferro_sander  viz:=false");
-    test_cases.push_back("roslaunch pct bootstrap.launch part:=boeing tool:=cam_sander_90 viz:=false");
+    // test_cases.push_back("roslaunch pct bootstrap.launch part:=bath_tub tool:=ferro_sander viz:=false");
+    // test_cases.push_back("roslaunch pct bootstrap.launch part:=step_slab tool:=ferro_sander  viz:=false");
+    // test_cases.push_back("roslaunch pct bootstrap.launch part:=boeing tool:=cam_sander_90 viz:=false");
     test_cases.push_back("roslaunch pct bootstrap.launch part:=gear_int tool:=ati viz:=false");
 
     ros::init(argc,argv,"x_eval");
@@ -66,7 +66,7 @@ int main(int argc, char** argv){
     // return 0;
 
     std::vector<std::vector<double>> history;
-    
+    std::vector<double> cst_hist;
     timer main_timer;
     main_timer.start();
     ros::param::set("/decision_var",x);
@@ -88,5 +88,6 @@ int main(int argc, char** argv){
 
     for (int i=0; i<history.size(); ++i)
         ROS_WARN_STREAM("Objective Value: " << history[i][0] << ". Execution Time: " << history[i][1]);
+    
     return 0;
 }
