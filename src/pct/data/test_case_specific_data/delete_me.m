@@ -8,24 +8,28 @@ clc;
 figure
 hold on;
 
-g_cost_history = csvread('greedy_cost_histories.csv');
+g_cost_history = csvread('greedy_cost_histories_2.csv');
 m = mean(g_cost_history,1);
-plot(linspace(10,100,10), m, 'linewidth', 4)
+plot(10:10:10*size(m,2), m, 'linewidth', 4)
 
-g_cost_history = csvread('random_cost_histories.csv');
+g_cost_history = csvread('greedy_diverse_cost_histories.csv');
 m = mean(g_cost_history,1);
-plot(linspace(10,100,10), m, 'linewidth', 4)
+plot(10:10:10*size(m,2), m, 'linewidth', 4)
 
-g_cost_history = csvread('greedy_smoothing_cost_histories.csv');
-m = mean(g_cost_history,1);
-plot(linspace(10,100,10), m, 'linewidth', 4)
+% g_cost_history = csvread('random_cost_histories.csv');
+% m = mean(g_cost_history,1);
+% plot(linspace(10,100,10), m, 'linewidth', 4)
+% 
+% g_cost_history = csvread('greedy_smoothing_cost_histories.csv');
+% m = mean(g_cost_history,1);
+% plot(linspace(10,100,10), m, 'linewidth', 4)
 
 set(gca,'fontsize',30)
 set(gcf, 'color', [1,1,1])
 xlabel('N')
 ylabel('Cost')
 
-legend('Greedy', 'Random', 'G+S');
+legend('Greedy', 'G+D');
 
 return;
 
@@ -35,21 +39,24 @@ return;
 
 
 % Plotting Curves with StdDev
-% g_cost_history = csvread('greedy_cost_histories.csv');
+% g_cost_history = csvread('greedy_cost_histories_2.csv');
+g_cost_history = csvread('greedy_diverse_cost_histories.csv');
 % g_cost_history = csvread('random_cost_histories.csv');
-g_cost_history = csvread('greedy_smoothing_cost_histories.csv');
+% g_cost_history = csvread('greedy_smoothing_cost_histories.csv');
+% g_cost_history = csvread('randomfull_cost_histories.csv');
 
 m = mean(g_cost_history,1);
-sdev = std(g_cost_history,1);
-
 figure
 hold on;
 
-plot(linspace(10,100,10), m, 'linewidth', 4)
+plot(10:10:10*size(m,2), m, 'linewidth', 4)
 for i=1:size(m,2)
-    lh = plot( [i*10, i*10], [m(i)-3*sdev(i), m(i)+3*sdev(i)], 'm', 'linewidth', 10 );
-    lh.Color = [lh.Color 1 / 2];
+%     lh = plot( [i*10, i*10], [m(i)-3*sdev(i), m(i)+3*sdev(i)], 'm', 'linewidth', 10 );
+%     lh.Color = [lh.Color 1 / 2];
+    scatter( i*10, max(g_cost_history(:,i)),50,'k','filled' );
+    scatter( i*10, min(g_cost_history(:,i)),50,'k','filled' );
 end
+
 
 set(gca,'fontsize',30)
 set(gcf, 'color', [1,1,1])
@@ -57,9 +64,10 @@ xlabel('N')
 ylabel('Cost')
 
 
-% title('Greedy')
+title('Greedy')
 % title('Random')
-title('G+S')
+% title('G+S')
+
 return;
 
 

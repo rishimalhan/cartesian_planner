@@ -29,34 +29,44 @@ private:
     };
 
     double computeGCost( const std::vector<node*>& node_map, const int parent, const int child ){
-        return (node_map[child]->jt_config - node_map[parent]->jt_config).array().abs().maxCoeff();
         // return (node_map[child]->jt_config - node_map[parent]->jt_config).array().abs().maxCoeff();
-        // return (node_map[child]->jt_config - node_map[parent]->jt_config).norm();
+        // return (node_map[child]->jt_config - node_map[parent]->jt_config).array().abs().maxCoeff();
+        return (node_map[child]->jt_config - node_map[parent]->jt_config).norm();
     };
 
     bool MakeConnections( Eigen::VectorXi parents, Eigen::VectorXi children, 
                     ikHandler* ik_handler, const std::vector<node*>& node_map, boost_graph* boost_graph){
         bool atleast_one_edge = false;
+        if (parents.size()==0 || children.size()==0)
+            return atleast_one_edge;
 
         // Connect dummy root
-        if (node_map[parents(0)]->depth==0)
+        if (node_map[parents(0)]->depth==0){
+            boost_graph->root_connected = true;
             for (int i=0; i<parents.size(); ++i)
                 add_edge( boost_graph->p[0], boost_graph->p[parents(i)],
                             EdgeWeightProperty(0),boost_graph->g );
-        if (node_map[parents(0)]->depth==boost_graph->no_levels-1)
+        }
+        if (node_map[parents(0)]->depth==boost_graph->no_levels-1){
+            boost_graph->root_connected = true;
             for (int i=0; i<parents.size(); ++i)
                 add_edge( boost_graph->p[parents(i)], boost_graph->p[1],
                             EdgeWeightProperty(0),boost_graph->g );
+        }
         
         // Connect dummy leaf
-        if (node_map[children(0)]->depth==boost_graph->no_levels-1)
+        if (node_map[children(0)]->depth==boost_graph->no_levels-1){
+            boost_graph->leaf_connected = true;
             for (int j=0; j<children.size(); ++j)
                 add_edge( boost_graph->p[children(j)], boost_graph->p[1],
                             EdgeWeightProperty(0),boost_graph->g );
-        if (node_map[children(0)]->depth==0)
+        }
+        if (node_map[children(0)]->depth==0){
+            boost_graph->leaf_connected = true;
             for (int j=0; j<children.size(); ++j)
                 add_edge( boost_graph->p[0], boost_graph->p[children(j)],
                             EdgeWeightProperty(0),boost_graph->g );
+        }
             
         for (int i=0; i<parents.size(); ++i){
             for (int j=0; j<children.size(); ++j){
@@ -78,7 +88,7 @@ private:
     void GreedyProgression(int strt, int end, std::vector<Eigen::MatrixXd>& ff_frames,
                         ikHandler* ik_handler, WM::WM* wm, GeometricFilterHarness* geo_filter,
                         std::vector<node*>& node_map, std::vector<Eigen::VectorXi>& node_list,
-                        boost_graph* boost_graph, int& total_depth, bool diversity
+                        boost_graph* boost_graph, int& total_depth, bool diversity, int resource
                         ){
         int a = 1;
         if (strt > end)
@@ -92,8 +102,8 @@ private:
         while (depth >= 0 && depth <= ff_frames.size()-1){
             // Sample nodes to be added to graph
             Eigen::VectorXi sampled_nodes = sampler.GenNodeSamples(ff_frames, ik_handler, wm, 
-                                geo_filter, unvisited_src, 
-                             node_map, node_list, depth, isCreated, graph_metrics, isSource, boost_graph, diversity);
+                                geo_filter, unvisited_src, node_map, node_list, depth, 
+                                isCreated, graph_metrics, isSource, boost_graph, diversity, resource);
             if (sampled_nodes.size()==0){
                 if (isSource)
                     if (depth==0)
@@ -104,6 +114,7 @@ private:
                             continue;
                 return; // Couldn't go through all levels
             }
+            
             // Integrate nodes with graph
             if (a==1){ // Fwd progression
                 if (depth > 0)
@@ -218,14 +229,14 @@ public:
     bool GreedyProgression(std::vector<Eigen::MatrixXd>& ff_frames,
                         ikHandler* ik_handler, WM::WM* wm, GeometricFilterHarness* geo_filter,
                         std::vector<node*>& node_map, std::vector<Eigen::VectorXi>& node_list,
-                        boost_graph* boost_graph, string type, bool diversity){
+                        boost_graph* boost_graph, string type, bool diversity, int resource){
         bool AreSamplesGen = false;
         int total_depth;
         if (type=="fwd"){
             if (unvisited_src[0].size()!=0){
                 AreSamplesGen = true;
                 GreedyProgression(0, ff_frames.size()-1, ff_frames,ik_handler,wm, geo_filter,
-                                node_map, node_list, boost_graph, total_depth, diversity
+                                node_map, node_list, boost_graph, total_depth, diversity, resource
                                 );
                 // // Avg Fwd Depth
                 // graph_metrics(6) = ((graph_metrics(5)-1)*graph_metrics(6) 
@@ -239,7 +250,7 @@ public:
             if (unvisited_src[1].size()!=0){
                 AreSamplesGen = true;
                 GreedyProgression(ff_frames.size()-1, 0, ff_frames,ik_handler,wm, geo_filter,
-                                node_map, node_list, boost_graph, total_depth, diversity
+                                node_map, node_list, boost_graph, total_depth, diversity, resource
                                 );
                 // // Avg Bck Depth
                 // graph_metrics(11) = ((graph_metrics(10)-1)*graph_metrics(11) 
@@ -354,11 +365,11 @@ public:
 
     bool NodeAdditions(std::vector<Eigen::MatrixXd>& ff_frames, ikHandler* ik_handler,
                     WM::WM* wm, GeometricFilterHarness* geo_filter, std::vector<node*>& node_map,
-                    std::vector<Eigen::VectorXi>& node_list, boost_graph* boost_graph){
+                    std::vector<Eigen::VectorXi>& node_list, boost_graph* boost_graph, int resource){
         for (int index=0; index<no_levels; ++index){
             sampler.RandomSample(ff_frames, ik_handler, wm, geo_filter, 
                 node_map, node_list, index, isCreated,
-                graph_metrics, boost_graph );
+                graph_metrics, boost_graph, resource );
         }
         
         return true;

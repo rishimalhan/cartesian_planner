@@ -481,6 +481,7 @@ int main(int argc, char** argv){
             search_time += main_timer.elapsed();
 
             if(search_success){ // Get the shortest path to a leaf node in terms of node ids
+                ROS_INFO_STREAM("Search Successful");
                 // Generate Trajectory
                 for(int k=0; k<id_path.size(); ++k)
                     trajectory.row(k) = node_map[id_path(k)]->jt_config.transpose();

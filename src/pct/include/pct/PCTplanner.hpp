@@ -99,10 +99,8 @@ bool GetMinCost(boost_graph* g, std::vector<node*>& node_map, ikHandler* ik_hand
         // Generate Trajectory
         for(int k=0; k<path.size(); ++k)
             trajectory.row(k) = node_map[path(k)]->jt_config.transpose();
-        for (int k=0; k<trajectory.rows()-1;++k){
-            Eigen::ArrayXd jt_diff = (trajectory.row(k+1) - trajectory.row(k)).transpose();
-            path_costs(k) = jt_diff.abs().maxCoeff();
-        }
+        for (int k=0; k<trajectory.rows()-1;++k)
+            path_costs(k) = (trajectory.row(k+1) - trajectory.row(k)).norm();
     }
     return path_found;
 };
@@ -125,13 +123,17 @@ bool BuildRefineGraph(ikHandler* ik_handler, std::vector<Eigen::MatrixXd>& ff_fr
         return 0;
     }
     
+    // ROS_INFO_STREAM("Defining actions object");
     Actions actions(ff_frames);
+    // ROS_INFO_STREAM("Complete............");
+    // ROS_INFO_STREAM("Defining graph");
     graph_t g;
     graph->g = g;
     graph->no_levels = ff_frames.size();
     graph->p.push_back(vertex(0,graph->g)); // root node
     graph->p.push_back(vertex(1,graph->g)); // leaf node
-
+    // ROS_INFO_STREAM("Complete............");
+    // ROS_INFO_STREAM("Initializing support variables");
     bool path_found = false;
     double min_cost;
     // Eigen::VectorXd cell_prob[2][2][2][2];
@@ -143,47 +145,64 @@ bool BuildRefineGraph(ikHandler* ik_handler, std::vector<Eigen::MatrixXd>& ff_fr
     // Eigen::VectorXd past_feature = Eigen::VectorXd::Zero(5);
     // past_feature(4) = 0;
 
-    timer main_timer;
-    main_timer.start();
+    // timer main_timer;
+    // main_timer.start();
     // while ( itr<max_time || actions.root_nodes.size()==0 || !path_found ){
     // while ( main_timer.elapsed()<max_time ){
     std::vector<int> fractions; // Fraction for which greedy progression to be done
-    fractions = {10,10,10,10,10,10,10,10,10,10}; // Greedy
+    fractions = {10,10,10,10,10,10,10,10,10,10,
+                    10,10,10,10,10,10,10,10,10,10,
+                    10,10,10,10,10,10,10,10,10,10,
+                    10,10,10,10,10,10,10,10,10,10}; // Greedy
+
+    // fractions = {10,10,10,10,10,8,8,8,8,8,
+    //                 6,6,6,6,4,4,4,4,2,2,
+    //                 2,0,0,0,0,0,0,0,0,0,
+    //                 0,0,0,0,0,0,0,0,0,0,
+    //                 0,0,0,0,0,0,0,0,0,0,
+    //                 0,0,0,0,0,0,0,0,0,0,
+    //                 0,0,0,0,0,0,0,0,0,0}; // Greedy + Random
+
     // fractions = {10,10,10,6,4,4,2,0,0,0}; // Greedy + Smoothing or Random + Smoothing
     // fractions = {10,8,6,4,2,0,0,0,0,0}; // Greedy + Random
-    // fractions = {0,0,0,0,0,0,0,0,0,0};
+
+
+
+
+    // fractions = {0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0, 
+    //             0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,
+    //             0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,
+    //             0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,
+    //             0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,
+    //             0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0 };
 
     Eigen::MatrixXd trajectory(graph->no_levels, ik_handler->OptVarDim);
     Eigen::VectorXi path;
     cost_hist.resize(fractions.size());
     Eigen::VectorXd path_costs(graph->no_levels-1);
     bool diversity = false;
+    int resource = 10;
+    // ROS_INFO_STREAM("Complete............");
+    // ROS_INFO_STREAM("PCT BEGIN");
     while(itr < fractions.size()){
         // int action = GenAction(feature_vec,cell_prob, past_action);
 
         // Greedy
-        for (int i=0; i<fractions[itr]/2; ++i){
-            if (path_found){
-                actions.sampler.best_source = node_map[path(0)]->wp;
-                actions.sampler.best_sink = node_map[path(path.size()-1)]->wp;
-                diversity = true;
-            }
-            actions.GreedyProgression(ff_frames,ik_handler,wm,geo_filter,node_map,
-                            node_list, graph, "fwd", diversity);
-            actions.GreedyProgression(ff_frames,ik_handler,wm,geo_filter,node_map,
-                            node_list, graph, "bck", diversity);
-            if (actions.infeasibility){
-                ROS_WARN_STREAM("All IKs infeasible at a level");
-                return false;
-            }
+        if (path_found){
+            actions.sampler.best_source = node_map[path(0)]->wp;
+            actions.sampler.best_sink = node_map[path(path.size()-1)]->wp;
+            diversity = true;
         }
+        actions.GreedyProgression(ff_frames,ik_handler,wm,geo_filter,node_map,
+                        node_list, graph, "fwd", diversity, resource/2);
+        actions.GreedyProgression(ff_frames,ik_handler,wm,geo_filter,node_map,
+                        node_list, graph, "bck", diversity, resource/2);
 
 
-        // // Random
-        // for (int i=0; i<10-fractions[itr]; ++i)
-        //     actions.NodeAdditions(ff_frames, ik_handler, wm, geo_filter, node_map,
-        //         node_list, graph);
-
+        // Random
+        actions.NodeAdditions(ff_frames, ik_handler, wm, geo_filter, node_map,
+            node_list, graph, 10-fractions[itr]);
+        
 
         // // Smoothing
         // if (path_found && fractions[itr] < 8){
@@ -201,19 +220,16 @@ bool BuildRefineGraph(ikHandler* ik_handler, std::vector<Eigen::MatrixXd>& ff_fr
         //     }
         // }
 
-
         actions.EdgeConnections(ik_handler, node_list, graph, node_map);
 
-
-        if (actions.infeasibility){
-            ROS_WARN_STREAM("All IKs infeasible at a level");
-            return false;
-        }
+        // if (actions.infeasibility){
+        //     ROS_WARN_STREAM("All IKs infeasible at a level");
+        //     return false;
+        // }
 
         graph->no_nodes = num_vertices(graph->g);
         graph->no_edges = num_edges(graph->g);
         std::vector<double> d(num_vertices(graph->g)); graph->d = d;
-
         if ( GetMinCost(graph, node_map, 
                         ik_handler, min_cost, path_found, path, path_costs, trajectory ) )
             ROS_INFO_STREAM("EOF Iteration: " << itr << ". Path Found");
@@ -222,7 +238,6 @@ bool BuildRefineGraph(ikHandler* ik_handler, std::vector<Eigen::MatrixXd>& ff_fr
         // ROS_WARN_STREAM("G Stats: " << actions.graph_metrics.transpose() << "\n");
         ROS_WARN_STREAM("Path Cost: " << min_cost );
         cost_hist(itr) = min_cost;
-
         // ROS_WARN_STREAM("path" << path.transpose());
         // feature_vec = 
         //             GetFeatureVector(actions.graph_metrics, graph->no_levels, 

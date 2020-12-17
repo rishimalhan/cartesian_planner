@@ -18,7 +18,7 @@ cvrg_tf_param:
 
 viz_param:
     {
-        rob_speed: 5
+        rob_speed: 10
     }
 
 gen_path: false

@@ -16,6 +16,11 @@
 namespace graph_searches{
 
     bool djikstra(boost_graph* graph, Eigen::VectorXi& path, double& path_cost){
+        if ( !(graph->root_connected && graph->leaf_connected) ){
+            path_cost = std::numeric_limits<double>::infinity();
+            return false;
+        }
+
         #ifdef SEARCH_ASSERT
         std::cout<< "\n##############################################################\n";
         std::cout<< "Running Djikstra.........\n";
@@ -24,17 +29,9 @@ namespace graph_searches{
                   predecessor_map(boost::make_iterator_property_map(graph->p.begin(), get(boost::vertex_index, graph->g))).
                   distance_map(boost::make_iterator_property_map(graph->d.begin(), get(boost::vertex_index, graph->g))));
         path_cost = graph->d[ 1 ];
-        bool leaf_connected = false;
         path.resize(graph->no_levels);
-        double lowest_cost = std::numeric_limits<double>::infinity();
-
-        if (graph->d[ 1 ] < lowest_cost)
-            leaf_connected = true;
-
-        if (!leaf_connected){
-            #ifdef SEARCH_ASSERT
-            std::cout<< "##############################################################\n";
-            #endif
+        if (graph->p[ 1 ] == 1){
+            path_cost = std::numeric_limits<double>::infinity();
             return false;
         }
 

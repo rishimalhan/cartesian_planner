@@ -41,6 +41,8 @@ struct boost_graph{
     int no_edges;
     int no_nodes;
     Eigen::MatrixXi paths; // Each column represents a path. Might not be lowest cost
+    bool leaf_connected = false;
+    bool root_connected = false;
 };
 
 #endif

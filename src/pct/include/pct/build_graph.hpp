@@ -25,9 +25,9 @@ bool isEdge(const std::vector<node*>& node_map, const int parent, const int chil
 
 
 double computeGCost( const std::vector<node*>& node_map, const int parent, const int child ){
-    return (node_map[child]->jt_config - node_map[parent]->jt_config).array().abs().maxCoeff();
     // return (node_map[child]->jt_config - node_map[parent]->jt_config).array().abs().maxCoeff();
-    // return (node_map[child]->jt_config - node_map[parent]->jt_config).norm();
+    // return (node_map[child]->jt_config - node_map[parent]->jt_config).array().abs().maxCoeff();
+    return (node_map[child]->jt_config - node_map[parent]->jt_config).norm();
 }
 
 
@@ -42,7 +42,9 @@ bool build_graph(ikHandler* ik_handler, std::vector<Eigen::MatrixXd>& ff_frames,
     boost_graph->no_nodes = node_map.size();
     std::cout<< "\n##############################################################\n";
     std::cout<< "Generating Graph\n";
-
+    boost_graph->root_connected = true;
+    boost_graph->leaf_connected = true;
+    
     int no_connections_eval = 0;
     std::vector<Edge> edges; edges.clear();
     std::vector<double> weights; weights.clear();
