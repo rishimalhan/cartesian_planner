@@ -200,8 +200,9 @@ int main(int argc, char** argv){
     double cost = 0;
     int no_sols = 0;
     double exec_time = 0;
-    int max_trials = 20;
+    int max_trials = 50;
     Eigen::MatrixXd cost_histories;
+    Eigen::MatrixXd node_histories;
     timer main_timer;
 
     for (int itr=0; itr<max_trials; ++itr){
@@ -212,7 +213,7 @@ int main(int argc, char** argv){
         double search_time = 0;
         Eigen::MatrixXi path_idx(NumWaypoints,1);
         Eigen::MatrixXi tcp_idx(NumWaypoints,1);
-        Eigen::VectorXd cost_hist;
+        Eigen::MatrixXd cost_hist;
         double path_cost;
         Eigen::MatrixXd trajectory;
 
@@ -236,13 +237,16 @@ int main(int argc, char** argv){
             trajectory.row(0) << ik_handler.init_guess.transpose();
         }
         else{
+            double grph_time = main_timer.elapsed();
+            exec_time += grph_time;
             trajectory.resize(NumWaypoints,ik_handler.OptVarDim);
-            ROS_INFO( "Graph generation COMPUTE TIME: %f", main_timer.elapsed() );
+            ROS_INFO( "Graph generation COMPUTE TIME: %f", grph_time );
             
             // Change the start vertex in graph
             vertex_descriptor s = vertex(0, graph.g); graph.s = s;
             Eigen::VectorXi id_path;
 
+            main_timer.reset();
             bool search_success = graph_searches::djikstra(&graph, id_path, path_cost);
             exec_time += main_timer.elapsed();
 
@@ -253,13 +257,18 @@ int main(int argc, char** argv){
                     trajectory.row(k) = node_map[id_path(k)]->jt_config.transpose();
                 cost += path_cost;
                 no_sols++;
-                cost_histories.conservativeResize( no_sols, cost_hist.size() );
-                cost_histories.row(no_sols-1) = cost_hist.transpose();
-                ROS_INFO_STREAM("Cost history for run #" << itr << " is: " << cost_hist.transpose());
+                cost_histories.conservativeResize( no_sols, cost_hist.cols() );
+                cost_histories.row(no_sols-1) = cost_hist.row(0);
+                node_histories.conservativeResize( no_sols, cost_hist.cols() );
+                node_histories.row(no_sols-1) = cost_hist.row(1);
+                ROS_INFO_STREAM("Cost history for run #" << itr << " is: " << cost_hist.row(0));
+                ROS_INFO_STREAM("Node history for run #" << itr << " is: " << cost_hist.row(1));
             }
         }
     }
+    main_timer.end();
     file_rw::file_write( csv_dir+"../test_case_specific_data/cost_histories.csv",cost_histories );
+    file_rw::file_write( csv_dir+"../test_case_specific_data/node_histories.csv",node_histories );
 
     ros::param::set("/obj_val",cost / no_sols);
     ros::param::set("/exec_time",exec_time / no_sols);

@@ -109,7 +109,7 @@ bool GetMinCost(boost_graph* g, std::vector<node*>& node_map, ikHandler* ik_hand
 bool BuildRefineGraph(ikHandler* ik_handler, std::vector<Eigen::MatrixXd>& ff_frames,
                     WM::WM* wm, GeometricFilterHarness* geo_filter,
                     std::vector<node*>& node_map, std::vector<Eigen::VectorXi>& node_list,
-                    boost_graph* graph, Eigen::VectorXd& cost_hist){
+                    boost_graph* graph, Eigen::MatrixXd& cost_hist){
     std::cout<< "\n##############################################################\n";
     std::cout<< "Generating Graph\n";
     ik_handler->setTcpFrame(Eigen::MatrixXd::Identity(4,4));
@@ -167,8 +167,6 @@ bool BuildRefineGraph(ikHandler* ik_handler, std::vector<Eigen::MatrixXd>& ff_fr
     // fractions = {10,8,6,4,2,0,0,0,0,0}; // Greedy + Random
 
 
-
-
     // fractions = {0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0, 
     //             0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,
     //             0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,
@@ -178,30 +176,33 @@ bool BuildRefineGraph(ikHandler* ik_handler, std::vector<Eigen::MatrixXd>& ff_fr
 
     Eigen::MatrixXd trajectory(graph->no_levels, ik_handler->OptVarDim);
     Eigen::VectorXi path;
-    cost_hist.resize(fractions.size());
+    cost_hist.conservativeResize(2,fractions.size());
+    cost_hist.row(1) = Eigen::VectorXd::Zero(fractions.size()).transpose();
     Eigen::VectorXd path_costs(graph->no_levels-1);
     bool diversity = false;
-    int resource = 10;
+    int resource = 1;
+    int prev_nodes = 0;
+    int tot_nodes = 0;
     // ROS_INFO_STREAM("Complete............");
     // ROS_INFO_STREAM("PCT BEGIN");
-    while(itr < fractions.size()){
+    while(itr < 1){
         // int action = GenAction(feature_vec,cell_prob, past_action);
 
         // Greedy
         if (path_found){
             actions.sampler.best_source = node_map[path(0)]->wp;
             actions.sampler.best_sink = node_map[path(path.size()-1)]->wp;
-            diversity = true;
+            diversity = false;
         }
         actions.GreedyProgression(ff_frames,ik_handler,wm,geo_filter,node_map,
                         node_list, graph, "fwd", diversity, resource/2);
-        actions.GreedyProgression(ff_frames,ik_handler,wm,geo_filter,node_map,
-                        node_list, graph, "bck", diversity, resource/2);
+        // actions.GreedyProgression(ff_frames,ik_handler,wm,geo_filter,node_map,
+        //                 node_list, graph, "bck", diversity, resource/2);
 
 
         // Random
-        actions.NodeAdditions(ff_frames, ik_handler, wm, geo_filter, node_map,
-            node_list, graph, 10-fractions[itr]);
+        // actions.NodeAdditions(ff_frames, ik_handler, wm, geo_filter, node_map,
+        //     node_list, graph, 10-fractions[itr]);
         
 
         // // Smoothing
@@ -237,7 +238,12 @@ bool BuildRefineGraph(ikHandler* ik_handler, std::vector<Eigen::MatrixXd>& ff_fr
             ROS_INFO_STREAM("EOF Iteration: " << itr << ". Path not found");
         // ROS_WARN_STREAM("G Stats: " << actions.graph_metrics.transpose() << "\n");
         ROS_WARN_STREAM("Path Cost: " << min_cost );
-        cost_hist(itr) = min_cost;
+        cost_hist(0,itr) = min_cost;
+        // int no_nodes = num_vertices(graph->g);
+        // tot_nodes += no_nodes - prev_nodes;
+        cost_hist(1,itr) = actions.sampler.attempts;
+        // prev_nodes = no_nodes;
+
         // ROS_WARN_STREAM("path" << path.transpose());
         // feature_vec = 
         //             GetFeatureVector(actions.graph_metrics, graph->no_levels, 
@@ -262,6 +268,24 @@ bool BuildRefineGraph(ikHandler* ik_handler, std::vector<Eigen::MatrixXd>& ff_fr
 
         itr ++;
     }
+
+    // for (int i=0; i<graph->no_levels; ++i)
+    //     delete actions.sampler.kdtrees[i];
+    // actions.sampler.kdtrees.clear();
+
+    for ( int i=0; i<node_list.size(); ++i ){
+        Eigen::MatrixXd configs(node_list[i].size(),6);
+        Eigen::MatrixXd wps(node_list[i].size(),12);
+        for (int j=0; j<node_list[i].size(); ++j){
+            configs.row(j) = node_map[node_list[i](j)]->jt_config.transpose();
+            wps.row(j) = node_map[node_list[i](j)]->wp.transpose();
+        }
+        file_rw::file_write(csv_dir+"../test_case_specific_data/wp"+std::to_string(i)+".csv",
+                                wps);
+        file_rw::file_write(csv_dir+"../test_case_specific_data/"+std::to_string(i)+".csv",
+                                configs);
+    }
+
 
     if (!path_found)
         return false;

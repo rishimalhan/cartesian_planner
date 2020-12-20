@@ -13,6 +13,7 @@
 #include <Eigen/Eigen>
 
 struct node{
+    int row_id;
     int id;
     int parent_id;
     int tcp_id;

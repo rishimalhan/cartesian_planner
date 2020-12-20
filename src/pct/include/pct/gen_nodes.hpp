@@ -71,6 +71,7 @@ bool gen_nodes(ikHandler* ik_handler, WM::WM* wm, GeometricFilterHarness* geo_fi
                         // jac = DFMapping::KDLJacobian_to_Eigen(jac_kdl);
                         no_sols ++;
                         node* curr_node = new node;
+                        curr_node->row_id = j;
                         curr_node->id = id_cnt;
                         curr_node->jt_config = ik_handler->solution.col(sol_no);
                         curr_node->depth = i;

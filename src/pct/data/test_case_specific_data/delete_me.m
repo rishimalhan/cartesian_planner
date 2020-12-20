@@ -3,59 +3,100 @@ close all;
 clc;
 
 
-
-% Overlapped plots
-figure
-hold on;
-
-g_cost_history = csvread('greedy_cost_histories_2.csv');
-m = mean(g_cost_history,1);
-plot(10:10:10*size(m,2), m, 'linewidth', 4)
-
-g_cost_history = csvread('greedy_diverse_cost_histories.csv');
-m = mean(g_cost_history,1);
-plot(10:10:10*size(m,2), m, 'linewidth', 4)
-
-% g_cost_history = csvread('random_cost_histories.csv');
-% m = mean(g_cost_history,1);
-% plot(linspace(10,100,10), m, 'linewidth', 4)
+% figure
+% hold on;
 % 
-% g_cost_history = csvread('greedy_smoothing_cost_histories.csv');
-% m = mean(g_cost_history,1);
-% plot(linspace(10,100,10), m, 'linewidth', 4)
+% opt_path = csvread('../opt_path.csv');
+% subopt_path = csvread('opt_path.csv');
+% 
+% for i=0:3:166
+%     nodes = csvread( strcat('wp', num2str(i),'.csv') );
+%     dist = vecnorm( nodes - opt_path(i+1,:),2,2 );
+%     scatter( ones(size(dist,1),1)*i, dist,80,'b','*' );
+%     scatter( i,norm(subopt_path(i+1,:)-opt_path(i+1,:)),100,'m','filled' )
+%     plot( [i,i],[0,1.5],'k' );
+% end
+% set(gca,'fontsize',30)
+% set(gcf, 'color', [1,1,1])
+% 
+% title('WP Opt Source Fix Tube')
+% 
+% return;
 
-set(gca,'fontsize',30)
-set(gcf, 'color', [1,1,1])
-xlabel('N')
-ylabel('Cost')
-
-legend('Greedy', 'G+D');
-
-return;
 
 
 
 
 
 
-% Plotting Curves with StdDev
-% g_cost_history = csvread('greedy_cost_histories_2.csv');
-g_cost_history = csvread('greedy_diverse_cost_histories.csv');
-% g_cost_history = csvread('random_cost_histories.csv');
-% g_cost_history = csvread('greedy_smoothing_cost_histories.csv');
-% g_cost_history = csvread('randomfull_cost_histories.csv');
-
-m = mean(g_cost_history,1);
 figure
 hold on;
 
-plot(10:10:10*size(m,2), m, 'linewidth', 4)
-for i=1:size(m,2)
-%     lh = plot( [i*10, i*10], [m(i)-3*sdev(i), m(i)+3*sdev(i)], 'm', 'linewidth', 10 );
-%     lh.Color = [lh.Color 1 / 2];
-    scatter( i*10, max(g_cost_history(:,i)),50,'k','filled' );
-    scatter( i*10, min(g_cost_history(:,i)),50,'k','filled' );
+opt_path = csvread('../opt_states.csv');
+subopt_path = csvread('joint_states.csv');
+disp( sum(vecnorm(subopt_path(1:end-1,:)-subopt_path(2:end,:),2,2)) );
+
+% opt_sink_fix: 10.53
+% opt_sink_neigh: 10.46
+% opt_source_fix: 11.10
+% opt_source_neigh: 10.26
+
+for i=0:3:166
+    nodes = csvread( strcat(num2str(i),'.csv') );
+    dist = vecnorm( nodes - opt_path(i+1,:),2,2 );
+    scatter( ones(size(dist,1),1)*i, dist,80,'b','*' );
+    scatter( i,norm(subopt_path(i+1,:)-opt_path(i+1,:)),100,'m','filled' )
+    plot( [i,i],[0,10],'k' );
 end
+set(gca,'fontsize',30)
+set(gcf, 'color', [1,1,1])
+
+title('Opt Source Fix Tube')
+
+return;
+
+
+
+
+figure
+hold on;
+
+g_cost_history = csvread('greedy_cost_histories.csv');
+n_history = csvread('greedy_node_histories.csv');
+m = mean(g_cost_history,1);
+n = mean(n_history,1);
+plot(n, m, 'linewidth', 4)
+
+g_cost_history = csvread('gd_02_cost_histories.csv');
+n_history = csvread('gd_02_node_histories.csv');
+m = mean(g_cost_history,1);
+n = mean(n_history,1);
+plot(n, m, 'linewidth', 4)
+
+
+g_cost_history = csvread('gd_04_cost_histories.csv');
+n_history = csvread('gd_04_node_histories.csv');
+m = mean(g_cost_history,1);
+n = mean(n_history,1);
+plot(n, m, 'linewidth', 4)
+
+g_cost_history = csvread('gd_07_cost_histories.csv');
+n_history = csvread('gd_07_node_histories.csv');
+m = mean(g_cost_history,1);
+n = mean(n_history,1);
+plot(n, m, 'linewidth', 4)
+
+g_cost_history = csvread('gd_01_cost_histories.csv');
+n_history = csvread('gd_01_node_histories.csv');
+m = mean(g_cost_history,1);
+n = mean(n_history,1);
+plot(n, m, 'linewidth', 4)
+
+g_cost_history = csvread('gd_005_cost_histories.csv');
+n_history = csvread('gd_005_node_histories.csv');
+m = mean(g_cost_history,1);
+n = mean(n_history,1);
+plot(n, m, 'linewidth', 4)
 
 
 set(gca,'fontsize',30)
@@ -63,12 +104,74 @@ set(gcf, 'color', [1,1,1])
 xlabel('N')
 ylabel('Cost')
 
-
-title('Greedy')
-% title('Random')
-% title('G+S')
+legend('Greedy', 'G+D 0.2', 'G+D 0.4', 'G+D 0.7', 'G+D 0.1', 'G+D 0.05');
 
 return;
+
+
+
+% figure
+% hold on;
+% 
+% g_cost_history = csvread('greedy_cost_histories.csv');
+% n_history = csvread('greedy_node_histories.csv');
+% m = mean(g_cost_history,1);
+% n = mean(n_history,1);
+% plot(n, m, 'linewidth', 4)
+% 
+% g_cost_history = csvread('random_cost_histories.csv');
+% n_history = csvread('random_node_histories.csv');
+% n = mean(n_history,1);
+% m = mean(g_cost_history,1);
+% plot(n, m, 'linewidth', 4)
+% 
+% set(gca,'fontsize',30)
+% set(gcf, 'color', [1,1,1])
+% xlabel('N')
+% ylabel('Cost')
+% 
+% legend('Greedy', 'Random');
+% 
+% return;
+
+
+
+
+
+
+% % Plotting Curves with StdDev
+% % g_cost_history = csvread('greedy_cost_histories.csv');
+% % n_history = csvread('greedy_node_histories.csv');
+% 
+% 
+% g_cost_history = csvread('random_cost_histories.csv');
+% n_history = csvread('random_node_histories.csv');
+% 
+% m = mean(g_cost_history,1);
+% n = mean(n_history,1);
+% figure
+% hold on;
+% 
+% plot(n, m, 'linewidth', 4)
+% for i=1:size(m,2)
+% %     lh = plot( [i*10, i*10], [m(i)-3*sdev(i), m(i)+3*sdev(i)], 'm', 'linewidth', 10 );
+% %     lh.Color = [lh.Color 1 / 2];
+%     scatter( n(i), max(g_cost_history(:,i)),50,'k','filled' );
+%     scatter( n(i), min(g_cost_history(:,i)),50,'k','filled' );
+% end
+% 
+% 
+% set(gca,'fontsize',30)
+% set(gcf, 'color', [1,1,1])
+% xlabel('N')
+% ylabel('Cost')
+% 
+% 
+% % title('Greedy')
+% title('Random')
+% % title('G+S')
+% 
+% return;
 
 
 

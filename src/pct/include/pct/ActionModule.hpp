@@ -193,8 +193,10 @@ public:
 
         for (int i=0; i<no_levels; ++i){
             sampler.M[i].resize(7,ff_frames[i].rows());
+            // sampler.M[i].resize(3,ff_frames[i].rows());
             for (int j=0; j<ff_frames[i].rows(); ++j)
                 sampler.M[i].col(j) = sampler.GetQTWp( ff_frames[i].row(j).transpose() );
+                // sampler.M[i].col(j) = ff_frames[i].block(j,0,1,3).transpose();
             sampler.kdtrees[i] = Nabo::NNSearchD::createKDTreeLinearHeap(sampler.M[i]);
         }
         

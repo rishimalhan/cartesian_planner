@@ -304,7 +304,7 @@ int main(int argc, char** argv){
     Eigen::MatrixXd success_flags = Eigen::MatrixXd::Ones(path.rows(),1)*0;
     std::string success_flag_path;
     ros::param::get("/cvrg_file_paths/success_flags",success_flag_path);
-
+    std::string opt_path_path = csv_dir + "opt_path.csv";
 
     std::vector<double> x(68);
     std::string x_path = ros::package::getPath("pct") + "/data/decision_variable/" + 
@@ -402,6 +402,8 @@ int main(int argc, char** argv){
     ROS_INFO( "Sequential IK COMPUTE TIME: %f", main_timer.reset().elapsed() );
     #endif
 
+    Eigen::VectorXi id_path;
+
 
 
     // // Tree Search
@@ -474,7 +476,6 @@ int main(int argc, char** argv){
             
             // Change the start vertex in graph
             vertex_descriptor s = vertex(0, graph.g); graph.s = s;
-            Eigen::VectorXi id_path;
 
             main_timer.reset();
             bool search_success = graph_searches::djikstra(&graph, id_path, path_cost);
@@ -488,8 +489,12 @@ int main(int argc, char** argv){
                     // tcp_idx(k,0) = node_map[id_path(k)]->tcp_id;
                 success_flags = Eigen::MatrixXd::Ones(NumWaypoints,1);
             }
-
-            // std::cout<< "Trajectory: \n" << trajectory << "\n";
+            ROS_INFO_STREAM( "Source Config: " << node_map[id_path(0)]->jt_config.transpose() );
+            ROS_INFO_STREAM( "Source Point Index: " << node_map[id_path(0)]->row_id );
+            ROS_INFO_STREAM( "Source Waypoint: " << node_map[id_path(0)]->wp.transpose() );
+            ROS_INFO_STREAM( "Sink Config: " << node_map[id_path(id_path.size()-1)]->jt_config.transpose() );
+            ROS_INFO_STREAM( "Sink Point Index: " << node_map[id_path(id_path.size()-1)]->row_id );
+            ROS_INFO_STREAM( "Sink Waypoint: " << node_map[id_path(id_path.size()-1)]->wp.transpose() );
         }
     }
     exec_time += search_time;
@@ -511,10 +516,9 @@ int main(int argc, char** argv){
     std::vector<Eigen::VectorXi> node_list;
     success_flags = Eigen::MatrixXd::Ones(NumWaypoints,1)*0;
     boost_graph graph;
-    double search_time = 0;
     Eigen::MatrixXi path_idx(NumWaypoints,1);
     Eigen::MatrixXi tcp_idx(NumWaypoints,1);
-    Eigen::VectorXd cost_hist;
+    Eigen::MatrixXd cost_hist;
 
     // Dummy root and leaf
     node* root_node = new node;
@@ -538,16 +542,17 @@ int main(int argc, char** argv){
     else{
         trajectory.resize(NumWaypoints,ik_handler.OptVarDim);
         // tcp_idx.resize(NumWaypoints,1);
-        exec_time += main_timer.elapsed();
-        ROS_INFO( "Graph generation COMPUTE TIME: %f", main_timer.elapsed() );
+        double grph_time = main_timer.elapsed();
+        exec_time += grph_time;
+        ROS_INFO( "Graph generation COMPUTE TIME: %f", grph_time );
         
         // Change the start vertex in graph
         vertex_descriptor s = vertex(0, graph.g); graph.s = s;
-        Eigen::VectorXi id_path;
 
         main_timer.reset();
         bool search_success = graph_searches::djikstra(&graph, id_path, path_cost);
-        search_time += main_timer.elapsed();
+        double search_time = main_timer.elapsed();
+        exec_time += search_time;
 
         if(search_success){ // Get the shortest path to a leaf node in terms of node ids
             // Generate Trajectory
@@ -556,8 +561,14 @@ int main(int argc, char** argv){
                 // tcp_idx(k,0) = node_map[id_path(k)]->tcp_id;
             success_flags = Eigen::MatrixXd::Ones(NumWaypoints,1);
         }
-        exec_time += search_time;
         ROS_INFO( "Search COMPUTE TIME: %f", search_time );
+
+        ROS_INFO_STREAM( "Source Config: " << node_map[id_path(0)]->jt_config.transpose() );
+        ROS_INFO_STREAM( "Source Point Index: " << node_map[id_path(0)]->row_id );
+        ROS_INFO_STREAM( "Source Waypoint: " << node_map[id_path(0)]->wp.transpose() );
+        ROS_INFO_STREAM( "Sink Config: " << node_map[id_path(id_path.size()-1)]->jt_config.transpose() );
+        ROS_INFO_STREAM( "Sink Point Index: " << node_map[id_path(id_path.size()-1)]->row_id );
+        ROS_INFO_STREAM( "Sink Waypoint: " << node_map[id_path(id_path.size()-1)]->wp.transpose() );
     }
     #endif
 
@@ -566,22 +577,37 @@ int main(int argc, char** argv){
     
     // Evaluate trajectory cost
     double max_change = -std::numeric_limits<double>::infinity();
+    int max_change_index;
     for (int i=0; i<trajectory.rows()-1;++i){
         Eigen::ArrayXd jt_diff = (trajectory.row(i+1) - trajectory.row(i)).transpose();
-        if (jt_diff.abs().maxCoeff()>max_change)
+        if (jt_diff.abs().maxCoeff()>max_change){
             max_change = jt_diff.abs().maxCoeff();
+            max_change_index = i+1;
+        }
     }
+
+    //Store the optimal path
+    Eigen::MatrixXd opt_path;
+    if (id_path.size()!=0){
+        opt_path.resize(NumWaypoints,12);
+        for (int i=0; i<id_path.size(); ++i){
+            opt_path.row(i) = node_map[id_path(i)]->wp.transpose();
+        }
+    }
+
     #ifdef GRAPH_SEARCH
     std::cout<< "Total number of edges in graph: " << graph.no_edges << std::endl;
     std::cout<< "Total number of nodes in graph: " << graph.no_nodes << std::endl;
     #endif
-    std::cout<< "Maximum Joint Angle Change in Trajectory: " << max_change*(180/M_PI) << " degrees.\n";
+    std::cout<< "Maximum Joint Angle Change in Trajectory: " << max_change*(180/M_PI) << 
+        " degrees. Index: " << max_change_index << "\n";
     std::cout<< "Number of waypoints: " << NumWaypoints << "\n";
     std::cout<< "Number of TCPs: " << no_tcps << "\n";
     std::cout<< "Trajectory Cost: " << path_cost << "\n";
     std::cout<< "Execution Time: " << exec_time << "\n";
     file_rw::file_write(traj_path,trajectory);
     file_rw::file_write(success_flag_path,success_flags);
+    file_rw::file_write(opt_path_path,opt_path);
     std::cout<< "##############################################################\n";
 
 
