@@ -203,6 +203,7 @@ int main(int argc, char** argv){
     int max_trials = 50;
     Eigen::MatrixXd cost_histories;
     Eigen::MatrixXd node_histories;
+    Eigen::MatrixXd src_histories;
     timer main_timer;
 
     for (int itr=0; itr<max_trials; ++itr){
@@ -261,14 +262,18 @@ int main(int argc, char** argv){
                 cost_histories.row(no_sols-1) = cost_hist.row(0);
                 node_histories.conservativeResize( no_sols, cost_hist.cols() );
                 node_histories.row(no_sols-1) = cost_hist.row(1);
+                src_histories.conservativeResize( no_sols, cost_hist.cols() );
+                src_histories.row(no_sols-1) = cost_hist.row(2);
                 ROS_INFO_STREAM("Cost history for run #" << itr << " is: " << cost_hist.row(0));
                 ROS_INFO_STREAM("Node history for run #" << itr << " is: " << cost_hist.row(1));
+                ROS_INFO_STREAM("Source history for run #" << itr << " is: " << cost_hist.row(2));
             }
         }
     }
     main_timer.end();
     file_rw::file_write( csv_dir+"../test_case_specific_data/cost_histories.csv",cost_histories );
     file_rw::file_write( csv_dir+"../test_case_specific_data/node_histories.csv",node_histories );
+    file_rw::file_write( csv_dir+"../test_case_specific_data/src_histories.csv",src_histories );
 
     ros::param::set("/obj_val",cost / no_sols);
     ros::param::set("/exec_time",exec_time / no_sols);

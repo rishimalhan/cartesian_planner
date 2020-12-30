@@ -144,6 +144,30 @@ class GeometricFilterHarness
             ROS_WARN_STREAM("GeometricFilterHarness initialized");
         }
         
+        void removeRow(Eigen::MatrixXd& matrix, unsigned int rowToRemove){
+            unsigned int numRows = matrix.rows()-1;
+            unsigned int numCols = matrix.cols();
+
+            if( rowToRemove < numRows )
+                matrix.block(rowToRemove,0,numRows-rowToRemove,numCols) = 
+                                matrix.block(rowToRemove+1,0,numRows-rowToRemove,numCols);
+
+            matrix.conservativeResize(numRows,numCols);
+        };
+
+        void UniquenessFilter(std::vector<Eigen::MatrixXd>& ff_frames){
+            for (int ctr=0; ctr<ff_frames.size(); ++ctr){
+                auto frames = ff_frames[ctr];
+                for (int i=0; i<frames.rows(); ++i){
+                    for (int j=i+1; j<frames.rows(); ++j){
+                        if ( (frames.row(i)-frames.row(j)).norm()<1e-5 )
+                            removeRow(frames, j);
+                    }
+                }
+                ff_frames[ctr] = frames;
+            }
+        };
+
         std::vector<Eigen::MatrixXd> generate_flange_frames(
                                    std::vector<Eigen::MatrixXd> const& waypoint_samples_all_levels,
                                    std::vector< Eigen::MatrixXd > const& tcp_list
@@ -186,6 +210,8 @@ class GeometricFilterHarness
             // ROS_INFO_STREAM(std::setw(25) << "Reduction: " << std::setw(20) << std::setprecision(4) << reduction_percent << " %");
             // ROS_INFO_STREAM(std::setw(25) << "Accepted sample count: " << std::setw(20) << std::setprecision(4) << no_valid_samples);
             // ROS_INFO_STREAM(std::setw(25) << "Total sample count: " << std::setw(20) << std::setprecision(4) << num_samples_counter);
+
+            UniquenessFilter(flange_frames);
 
             return flange_frames;
         }

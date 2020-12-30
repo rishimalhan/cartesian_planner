@@ -2,6 +2,70 @@ clear all;
 close all;
 clc;
 
+% figure
+% hold on;
+% daspect([1,1,1])
+% 
+% % Code to compute diversity quality
+% src = csvread('greedy_source.csv');
+% snk = csvread('greedy_sink.csv');
+% 
+% factor = 1;
+% 
+% % data = src;
+% % src = [];
+% % for i=1:size(data,1)
+% %     q = [data(i,7),data(i,4:6)];
+% %     R = quat2rotm(q);
+% %     src(i,:) = [ data(i,1:3),R(:,1)',R(:,2)',R(:,3)'  ];
+% % end
+% % 
+% % quiver3( src(:,1),src(:,2),src(:,3),src(:,4),src(:,5),src(:,6),'r',...
+% %     'AutoScaleFactor', factor);
+% % quiver3( src(:,1),src(:,2),src(:,3),src(:,7),src(:,8),src(:,9),'g',...
+% %     'AutoScaleFactor', factor);
+% % quiver3( src(:,1),src(:,2),src(:,3),src(:,10),src(:,11),src(:,12),'b',...
+% %     'AutoScaleFactor', factor);
+% 
+% 
+% 
+% 
+% src = csvread('gd_02_source.csv');
+% snk = csvread('gd_02_sink.csv');
+% 
+% data = src;
+% src = [];
+% for i=1:size(data,1)
+%     q = [data(i,7),data(i,4:6)];
+%     R = quat2rotm(q);
+%     src(i,:) = [ data(i,1:3),R(:,1)',R(:,2)',R(:,3)'  ];
+% end
+% 
+% quiver3( src(:,1),src(:,2),src(:,3),src(:,4),src(:,5),src(:,6),'r',...
+%     'AutoScaleFactor', factor);
+% quiver3( src(:,1),src(:,2),src(:,3),src(:,7),src(:,8),src(:,9),'g',...
+%     'AutoScaleFactor', factor);
+% quiver3( src(:,1),src(:,2),src(:,3),src(:,10),src(:,11),src(:,12),'b',...
+%     'AutoScaleFactor', factor);
+% 
+% return;
+% 
+% 
+% src = csvread('gd_05_source.csv');
+% snk = csvread('gd_05_sink.csv');
+% 
+% score = 0;
+% for i=1:size(src,1)
+%     for j=i+1:size(src,1)
+%         score = score + norm( src(i,:)-src(j,:) );
+%     end
+% end
+% score
+% 
+% 
+% return;
+
+
 
 % figure
 % hold on;
@@ -29,31 +93,31 @@ clc;
 
 
 
-figure
-hold on;
-
-opt_path = csvread('../opt_states.csv');
-subopt_path = csvread('joint_states.csv');
-disp( sum(vecnorm(subopt_path(1:end-1,:)-subopt_path(2:end,:),2,2)) );
-
-% opt_sink_fix: 10.53
-% opt_sink_neigh: 10.46
-% opt_source_fix: 11.10
-% opt_source_neigh: 10.26
-
-for i=0:3:166
-    nodes = csvread( strcat(num2str(i),'.csv') );
-    dist = vecnorm( nodes - opt_path(i+1,:),2,2 );
-    scatter( ones(size(dist,1),1)*i, dist,80,'b','*' );
-    scatter( i,norm(subopt_path(i+1,:)-opt_path(i+1,:)),100,'m','filled' )
-    plot( [i,i],[0,10],'k' );
-end
-set(gca,'fontsize',30)
-set(gcf, 'color', [1,1,1])
-
-title('Opt Source Fix Tube')
-
-return;
+% figure
+% hold on;
+% 
+% opt_path = csvread('../opt_states.csv');
+% subopt_path = csvread('joint_states.csv');
+% disp( sum(vecnorm(subopt_path(1:end-1,:)-subopt_path(2:end,:),2,2)) );
+% 
+% % opt_sink_fix: 10.53
+% % opt_sink_neigh: 10.46
+% % opt_source_fix: 11.10
+% % opt_source_neigh: 10.26
+% 
+% for i=0:3:166
+%     nodes = csvread( strcat(num2str(i),'.csv') );
+%     dist = vecnorm( nodes - opt_path(i+1,:),2,2 );
+%     scatter( ones(size(dist,1),1)*i, dist,80,'b','*' );
+%     scatter( i,norm(subopt_path(i+1,:)-opt_path(i+1,:)),100,'m','filled' )
+%     plot( [i,i],[0,10],'k' );
+% end
+% set(gca,'fontsize',30)
+% set(gcf, 'color', [1,1,1])
+% 
+% title('Opt Source Fix Tube')
+% 
+% return;
 
 
 
@@ -63,40 +127,112 @@ hold on;
 
 g_cost_history = csvread('greedy_cost_histories.csv');
 n_history = csvread('greedy_node_histories.csv');
-m = mean(g_cost_history,1);
-n = mean(n_history,1);
+n_history = csvread('greedy_src_histories.csv');
+m = getmean(g_cost_history);
+n = getmean(n_history);
 plot(n, m, 'linewidth', 4)
 
-g_cost_history = csvread('gd_02_cost_histories.csv');
-n_history = csvread('gd_02_node_histories.csv');
-m = mean(g_cost_history,1);
-n = mean(n_history,1);
-plot(n, m, 'linewidth', 4)
-
-
-g_cost_history = csvread('gd_04_cost_histories.csv');
-n_history = csvread('gd_04_node_histories.csv');
-m = mean(g_cost_history,1);
-n = mean(n_history,1);
-plot(n, m, 'linewidth', 4)
-
-g_cost_history = csvread('gd_07_cost_histories.csv');
-n_history = csvread('gd_07_node_histories.csv');
-m = mean(g_cost_history,1);
-n = mean(n_history,1);
-plot(n, m, 'linewidth', 4)
-
-g_cost_history = csvread('gd_01_cost_histories.csv');
-n_history = csvread('gd_01_node_histories.csv');
-m = mean(g_cost_history,1);
-n = mean(n_history,1);
-plot(n, m, 'linewidth', 4)
+% g_cost_history = csvread('gd_003_cost_histories.csv');
+% n_history = csvread('gd_003_node_histories.csv');
+% m = mean(g_cost_history,1);
+% n = mean(n_history,1);
+% plot(n, m, 'linewidth', 4)
 
 g_cost_history = csvread('gd_005_cost_histories.csv');
 n_history = csvread('gd_005_node_histories.csv');
-m = mean(g_cost_history,1);
+n_history = csvread('gd_005_src_histories.csv');
+m = getmean(g_cost_history);
+n = getmean(n_history);
+plot(n, m, 'linewidth', 4)
+
+% g_cost_history = csvread('gd_01_cost_histories.csv');
+% n_history = csvread('gd_01_node_histories.csv');
+% m = mean(g_cost_history,1);
+% n = mean(n_history,1);
+% plot(n, m, 'linewidth', 4)
+% 
+% 
+% g_cost_history = csvread('gd_03_cost_histories.csv');
+% n_history = csvread('gd_03_node_histories.csv');
+% m = mean(g_cost_history,1);
+% n = mean(n_history,1);
+% plot(n, m, 'linewidth', 4)
+
+g_cost_history = csvread('gds_cost_histories.csv');
+n_history = csvread('gds_node_histories.csv');
+n_history = csvread('gds_src_histories.csv');
+m = getmean(g_cost_history);
+n = getmean(n_history);
+plot(n, m, 'linewidth', 4)
+
+g_cost_history = csvread('gd*s_cost_histories.csv');
+n_history = csvread('gd*s_node_histories.csv');
+n_history = csvread('gd*s_src_histories.csv');
+m = getmean(g_cost_history);
+n = getmean(n_history);
+plot(n, m, 'linewidth', 4)
+
+set(gca,'fontsize',30)
+set(gcf, 'color', [1,1,1])
+xlabel('N')
+ylabel('Cost')
+
+legend('Greedy', 'G+D', 'G+D+S', 'G+D*+S');
+
+return;
+
+
+
+figure
+hold on;
+
+g_cost_history = csvread('greedy_cost_histories.csv');
+n_history = csvread('greedy_node_histories.csv');
+% n_history = csvread('greedy_src_histories.csv');
+m = [];
+for i=1:size(g_cost_history,2)
+    idx = g_cost_history(:,i) < inf;
+    m(1,i) = mean(g_cost_history(idx,i));
+end
 n = mean(n_history,1);
 plot(n, m, 'linewidth', 4)
+
+
+
+% g_cost_history = csvread('gs_cost_histories.csv');
+% n_history = csvread('gs_node_histories.csv');
+% n = mean(n_history,1);
+% m = [];
+% for i=1:size(g_cost_history,2)
+%     idx = g_cost_history(:,i) < inf;
+%     m(1,i) = mean(g_cost_history(idx,i));
+% end
+% plot(n, m, 'linewidth', 4)
+
+
+
+g_cost_history = csvread('gd_03_cost_histories.csv');
+n_history = csvread('gd_03_node_histories.csv');
+% n_history = csvread('gd_03_src_histories.csv');
+n = mean(n_history,1);
+m = [];
+for i=1:size(g_cost_history,2)
+    idx = g_cost_history(:,i) < inf;
+    m(1,i) = mean(g_cost_history(idx,i));
+end
+plot(n, m, 'linewidth', 4)
+
+
+% g_cost_history = csvread('gds_05_cost_histories.csv');
+% n_history = csvread('gds_05_node_histories.csv');
+% n = mean(n_history,1);
+% m = [];
+% for i=1:size(g_cost_history,2)
+%     idx = g_cost_history(:,i) < inf;
+%     m(1,i) = mean(g_cost_history(idx,i));
+% end
+% plot(n, m, 'linewidth', 4)
+
 
 
 set(gca,'fontsize',30)
@@ -104,35 +240,9 @@ set(gcf, 'color', [1,1,1])
 xlabel('N')
 ylabel('Cost')
 
-legend('Greedy', 'G+D 0.2', 'G+D 0.4', 'G+D 0.7', 'G+D 0.1', 'G+D 0.05');
+legend('Greedy', 'G+D');
 
 return;
-
-
-
-% figure
-% hold on;
-% 
-% g_cost_history = csvread('greedy_cost_histories.csv');
-% n_history = csvread('greedy_node_histories.csv');
-% m = mean(g_cost_history,1);
-% n = mean(n_history,1);
-% plot(n, m, 'linewidth', 4)
-% 
-% g_cost_history = csvread('random_cost_histories.csv');
-% n_history = csvread('random_node_histories.csv');
-% n = mean(n_history,1);
-% m = mean(g_cost_history,1);
-% plot(n, m, 'linewidth', 4)
-% 
-% set(gca,'fontsize',30)
-% set(gcf, 'color', [1,1,1])
-% xlabel('N')
-% ylabel('Cost')
-% 
-% legend('Greedy', 'Random');
-% 
-% return;
 
 
 
@@ -574,7 +684,13 @@ title('Step Slab')
 % title('Gear')
 
 
-
+function m = getmean(g_cost_history)
+    m = [];
+    for i=1:size(g_cost_history,2)
+        idx = g_cost_history(:,i) < inf;
+        m(1,i) = mean(g_cost_history(idx,i));
+    end
+end
 
 
 function [volume,area]=area3d(v)
