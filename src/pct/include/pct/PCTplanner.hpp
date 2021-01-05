@@ -106,19 +106,79 @@ bool GetMinCost(boost_graph* g, std::vector<node*>& node_map, ikHandler* ik_hand
 };
 
 double wpCost(std::vector<Eigen::MatrixXd> wps){
-    double wp_cost = 0;
+    double wp_cost;
     // Analysis Point
-    for ( int i=0; i<wps.size()-1; ++i ){
+    for ( int i=0; i<wps.size()-1; ++i )
         if (wps[i].cols()==0 || wps[i+1].cols()==0)
-            return 6.5;
-        Eigen::VectorXd curr_wp = wps[i].rowwise().mean();
-        double sum = 0;
-        for (int j=0; j<wps[i+1].cols(); ++j)
-            sum += (wps[i+1].col(j) - curr_wp).norm();
-        wp_cost += sum / wps[i+1].cols();
+            return 7;
+
+    boost_graph wp_grph;
+    graph_t g;
+    wp_grph.g = g;
+    wp_grph.leaf_connected = true;
+    wp_grph.root_connected = true;
+    std::vector<Eigen::VectorXi> node_list(wps.size());
+    std::vector<Eigen::VectorXd> node_map;
+    node_map.push_back(Eigen::VectorXd::Zero(7));
+    node_map.push_back(Eigen::VectorXd::Zero(7));
+    wp_grph.p.push_back(vertex(0,wp_grph.g));
+    wp_grph.p.push_back(vertex(1,wp_grph.g));
+    int ctr = 2;
+    for ( int i=0; i<wps.size(); ++i ){
+        for ( int j=0; j<wps[i].cols(); ++j ){
+            wp_grph.p.push_back(vertex(ctr,wp_grph.g));
+            node_list[i].conservativeResize(node_list[i].size()+1);
+            node_list[i](node_list[i].size()-1) = ctr;
+            node_map.push_back(wps[i].col(j));
+            ctr++;
+        }
     }
+    // Construct Graph
+    for (int i=0; i<node_list.size(); ++i){
+        if (i==0)
+            for (int j=0; j<node_list[i].size(); ++j)
+                add_edge( wp_grph.p[0], wp_grph.p[node_list[i](j)], EdgeWeightProperty(0), wp_grph.g );
+        if (i==node_list.size()-1){
+            for (int j=0; j<node_list[i].size(); ++j)
+                add_edge( wp_grph.p[node_list[i](j)], wp_grph.p[1], EdgeWeightProperty(0), wp_grph.g );
+            continue;
+        }
+        
+        for (int j=0; j<node_list[i].size(); ++j){
+            for (int k=0; k<node_list[i+1].size(); ++k){
+                double cost = (node_map[node_list[i+1](k)]-node_map[node_list[i](j)]).norm();
+                add_edge( wp_grph.p[node_list[i](j)], wp_grph.p[node_list[i+1](k)],
+                    EdgeWeightProperty(cost), wp_grph.g );
+            }
+        }
+    }
+    wp_grph.no_levels = node_list.size();
+    std::vector<double> d(num_vertices(wp_grph.g)); wp_grph.d = d;
+    Eigen::VectorXi path;
+    vertex_descriptor s = vertex(0, wp_grph.g); wp_grph.s = s;
+    bool search_success = graph_searches::djikstra(&wp_grph,path,wp_cost);
     return wp_cost;
 }
+
+// void RemoveSamples(Actions act, Eigen::VectorXd curr_source, 
+//                     Eigen::MatrixXd sources, double radius, std::vector<int>& src_list){
+//     Nabo::NNSearchD* tree;
+//     Eigen::VectorXi indices(100);
+//     Eigen::VectorXd dists2(100);
+//     tree = Nabo::NNSearchD::createKDTreeLinearHeap(sources);
+//     tree->knn(act.sampler.GetQTWp(curr_source), indices, dists2, indices.size());
+//     for (int i=0; i<dists2; ++i){
+//         if (dists2(i) <  radius){
+//             int index = std::find( src_list.begin(), src_list.end(), indices(i) ) - src_list.begin();
+//             if (index < src_list.size()){
+//                 vector<int>::iterator it = src_list.begin() + index;
+//                 src_list.erase( it );
+//             }
+//         }
+//     else
+//         return;
+//     }
+// }
 
 bool BuildRefineGraph(ikHandler* ik_handler, std::vector<Eigen::MatrixXd>& ff_frames,
                     WM::WM* wm, GeometricFilterHarness* geo_filter,
@@ -149,7 +209,7 @@ bool BuildRefineGraph(ikHandler* ik_handler, std::vector<Eigen::MatrixXd>& ff_fr
     // ROS_INFO_STREAM("Complete............");
     // ROS_INFO_STREAM("Initializing support variables");
     bool path_found = false;
-    double min_cost;
+    double min_cost = 0;
     // Eigen::VectorXd cell_prob[2][2][2][2];
     // InitCellProb(cell_prob);
 
@@ -193,46 +253,66 @@ bool BuildRefineGraph(ikHandler* ik_handler, std::vector<Eigen::MatrixXd>& ff_fr
 
     Eigen::MatrixXd trajectory(graph->no_levels, ik_handler->OptVarDim);
     Eigen::VectorXi path;
-    cost_hist.conservativeResize(3,fractions.size());
-    cost_hist.row(1) = Eigen::VectorXd::Zero(fractions.size()).transpose();
     Eigen::VectorXd path_costs(graph->no_levels-1);
     bool diversity = false;
     int resource = 1;
     int prev_nodes = 0;
     int tot_nodes = 0;
+    double wp_cost = std::numeric_limits<float>::infinity();
+    bool rej_sampl = true;
+    Eigen::MatrixXd data;
     // ROS_INFO_STREAM("Complete............");
     // ROS_INFO_STREAM("PCT BEGIN");
-    while(itr < fractions.size()){
+    // while(itr < fractions.size()){
+    double opt_Cost;
+    if(!ros::param::get("/opt_cost",opt_Cost)){
+        std::cout<< "Unable to Obtain Maximum Iterations\n";
+        return 0;
+    }
+    while(std::fabs(min_cost - opt_Cost)>1e-1){
         // int action = GenAction(feature_vec,cell_prob, past_action);
 
-        // Greedy
-        if ( path_found && (actions.sampler.src_waypoints.cols()>3 && actions.sampler.snk_waypoints.cols()>3) )
-            diversity = true;
+        // // Greedy
+        // if ( path_found && (actions.sampler.src_waypoints.cols()>3 && actions.sampler.snk_waypoints.cols()>3) )
+        //     diversity = true;
         
-        ROS_INFO_STREAM("Applying Fwd/Bck progression");
-        actions.GreedyProgression(ff_frames,ik_handler,wm,geo_filter,node_map,
-                node_list, graph, "fwd", diversity, resource/2);
-        actions.sampler.src_balls[0](actions.sampler.src_balls[0].size()-1) = 
-                                                (wpCost(actions.greedy_list)-3.0) / (6.5-3.0) * actions.delta;
-        actions.GreedyProgression(ff_frames,ik_handler,wm,geo_filter,node_map,
-                node_list, graph, "bck", diversity, resource/2);
-        actions.sampler.src_balls[1](actions.sampler.src_balls[1].size()-1) = 
-                                                (wpCost(actions.greedy_list)-3.0) / (6.5-3.0) * actions.delta;
+        // ROS_INFO_STREAM("Applying Fwd/Bck progression");
+        // actions.GreedyProgression(ff_frames,ik_handler,wm,geo_filter,node_map,
+        //         node_list, graph, "fwd", diversity, resource/2);
+        // // actions.sampler.src_balls[0](actions.sampler.src_balls[0].size()-1) = actions.ball_size;
+        // // wp_cost = wpCost(actions.greedy_list);
+        // // if (actions.greedy_list[0].cols()>0){
+        // //     ROS_WARN_STREAM("P1: " << actions.greedy_list[0].col(0).transpose());
+        // //     ROS_WARN_STREAM("Cost: " << wp_cost);
+        // //     data.conservativeResize(data.rows()+1,8);
+        // //     data.block(data.rows()-1,0,1,7) = actions.greedy_list[0].col(0).transpose();
+        // //     data(data.rows()-1,7) = wp_cost;
+        // // }
+        // // actions.sampler.src_balls[0](actions.sampler.src_balls[0].size()-1) = 
+        // //                                         (wp_cost-3) / 4 * actions.ball_size;
+        // actions.GreedyProgression(ff_frames,ik_handler,wm,geo_filter,node_map,
+        //         node_list, graph, "bck", diversity, resource/2);
+
+        // wp_cost = wpCost(actions.greedy_list);
+        // actions.sampler.src_balls[1](actions.sampler.src_balls[1].size()-1) = 
+        //                                         (wp_cost-3) / 4 * actions.delta;
+
+
 
         // Random
-        // actions.NodeAdditions(ff_frames, ik_handler, wm, geo_filter, node_map,
-        //     node_list, graph, 10-fractions[itr]);
+        actions.NodeAdditions(ff_frames, ik_handler, wm, geo_filter, node_map,
+            node_list, graph, 1);
         
 
-        // Smoothing
-        if (path_found){
-            ROS_INFO_STREAM("Applying Smoothing");
-            // Smoothing
-            for (int i=0; i<graph->no_levels; ++i){
-                actions.NearestNode( ik_handler, wm, node_map[path(i)]->wp, ff_frames, i,
-                    graph, geo_filter, node_map, node_list, 10 );
-            }
-        }
+        // // Smoothing
+        // if (path_found){
+        //     ROS_INFO_STREAM("Applying Smoothing");
+        //     // Smoothing
+        //     for (int i=0; i<graph->no_levels; ++i){
+        //         actions.NearestNode( ik_handler, wm, node_map[path(i)]->wp, ff_frames, i,
+        //             graph, geo_filter, node_map, node_list, 10 );
+        //     }
+        // }
 
         actions.EdgeConnections(ik_handler, node_list, graph, node_map);
 
@@ -259,13 +339,12 @@ bool BuildRefineGraph(ikHandler* ik_handler, std::vector<Eigen::MatrixXd>& ff_fr
         // ROS_WARN_STREAM("G Stats: " << actions.graph_metrics.transpose() << "\n");
 
 
-        ROS_WARN_STREAM("Path Cost: " << min_cost << ". Workspace Cost: " << wpCost(actions.greedy_list) <<
-                            ". Dist to opt: " << dist_opt );
+        ROS_WARN_STREAM("Path Cost: " << min_cost );
+        cost_hist.conservativeResize(4,itr+1);
         cost_hist(0,itr) = min_cost;
-        // int no_nodes = num_vertices(graph->g);
-        // tot_nodes += no_nodes - prev_nodes;
-        cost_hist(1,itr) = actions.sampler.attempts;
-        cost_hist(2,itr) = actions.sampler.src_cnt;
+        cost_hist(1,itr) = wp_cost;
+        cost_hist(2,itr) = actions.sampler.attempts;
+        cost_hist(3,itr) = actions.sampler.src_cnt;
 
 
         // prev_nodes = no_nodes;
@@ -294,6 +373,17 @@ bool BuildRefineGraph(ikHandler* ik_handler, std::vector<Eigen::MatrixXd>& ff_fr
 
         itr ++;
     }
+    int tot_cnt = 0;
+    int hits = 0;
+    for (int i=0; i<actions.sampler.d_list.size(); ++i){
+        if (actions.sampler.d_list[i] > 0.5)
+            hits++;
+        tot_cnt++;
+    }
+    ROS_WARN_STREAM("Fraction is: " << (double) hits / tot_cnt);
+    // file_rw::file_write(csv_dir+"../test_case_specific_data/src_map.csv",data);
+    // ROS_WARN_STREAM(actions.sampler.src_balls[0].transpose());
+    // ROS_WARN_STREAM(actions.sampler.src_balls[1].transpose());
     // for (int i=0; i<graph->no_levels; ++i)
     //     delete actions.sampler.kdtrees[i];
     // actions.sampler.kdtrees.clear();

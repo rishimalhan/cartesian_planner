@@ -31,3 +31,4 @@ sampling_res: 20 # Degrees
 tolerances: [ 0,0,0,0,-180,180 ]
 max_pct_time: 5
 tol_constraint: 0.2
+opt_cost: 4.2

@@ -27,6 +27,7 @@ int main(int argc, char** argv){
     // test_cases.push_back("roslaunch pct bootstrap.launch part:=step_slab tool:=ferro_sander  viz:=false");
     // test_cases.push_back("roslaunch pct bootstrap.launch part:=boeing tool:=cam_sander_90 viz:=false");
     test_cases.push_back("roslaunch pct bootstrap.launch part:=gear_int tool:=ati viz:=false");
+    // test_cases.push_back("roslaunch pct bootstrap.launch part:=fender tool:=cam_sander_90 viz:=false");
 
     ros::init(argc,argv,"x_eval");
     ros::NodeHandle main_handler;

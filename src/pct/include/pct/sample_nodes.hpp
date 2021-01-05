@@ -62,9 +62,9 @@ int PickSource( std::vector<std::vector<int>>& unvisited_src,
             tree = Nabo::NNSearchD::createKDTreeLinearHeap(snk_waypoints);
 
         int itr = 0;
-        int best_id;
         double max_dist = 0;
-        while(itr < unvisited_src[src_id].size()){
+        // while(itr < unvisited_src[src_id].size()){
+        while(itr < 1){
             // Generate a random ff_frame index
             int index = 0 + ( std::rand() % ( unvisited_src[src_id].size() ) );
             ff_frame_id = unvisited_src[src_id][index];
@@ -74,29 +74,26 @@ int PickSource( std::vector<std::vector<int>>& unvisited_src,
             Eigen::VectorXi indices(1);
             Eigen::VectorXd dists2(1);
             tree->knn(GetQTWp(ff_frames[depth].row(ff_frame_id).transpose()), indices, dists2, 1);
-            double dist = dists2(0);
-            if (dist > src_balls[src_id](indices(0))){
-                best_id = ff_frame_id;
+            // if (dists2(0) > src_balls[src_id](indices(0)))
+            // if (dists2(0) > d)
+            if (dists2(0) > 0){
+                d_list.push_back( dists2(0) );
                 break;
             }
+            junk_yard.push_back( ff_frame_id );
+            ff_frame_id = -1;
             itr++;
         }
-        ff_frame_id = best_id;
         delete tree;
+        if (unvisited_src[src_id].size()==0 && junk_yard.size()!=0 && d >= 0.005){
+            d -= 0.005;
+            unvisited_src[src_id] = junk_yard;
+            junk_yard.clear();
+        }
     }
 
     if (ff_frame_id==-1)
         return -1;
-
-    if (src_id==0){
-        src_waypoints.conservativeResize(7,src_waypoints.cols()+1);
-        src_waypoints.col(src_waypoints.cols()-1) = GetQTWp(ff_frames[depth].row(ff_frame_id).transpose());
-    }
-
-    if (src_id==1){
-        snk_waypoints.conservativeResize(7,snk_waypoints.cols()+1);
-        snk_waypoints.col(snk_waypoints.cols()-1) = GetQTWp(ff_frames[depth].row(ff_frame_id).transpose());
-    }
     return ff_frame_id;
 }
 
@@ -208,8 +205,11 @@ Eigen::MatrixXd src_waypoints;
 std::vector<Eigen::VectorXd> src_balls;
 Eigen::MatrixXd snk_waypoints;
 Eigen::VectorXd prev_wp;
+double d;
+std::vector<int> junk_yard;
+std::vector<double> d_list;
 
-FFSampler(){infeasibility = false; attempts = 0; src_cnt = 0; src_balls.resize(2);};
+FFSampler(){infeasibility = false; attempts = 0; src_cnt = 0; src_balls.resize(2); d = 0.5;};
 ~FFSampler(){};
 
 Eigen::VectorXd GetQTWp(Eigen::VectorXd waypoint){
@@ -244,11 +244,11 @@ Eigen::VectorXi GenNodeSamples(std::vector<Eigen::MatrixXd>& ff_frames, ikHandle
         if (optID(0)==-1)
             return sampled_wps;
         if (isCreated[depth](optID(0),0) == 0) // Under collision
-            return sampled_wps;
+            return sampled_wps;        
     }
     else{ // PickNode
         int trial_itr = 0;
-        double closest_distance;
+        double closest_distance = -1;
         while (trial_itr<ff_frames[depth].rows()){
             // Find nearest neighbor to previous waypoint
             Eigen::VectorXi indices(trial_itr+1);
@@ -260,7 +260,8 @@ Eigen::VectorXi GenNodeSamples(std::vector<Eigen::MatrixXd>& ff_frames, ikHandle
                 trial_itr++;
                 continue;
             }
-            if (trial_itr==0)
+
+            if (closest_distance < 0)
                 closest_distance = dists2(trial_itr);
 
             if (std::fabs(dists2(trial_itr)-closest_distance) < 1e-8){

@@ -105,6 +105,11 @@ int main(int argc, char** argv){
     }
     resolution *= (M_PI / 180);
 
+    // std::vector<int> src_list = {2,4,1,3,6,8};
+    // std::cout<< std::find( src_list.begin(), src_list.end(), 0 ) - src_list.begin() << "\n";
+    // return 0;
+
+
     ///////////////// CAUTION ///////////////////////////////////////
     // WHEN CHANGING A 6DOF ROBOT FOR ANALYTICAL IK, MAKE SURE CHANGES ARE MADE
     // IN IK GATEWAY HEADER AND APPROPRIATE CPP IS INCLUDED
@@ -296,6 +301,15 @@ int main(int argc, char** argv){
     std::vector<Eigen::MatrixXd> ff_frames = 
     geo_filter.generate_flange_frames( wpTol,tcp_list );
 
+    int fframes_cnt = 0, max_fframes = 0, min_fframes = 1e8;
+    for (auto frames : ff_frames){
+        fframes_cnt += frames.rows();
+        if (max_fframes < frames.rows())
+            max_fframes = frames.rows();
+        if (min_fframes > frames.rows())
+            min_fframes = frames.rows();
+    }
+
 
     // Get trajectory path
     std::string traj_path;
@@ -428,6 +442,7 @@ int main(int argc, char** argv){
     // std::cout<< trajectory << "\n";
 
     double path_cost;
+    Eigen::MatrixXi attmps(NumWaypoints,2);
 
     #ifdef GRAPH_SEARCH
 
@@ -443,7 +458,7 @@ int main(int argc, char** argv){
 
     std::cout<< "\nGenerating Nodes\n";
     main_timer.reset();
-    if(!gen_nodes(&ik_handler, &wm, &geo_filter, ff_frames, node_map, node_list, success_flags)){
+    if(!gen_nodes(&ik_handler, &wm, &geo_filter, ff_frames, node_map, node_list, success_flags, attmps)){
         std::cout<< "Nodes could not be generated. No solution found\n";
         trajectory.resize(1,ik_handler.OptVarDim);
         trajectory.row(0) << ik_handler.init_guess.transpose();
@@ -605,6 +620,32 @@ int main(int argc, char** argv){
     std::cout<< "Number of TCPs: " << no_tcps << "\n";
     std::cout<< "Trajectory Cost: " << path_cost << "\n";
     std::cout<< "Execution Time: " << exec_time << "\n";
+    #ifdef BASELINE
+    int tot_attmpts = 0, max_attmps = 0; 
+    int min_attmpts = 1e8;
+    int max_val_attmps = 0; 
+    int min_val_attmpts = 1e8;
+    for (int i=0; i<attmps.rows(); ++i){
+        tot_attmpts += attmps(i,0);
+        if (max_attmps < attmps(i,0))
+            max_attmps = attmps(i,0);
+        if (min_attmpts > attmps(i,0))
+            min_attmpts = attmps(i,0);
+
+        if (max_val_attmps < attmps(i,1))
+            max_val_attmps = attmps(i,1);
+        if (min_val_attmpts > attmps(i,1))
+            min_val_attmpts = attmps(i,1);
+    }
+
+    ROS_WARN_STREAM("Average FFrames per level: " << fframes_cnt / NumWaypoints << "\n" << 
+                        "Max/Min FFrames: " << max_fframes << " / " << min_fframes);
+    ROS_WARN_STREAM("Average Attempts per level: " << tot_attmpts / NumWaypoints << "\n" << 
+                        "Max/Min Attempts: " << max_attmps << " / " << min_attmpts);
+    ROS_WARN_STREAM("Average Valid Nodes per level: " << graph.no_nodes / NumWaypoints << "\n" << 
+                        "Max/Min Valid Nodes: " << max_val_attmps << " / " << min_val_attmpts);
+
+    #endif
     file_rw::file_write(traj_path,trajectory);
     file_rw::file_write(success_flag_path,success_flags);
     file_rw::file_write(opt_path_path,opt_path);

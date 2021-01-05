@@ -157,7 +157,7 @@ private:
                                 geo_filter, unvisited_src, node_map, node_list, depth, 
                                 isCreated, graph_metrics, true, boost_graph, diversity, resource);
             sampler.src_balls[src_id].conservativeResize(sampler.src_balls[src_id].size()+1);
-            sampler.src_balls[src_id](sampler.src_balls[src_id].size()-1) = delta;
+            sampler.src_balls[src_id](sampler.src_balls[src_id].size()-1) = ball_size;
             if (sampled_wps.size()==0){
                 if (depth==0)
                     if (unvisited_src[depth].size()!=0)
@@ -175,6 +175,16 @@ private:
         greedy_ff.push( ff_node );
         greedy_list[depth].conservativeResize(7,greedy_list[depth].cols()+1);
         greedy_list[depth].col(greedy_list[depth].cols()-1) = ff_node.segment(0,7);
+
+        if (src_id==0){
+            sampler.src_waypoints.conservativeResize(7,sampler.src_waypoints.cols()+1);
+            sampler.src_waypoints.col(sampler.src_waypoints.cols()-1) = ff_node.segment(0,7);
+        }
+
+        if (src_id==1){
+            sampler.snk_waypoints.conservativeResize(7,sampler.snk_waypoints.cols()+1);
+            sampler.snk_waypoints.col(sampler.snk_waypoints.cols()-1) = ff_node.segment(0,7);
+        }
         return true;
     }
 
@@ -231,7 +241,7 @@ public:
     FFSampler sampler;
     int infeasibility;
     int no_levels;
-    double delta;
+    double ball_size;
     // // Find the following for each level
     // // Number of BC
     // Eigen::VectorXd bc_count;
@@ -272,7 +282,7 @@ public:
         infeasibility = sampler.infeasibility;
         no_levels = ff_frames.size();
         sampler.M.resize(no_levels);
-        delta = 0.005;
+        ball_size = 0.05;
         // bc_count = Eigen::VectorXd::Zero(no_levels); // UC, LC, BC
         // bc_count(0) = 1e8;
         // bc_count(no_levels-1) = 1e8;
@@ -324,6 +334,7 @@ public:
                         boost_graph* boost_graph, string type, bool diversity, int resource){
         bool AreSamplesGen = false;
         std::stack<Eigen::VectorXd> greedy_ff;
+        greedy_list.clear();
         greedy_list.resize(ff_frames.size());
         int total_depth;
         if (type=="fwd"){

@@ -19,7 +19,7 @@
 bool gen_nodes(ikHandler* ik_handler, WM::WM* wm, GeometricFilterHarness* geo_filter,
                 std::vector<Eigen::MatrixXd>& ff_frames,
                 std::vector<node*>& node_map, std::vector<Eigen::VectorXi>& node_list,
-                Eigen::MatrixXd& success_flags){
+                Eigen::MatrixXd& success_flags, Eigen::MatrixXi& attmps){
     std::cout<< "\n\n##############################################################\n";
     std::cout<< "Generating nodes\n";
     int NumWaypoints = ff_frames.size();
@@ -110,6 +110,8 @@ bool gen_nodes(ikHandler* ik_handler, WM::WM* wm, GeometricFilterHarness* geo_fi
             // std::cout<< "Node ids: " << nodes_at_depth.transpose() << "\n\n";
             node_list.push_back(nodes_at_depth);
         }
+        attmps(i,0) = tot_nodes_lvl;
+        attmps(i,1) = valid_nodes_lvl;
         // std::cout << (double)valid_nodes_lvl / tot_nodes_lvl << "\n";
     }
     std::cout<< "Total Number of Valid Nodes: " << id_cnt << "\n"; 
