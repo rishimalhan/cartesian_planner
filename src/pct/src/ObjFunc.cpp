@@ -200,7 +200,7 @@ int main(int argc, char** argv){
     double cost = 0;
     int no_sols = 0;
     double exec_time = 0;
-    int max_trials = 20;
+    int max_trials = 50;
     Eigen::MatrixXd cost_histories;
     Eigen::MatrixXd wpcost_histories;
     Eigen::MatrixXd node_histories;
@@ -248,9 +248,9 @@ int main(int argc, char** argv){
             vertex_descriptor s = vertex(0, graph.g); graph.s = s;
             Eigen::VectorXi id_path;
 
-            main_timer.reset();
+            // main_timer.reset();
             bool search_success = graph_searches::djikstra(&graph, id_path, path_cost);
-            exec_time += main_timer.elapsed();
+            // exec_time += main_timer.elapsed();
 
             if(search_success){ // Get the shortest path to a leaf node in terms of node ids
                 ROS_INFO_STREAM("Search Successful");
@@ -261,22 +261,19 @@ int main(int argc, char** argv){
                 no_sols++;
                 cost_histories.conservativeResize( no_sols, cost_hist.cols() );
                 cost_histories.row(no_sols-1) = cost_hist.row(0);
-                wpcost_histories.conservativeResize( no_sols, cost_hist.cols() );
-                wpcost_histories.row(no_sols-1) = cost_hist.row(1);
                 node_histories.conservativeResize( no_sols, cost_hist.cols() );
-                node_histories.row(no_sols-1) = cost_hist.row(2);
+                node_histories.row(no_sols-1) = cost_hist.row(1);
                 src_histories.conservativeResize( no_sols, cost_hist.cols() );
-                src_histories.row(no_sols-1) = cost_hist.row(3);
+                src_histories.row(no_sols-1) = cost_hist.row(2);
                 ROS_INFO_STREAM("Cost history for run #" << itr << " is: " << cost_hist.row(0));
-                // ROS_INFO_STREAM("Wp Cost history for run #" << itr << " is: " << wpcost_histories.row(1));
-                ROS_INFO_STREAM("Node history for run #" << itr << " is: " << cost_hist.row(2));
-                ROS_INFO_STREAM("Source history for run #" << itr << " is: " << cost_hist.row(3));
+                ROS_INFO_STREAM("Node history for run #" << itr << " is: " << cost_hist.row(1));
+                ROS_INFO_STREAM("Source history for run #" << itr << " is: " << cost_hist.row(2));
             }
         }
     }
+    ROS_WARN_STREAM("Average execution time: " << exec_time / no_sols);
     main_timer.end();
     file_rw::file_write( csv_dir+"../test_case_specific_data/cost_histories.csv",cost_histories );
-    // file_rw::file_write( csv_dir+"../test_case_specific_data/wpcost_histories.csv",wpcost_histories );
     file_rw::file_write( csv_dir+"../test_case_specific_data/node_histories.csv",node_histories );
     file_rw::file_write( csv_dir+"../test_case_specific_data/src_histories.csv",src_histories );
 

@@ -110,7 +110,7 @@ double wpCost(std::vector<Eigen::MatrixXd> wps){
     // Analysis Point
     for ( int i=0; i<wps.size()-1; ++i )
         if (wps[i].cols()==0 || wps[i+1].cols()==0)
-            return 7;
+            return 1e8;
 
     boost_graph wp_grph;
     graph_t g;
@@ -197,130 +197,85 @@ bool BuildRefineGraph(ikHandler* ik_handler, std::vector<Eigen::MatrixXd>& ff_fr
         return 0;
     }
     
-    // ROS_INFO_STREAM("Defining actions object");
+    ROS_INFO_STREAM("Defining actions object");
     Actions actions(ff_frames);
-    // ROS_INFO_STREAM("Complete............");
-    // ROS_INFO_STREAM("Defining graph");
+    ROS_INFO_STREAM("Complete............");
+    ROS_INFO_STREAM("Defining graph");
     graph_t g;
     graph->g = g;
     graph->no_levels = ff_frames.size();
     graph->p.push_back(vertex(0,graph->g)); // root node
     graph->p.push_back(vertex(1,graph->g)); // leaf node
-    // ROS_INFO_STREAM("Complete............");
-    // ROS_INFO_STREAM("Initializing support variables");
+    ROS_INFO_STREAM("Complete............");
+    ROS_INFO_STREAM("Initializing support variables");
     bool path_found = false;
     double min_cost = 0;
     // Eigen::VectorXd cell_prob[2][2][2][2];
     // InitCellProb(cell_prob);
 
-    // Eigen::VectorXd feature_vec = Eigen::VectorXd::Zero(5);
-    // feature_vec(4) = std::numeric_limits<double>::infinity();
-    // int past_action = 0;
-    // Eigen::VectorXd past_feature = Eigen::VectorXd::Zero(5);
-    // past_feature(4) = 0;
-
-    // timer main_timer;
-    // main_timer.start();
-    // while ( itr<max_time || actions.root_nodes.size()==0 || !path_found ){
-    // while ( main_timer.elapsed()<max_time ){
-    std::vector<int> fractions; // Fraction for which greedy progression to be done
-    fractions = {10,10,10,10,10,10,10,10,10,10,
-                    10,10,10,10,10,10,10,10,10,10,
-                    10,10,10,10,10,10,10,10,10,10,
-                    10,10,10,10,10,10,10,10,10,10,
-                    10,10,10,10,10,10,10,10,10,10,
-                    10,10,10,10,10,10,10,10,10,10,
-                    10,10,10,10,10,10,10,10,10,10}; // Greedy
-
-    // fractions = {10,10,10,10,10,8,8,8,8,8,
-    //                 6,6,6,6,4,4,4,4,2,2,
-    //                 2,0,0,0,0,0,0,0,0,0,
-    //                 0,0,0,0,0,0,0,0,0,0,
-    //                 0,0,0,0,0,0,0,0,0,0,
-    //                 0,0,0,0,0,0,0,0,0,0,
-    //                 0,0,0,0,0,0,0,0,0,0}; // Greedy + Random
-
-    // fractions = {10,10,10,6,4,4,2,0,0,0}; // Greedy + Smoothing or Random + Smoothing
-    // fractions = {10,8,6,4,2,0,0,0,0,0}; // Greedy + Random
-
-
-    // fractions = {0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0, 
-    //             0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,
-    //             0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,
-    //             0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,
-    //             0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,
-    //             0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0 };
-
     Eigen::MatrixXd trajectory(graph->no_levels, ik_handler->OptVarDim);
     Eigen::VectorXi path;
     Eigen::VectorXd path_costs(graph->no_levels-1);
-    bool diversity = false;
+    bool src_bias = false;
     int resource = 1;
     int prev_nodes = 0;
     int tot_nodes = 0;
+    bool trigger_random = false;
     double wp_cost = std::numeric_limits<float>::infinity();
-    bool rej_sampl = true;
     Eigen::MatrixXd data;
-    // ROS_INFO_STREAM("Complete............");
-    // ROS_INFO_STREAM("PCT BEGIN");
-    // while(itr < fractions.size()){
+    ROS_INFO_STREAM("Complete............");
+    ROS_INFO_STREAM("PCT BEGIN");
     double opt_Cost;
     if(!ros::param::get("/opt_cost",opt_Cost)){
         std::cout<< "Unable to Obtain Maximum Iterations\n";
         return 0;
     }
-    while(std::fabs(min_cost - opt_Cost)>1e-1){
+    while(itr < 100){
         // int action = GenAction(feature_vec,cell_prob, past_action);
 
-        // // Greedy
-        // if ( path_found && (actions.sampler.src_waypoints.cols()>3 && actions.sampler.snk_waypoints.cols()>3) )
-        //     diversity = true;
+        // Greedy
+        if ( path_found && (actions.sampler.src_waypoints.cols()>10 && actions.sampler.snk_waypoints.cols()>10) )
+            src_bias = true;
         
-        // ROS_INFO_STREAM("Applying Fwd/Bck progression");
-        // actions.GreedyProgression(ff_frames,ik_handler,wm,geo_filter,node_map,
-        //         node_list, graph, "fwd", diversity, resource/2);
-        // // actions.sampler.src_balls[0](actions.sampler.src_balls[0].size()-1) = actions.ball_size;
-        // // wp_cost = wpCost(actions.greedy_list);
-        // // if (actions.greedy_list[0].cols()>0){
-        // //     ROS_WARN_STREAM("P1: " << actions.greedy_list[0].col(0).transpose());
-        // //     ROS_WARN_STREAM("Cost: " << wp_cost);
-        // //     data.conservativeResize(data.rows()+1,8);
-        // //     data.block(data.rows()-1,0,1,7) = actions.greedy_list[0].col(0).transpose();
-        // //     data(data.rows()-1,7) = wp_cost;
-        // // }
-        // // actions.sampler.src_balls[0](actions.sampler.src_balls[0].size()-1) = 
-        // //                                         (wp_cost-3) / 4 * actions.ball_size;
-        // actions.GreedyProgression(ff_frames,ik_handler,wm,geo_filter,node_map,
-        //         node_list, graph, "bck", diversity, resource/2);
+        ROS_INFO_STREAM("Applying Fwd progression");
+        actions.GreedyProgression(ff_frames,ik_handler,wm,geo_filter,node_map,
+                node_list, graph, "fwd", src_bias, resource/2);
+        wp_cost = wpCost(actions.greedy_list);
+        // data.conservativeResize(data.rows()+1,8);
+        // data.block(data.rows()-1,0,1,7) = actions.greedy_list[0].col(0).transpose();
+        // data(data.rows()-1,7) = wp_cost;
+        if (wp_cost < 1e7){
+            if (actions.sampler.src_cost[0] > wp_cost)
+                actions.sampler.src_cost[0] = wp_cost;
+            if (actions.sampler.src_cost[1] < wp_cost)
+                actions.sampler.src_cost[1] = wp_cost;
+        }
+        actions.sampler.src_costs[0](actions.sampler.src_costs[0].size()-1) = wp_cost;
+        ROS_INFO_STREAM("Applying Bck progression");
+        actions.GreedyProgression(ff_frames,ik_handler,wm,geo_filter,node_map,
+                node_list, graph, "bck", src_bias, resource/2);
+        wp_cost = wpCost(actions.greedy_list);
+        if (wp_cost < 1e7){
+            if (actions.sampler.snk_cost[0] > wp_cost)
+                actions.sampler.snk_cost[0] = wp_cost;
+            if (actions.sampler.snk_cost[1] < wp_cost)
+                actions.sampler.snk_cost[1] = wp_cost;
+        }
+        actions.sampler.src_costs[1](actions.sampler.src_costs[1].size()-1) = wp_cost;
 
-        // wp_cost = wpCost(actions.greedy_list);
-        // actions.sampler.src_balls[1](actions.sampler.src_balls[1].size()-1) = 
-        //                                         (wp_cost-3) / 4 * actions.delta;
 
-
-
-        // Random
-        actions.NodeAdditions(ff_frames, ik_handler, wm, geo_filter, node_map,
-            node_list, graph, 1);
-        
-
-        // // Smoothing
-        // if (path_found){
-        //     ROS_INFO_STREAM("Applying Smoothing");
-        //     // Smoothing
-        //     for (int i=0; i<graph->no_levels; ++i){
-        //         actions.NearestNode( ik_handler, wm, node_map[path(i)]->wp, ff_frames, i,
-        //             graph, geo_filter, node_map, node_list, 10 );
-        //     }
+        // if (trigger_random){
+        //     // Random
+        //     actions.NodeAdditions(ff_frames, ik_handler, wm, geo_filter, node_map,
+        //         node_list, graph, 0.001);
         // }
 
         actions.EdgeConnections(ik_handler, node_list, graph, node_map);
-
         // if (actions.infeasibility){
         //     ROS_WARN_STREAM("All IKs infeasible at a level");
         //     return false;
         // }
-        double dist_opt = 0;
+        // double dist_opt = 0;
         // if (path_found){
         //     for (int i=0; i<graph->no_levels-1; ++i)
         //         wp_cost += (node_map[path(i+1)]->wp - node_map[path(i)]->wp).norm();
@@ -338,13 +293,12 @@ bool BuildRefineGraph(ikHandler* ik_handler, std::vector<Eigen::MatrixXd>& ff_fr
             ROS_INFO_STREAM("EOF Iteration: " << itr << ". Path not found");
         // ROS_WARN_STREAM("G Stats: " << actions.graph_metrics.transpose() << "\n");
 
-
-        ROS_WARN_STREAM("Path Cost: " << min_cost );
-        cost_hist.conservativeResize(4,itr+1);
+        ROS_WARN_STREAM("Path Cost: " << min_cost << ". # Sources Sampled: " << actions.sampler.src_cnt <<
+            ". Nodes Sampled: " << actions.sampler.attempts );
+        cost_hist.conservativeResize(3,itr+1);
         cost_hist(0,itr) = min_cost;
-        cost_hist(1,itr) = wp_cost;
-        cost_hist(2,itr) = actions.sampler.attempts;
-        cost_hist(3,itr) = actions.sampler.src_cnt;
+        cost_hist(1,itr) = actions.sampler.attempts;
+        cost_hist(2,itr) = actions.sampler.src_cnt;
 
 
         // prev_nodes = no_nodes;
@@ -370,17 +324,31 @@ bool BuildRefineGraph(ikHandler* ik_handler, std::vector<Eigen::MatrixXd>& ff_fr
         //                         trajectory);
         // file_rw::file_write(csv_dir+"../test_case_specific_data/points"+std::to_string(itr)+".csv",
         //                         points);
+        // if (actions.infeasibility){
+        //     trigger_random = true;
+        //     ROS_WARN_STREAM("All Sources Exhausted");
+        // }
 
         itr ++;
     }
-    int tot_cnt = 0;
-    int hits = 0;
-    for (int i=0; i<actions.sampler.d_list.size(); ++i){
-        if (actions.sampler.d_list[i] > 0.5)
-            hits++;
-        tot_cnt++;
-    }
-    ROS_WARN_STREAM("Fraction is: " << (double) hits / tot_cnt);
+    // // Smoothing
+    // if (path_found){
+    //     ROS_INFO_STREAM("Applying Smoothing");
+    //     // Smoothing
+    //     for (int i=0; i<graph->no_levels; ++i){
+    //         actions.NearestNode( ik_handler, wm, node_map[path(i)]->wp, ff_frames, i,
+    //             graph, geo_filter, node_map, node_list, 0.005 );
+    //     }
+    // }
+
+    // int tot_cnt = 0;
+    // int hits = 0;
+    // for (int i=0; i<actions.sampler.d_list.size(); ++i){
+    //     if (actions.sampler.d_list[i] > 0.5)
+    //         hits++;
+    //     tot_cnt++;
+    // }
+    // ROS_WARN_STREAM("Fraction is: " << (double) hits / tot_cnt);
     // file_rw::file_write(csv_dir+"../test_case_specific_data/src_map.csv",data);
     // ROS_WARN_STREAM(actions.sampler.src_balls[0].transpose());
     // ROS_WARN_STREAM(actions.sampler.src_balls[1].transpose());

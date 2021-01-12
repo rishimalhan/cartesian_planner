@@ -105,6 +105,7 @@ int main(int argc, char** argv){
     }
     resolution *= (M_PI / 180);
 
+    
     // std::vector<int> src_list = {2,4,1,3,6,8};
     // std::cout<< std::find( src_list.begin(), src_list.end(), 0 ) - src_list.begin() << "\n";
     // return 0;

@@ -15,10 +15,6 @@
 #include <gen_utilities/file_rw.hpp>
 
 
-// Borat
-// Brotherrs grimbsi
-//
-
 int main(int argc, char** argv){
     srand(time(0));
 

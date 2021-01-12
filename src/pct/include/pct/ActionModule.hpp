@@ -89,7 +89,7 @@ private:
     // void GreedyProgression(int strt, int end, std::vector<Eigen::MatrixXd>& ff_frames,
     //                     ikHandler* ik_handler, WM::WM* wm, GeometricFilterHarness* geo_filter,
     //                     std::vector<node*>& node_map, std::vector<Eigen::VectorXi>& node_list,
-    //                     boost_graph* boost_graph, int& total_depth, bool diversity, int resource
+    //                     boost_graph* boost_graph, int& total_depth, bool src_bias, int resource
     //                     ){
     //     int a = 1;
     //     if (strt > end)
@@ -104,7 +104,7 @@ private:
     //         // Sample nodes to be added to graph
     //         Eigen::VectorXi sampled_nodes = sampler.GenNodeSamples(ff_frames, ik_handler, wm, 
     //                             geo_filter, unvisited_src, node_map, node_list, depth, 
-    //                             isCreated, graph_metrics, isSource, boost_graph, diversity, resource);
+    //                             isCreated, graph_metrics, isSource, boost_graph, src_bias, resource);
     //         if (sampled_nodes.size()==0){
     //             if (isSource)
     //                 if (depth==0)
@@ -138,8 +138,8 @@ private:
     bool InitSource(int seq, std::vector<Eigen::MatrixXd>& ff_frames,
                         ikHandler* ik_handler, WM::WM* wm, GeometricFilterHarness* geo_filter,
                         std::vector<node*>& node_map, std::vector<Eigen::VectorXi>& node_list,
-                        boost_graph* boost_graph, bool diversity, int resource, 
-                        std::stack<Eigen::VectorXd>& greedy_ff){
+                        boost_graph* boost_graph, bool src_bias, int resource, 
+                        std::stack<std::vector<int>>& greedy_ff){
         int depth;
         int src_id;
         Eigen::VectorXi sampled_wps;
@@ -153,11 +153,9 @@ private:
         }
         bool sourceFound = false;
         while(!sourceFound){
-            sampled_wps = sampler.GenNodeSamples(ff_frames, ik_handler, wm, 
-                                geo_filter, unvisited_src, node_map, node_list, depth, 
-                                isCreated, graph_metrics, true, boost_graph, diversity, resource);
-            sampler.src_balls[src_id].conservativeResize(sampler.src_balls[src_id].size()+1);
-            sampler.src_balls[src_id](sampler.src_balls[src_id].size()-1) = ball_size;
+            sampler.GenNodeSamples(ff_frames, ik_handler, wm, 
+                                geo_filter, unvisited_src, node_map, node_list, depth, sampled_wps,
+                                isCreated, graph_metrics, true, boost_graph, src_bias, resource);
             if (sampled_wps.size()==0){
                 if (depth==0)
                     if (unvisited_src[depth].size()!=0)
@@ -169,66 +167,69 @@ private:
             }
             sourceFound = true;
         }
-        Eigen::VectorXd ff_node(8);
-        ff_node.segment(0,7) = sampler.GetQTWp( ff_frames[depth].row(sampled_wps(0)).transpose() );
-        ff_node(7) = depth;
+        std::vector<int> ff_node = {depth,sampled_wps(0)};
+        Eigen::VectorXd wp = sampler.GetQTWp( ff_frames[depth].row(sampled_wps(0)).transpose() );
         greedy_ff.push( ff_node );
         greedy_list[depth].conservativeResize(7,greedy_list[depth].cols()+1);
-        greedy_list[depth].col(greedy_list[depth].cols()-1) = ff_node.segment(0,7);
+        greedy_list[depth].col(greedy_list[depth].cols()-1) = wp;
 
         if (src_id==0){
             sampler.src_waypoints.conservativeResize(7,sampler.src_waypoints.cols()+1);
-            sampler.src_waypoints.col(sampler.src_waypoints.cols()-1) = ff_node.segment(0,7);
+            sampler.src_waypoints.col(sampler.src_waypoints.cols()-1) = wp;
         }
 
         if (src_id==1){
             sampler.snk_waypoints.conservativeResize(7,sampler.snk_waypoints.cols()+1);
-            sampler.snk_waypoints.col(sampler.snk_waypoints.cols()-1) = ff_node.segment(0,7);
+            sampler.snk_waypoints.col(sampler.snk_waypoints.cols()-1) = wp;
         }
+
+        sampler.src_balls[src_id].conservativeResize(sampler.src_balls[src_id].size()+1);
+        sampler.src_costs[src_id].conservativeResize(sampler.src_costs[src_id].size()+1);
+            
+        // ROS_INFO_STREAM("Source picked: " << sampled_wps(0));
         return true;
     }
 
 
-    bool DFSProgression(int seq, std::vector<Eigen::MatrixXd>& ff_frames,
+    void DFSProgression(int seq, std::vector<Eigen::MatrixXd>& ff_frames,
                         ikHandler* ik_handler, WM::WM* wm, GeometricFilterHarness* geo_filter,
                         std::vector<node*>& node_map, std::vector<Eigen::VectorXi>& node_list,
-                        boost_graph* boost_graph, bool diversity, int resource, 
-                        std::stack<Eigen::VectorXd>& greedy_ff
+                        boost_graph* boost_graph, bool src_bias, int itr, 
+                        std::stack<std::vector<int>>& greedy_ff
                         ){
+        itr++;
         // If stack empty we need a new source
         if (greedy_ff.empty())
-            return false;
+            return;
 
         int depth;
         Eigen::VectorXi sampled_wps;
-        Eigen::VectorXd ff_node(8);
+        std::vector<int> ff_node(2);
         
         ff_node = greedy_ff.top();
-        sampler.prev_wp = ff_node.segment(0,7);
-        depth = (int) ff_node(7) + seq;
+        sampler.prev_wp = sampler.GetQTWp( ff_frames[ff_node[0]].row(ff_node[1]).transpose() );
+        depth = ff_node[0] + seq;
         greedy_ff.pop();
-
         if (depth<=ff_frames.size()-1 && depth>=0){
-            // Picking next nodes
-            sampled_wps = sampler.GenNodeSamples(ff_frames, ik_handler, wm, 
-                            geo_filter, unvisited_src, node_map, node_list, depth, 
-                            isCreated, graph_metrics, false, boost_graph, diversity, resource);
-            if (sampled_wps.size()!=0){
-                for (int i=0; i<sampled_wps.size(); ++i){
-                    ff_node.segment(0,7) = sampler.GetQTWp( ff_frames[depth].row(sampled_wps(i)).transpose() );
-                    ff_node(7) = depth;
-                    greedy_ff.push( ff_node );
-                    greedy_list[depth].conservativeResize(7,greedy_list[depth].cols()+1);
-                    greedy_list[depth].col(greedy_list[depth].cols()-1) = ff_node.segment(0,7);
-                }
+            bool samples_found = false;
+            while (!samples_found){
+                // Picking next nodes
+                samples_found = sampler.GenNodeSamples(ff_frames, ik_handler, wm, 
+                            geo_filter, unvisited_src, node_map, node_list, depth, sampled_wps,
+                            isCreated, graph_metrics, false, boost_graph, src_bias, itr);
+            }
+
+            for (int i=0; i<sampled_wps.size(); ++i){
+                // ff_node.segment(0,7) = sampler.GetQTWp( ff_frames[depth].row(sampled_wps(i)).transpose() );
+                ff_node = {depth,sampled_wps(i)};
+                greedy_ff.push( ff_node );
+                greedy_list[depth].conservativeResize(7,greedy_list[depth].cols()+1);
+                greedy_list[depth].col(greedy_list[depth].cols()-1) = 
+                                    sampler.GetQTWp( ff_frames[depth].row(sampled_wps(i)).transpose() );
             }
         }
-
-        if ( DFSProgression(seq, ff_frames, ik_handler, wm, geo_filter, node_map, node_list,
-                        boost_graph, diversity, resource, greedy_ff) )
-            return true;
-        else
-            return false;
+        DFSProgression(seq, ff_frames, ik_handler, wm, geo_filter, node_map, node_list,
+                        boost_graph, src_bias, itr, greedy_ff);
     };
 
 
@@ -239,7 +240,7 @@ private:
 
 public:
     FFSampler sampler;
-    int infeasibility;
+    bool infeasibility;
     int no_levels;
     double ball_size;
     // // Find the following for each level
@@ -279,7 +280,7 @@ public:
 
 
     Actions(std::vector<Eigen::MatrixXd>& ff_frames){
-        infeasibility = sampler.infeasibility;
+        infeasibility = false;
         no_levels = ff_frames.size();
         sampler.M.resize(no_levels);
         ball_size = 0.05;
@@ -331,9 +332,9 @@ public:
     bool GreedyProgression(std::vector<Eigen::MatrixXd>& ff_frames,
                         ikHandler* ik_handler, WM::WM* wm, GeometricFilterHarness* geo_filter,
                         std::vector<node*>& node_map, std::vector<Eigen::VectorXi>& node_list,
-                        boost_graph* boost_graph, string type, bool diversity, int resource){
+                        boost_graph* boost_graph, string type, bool src_bias, int resource){
         bool AreSamplesGen = false;
-        std::stack<Eigen::VectorXd> greedy_ff;
+        std::stack<std::vector<int>> greedy_ff;
         greedy_list.clear();
         greedy_list.resize(ff_frames.size());
         int total_depth;
@@ -341,9 +342,9 @@ public:
             if (unvisited_src[0].size()!=0){
                 AreSamplesGen = true;
                 if ( InitSource(1, ff_frames, ik_handler, wm, geo_filter, node_map, node_list,
-                        boost_graph, diversity, resource, greedy_ff) )
+                        boost_graph, src_bias, resource, greedy_ff) )
                     DFSProgression(1, ff_frames,ik_handler,wm, geo_filter, node_map, node_list, 
-                        boost_graph, diversity, resource, greedy_ff
+                        boost_graph, src_bias, 0, greedy_ff
                                 );
                 // // Avg Fwd Depth
                 // graph_metrics(6) = ((graph_metrics(5)-1)*graph_metrics(6) 
@@ -357,9 +358,9 @@ public:
             if (unvisited_src[1].size()!=0){
                 AreSamplesGen = true;
                 if ( InitSource(-1, ff_frames, ik_handler, wm, geo_filter, node_map, node_list,
-                        boost_graph, diversity, resource, greedy_ff) )
+                        boost_graph, src_bias, resource, greedy_ff) )
                     DFSProgression(-1, ff_frames,ik_handler,wm, geo_filter, node_map, node_list, 
-                        boost_graph, diversity, resource, greedy_ff
+                        boost_graph, src_bias, 0, greedy_ff
                                 );
                 // // Avg Bck Depth
                 // graph_metrics(11) = ((graph_metrics(10)-1)*graph_metrics(11) 
@@ -369,7 +370,8 @@ public:
                 //     graph_metrics(12) = total_depth;
             }
         }
-        infeasibility = sampler.infeasibility;
+        if (unvisited_src[0].size()==0 && unvisited_src[1].size()==0)
+            infeasibility = true;
         return AreSamplesGen;
     };
 
@@ -466,15 +468,15 @@ public:
                 std::vector<Eigen::MatrixXd>& ff_frames, int depth,
                 boost_graph* boost_graph,
                 GeometricFilterHarness* geo_filter, std::vector<node*>& node_map,
-                    std::vector<Eigen::VectorXi>& node_list, int n){
+                    std::vector<Eigen::VectorXi>& node_list, double resource){
         sampler.NearestNode(ik_handler, wm, waypoint,
                 ff_frames, depth, isCreated, boost_graph, geo_filter,
-                node_map, node_list, n);
+                node_map, node_list, resource);
     };
 
     bool NodeAdditions(std::vector<Eigen::MatrixXd>& ff_frames, ikHandler* ik_handler,
                     WM::WM* wm, GeometricFilterHarness* geo_filter, std::vector<node*>& node_map,
-                    std::vector<Eigen::VectorXi>& node_list, boost_graph* boost_graph, int resource){
+                    std::vector<Eigen::VectorXi>& node_list, boost_graph* boost_graph, double resource){
         for (int index=0; index<no_levels; ++index){
             sampler.RandomSample(ff_frames, ik_handler, wm, geo_filter, 
                 node_map, node_list, index, isCreated,
