@@ -62,3 +62,4 @@ tolerances: [ -40,40,-40,40,-180,180 ]
 sampling_res: 20 # Degrees
 max_pct_itr: 15
 tol_constraint: 0.3
+src_bias: true

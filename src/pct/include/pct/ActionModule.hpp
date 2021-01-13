@@ -142,7 +142,7 @@ private:
                         std::stack<std::vector<int>>& greedy_ff){
         int depth;
         int src_id;
-        Eigen::VectorXi sampled_wps;
+        Eigen::MatrixXi sampled_wps;
         if (seq==1){
             depth = 0;
             src_id = 0;
@@ -156,7 +156,7 @@ private:
             sampler.GenNodeSamples(ff_frames, ik_handler, wm, 
                                 geo_filter, unvisited_src, node_map, node_list, depth, sampled_wps,
                                 isCreated, graph_metrics, true, boost_graph, src_bias, resource);
-            if (sampled_wps.size()==0){
+            if (sampled_wps.rows()==0){
                 if (depth==0)
                     if (unvisited_src[depth].size()!=0)
                         continue;
@@ -167,11 +167,10 @@ private:
             }
             sourceFound = true;
         }
-        std::vector<int> ff_node = {depth,sampled_wps(0)};
-        Eigen::VectorXd wp = sampler.GetQTWp( ff_frames[depth].row(sampled_wps(0)).transpose() );
+        std::vector<int> ff_node = {depth,node_map[sampled_wps(0,0)]->row_id};
+        Eigen::VectorXd wp = sampler.GetQTWp( ff_frames[depth].row(node_map[sampled_wps(0,0)]->row_id).transpose() );
         greedy_ff.push( ff_node );
-        greedy_list[depth].conservativeResize(7,greedy_list[depth].cols()+1);
-        greedy_list[depth].col(greedy_list[depth].cols()-1) = wp;
+        greedy_list[depth] = sampled_wps;
 
         if (src_id==0){
             sampler.src_waypoints.conservativeResize(7,sampler.src_waypoints.cols()+1);
@@ -185,8 +184,8 @@ private:
 
         sampler.src_balls[src_id].conservativeResize(sampler.src_balls[src_id].size()+1);
         sampler.src_costs[src_id].conservativeResize(sampler.src_costs[src_id].size()+1);
-            
-        // ROS_INFO_STREAM("Source picked: " << sampled_wps(0));
+
+        // ROS_INFO_STREAM("Source picked: " << sampled_wps(0,0));
         return true;
     }
 
@@ -203,7 +202,7 @@ private:
             return;
 
         int depth;
-        Eigen::VectorXi sampled_wps;
+        Eigen::MatrixXi sampled_wps;
         std::vector<int> ff_node(2);
         
         ff_node = greedy_ff.top();
@@ -219,13 +218,17 @@ private:
                             isCreated, graph_metrics, false, boost_graph, src_bias, itr);
             }
 
-            for (int i=0; i<sampled_wps.size(); ++i){
+            for (int i=0; i<sampled_wps.rows(); ++i){
                 // ff_node.segment(0,7) = sampler.GetQTWp( ff_frames[depth].row(sampled_wps(i)).transpose() );
-                ff_node = {depth,sampled_wps(i)};
+                ff_node = {depth,node_map[sampled_wps(i,0)]->row_id};
                 greedy_ff.push( ff_node );
-                greedy_list[depth].conservativeResize(7,greedy_list[depth].cols()+1);
-                greedy_list[depth].col(greedy_list[depth].cols()-1) = 
-                                    sampler.GetQTWp( ff_frames[depth].row(sampled_wps(i)).transpose() );
+                if (greedy_list[depth].rows()==0)
+                    greedy_list[depth] = sampled_wps;
+                else{
+                    Eigen::MatrixXi combined_mat(greedy_list[depth].rows()+sampled_wps.rows(),sampled_wps.cols());
+                    combined_mat << greedy_list[depth] , sampled_wps;
+                    greedy_list[depth] = combined_mat;
+                }
             }
         }
         DFSProgression(seq, ff_frames, ik_handler, wm, geo_filter, node_map, node_list,
@@ -240,7 +243,7 @@ private:
 
 public:
     FFSampler sampler;
-    bool infeasibility;
+    bool feasibility;
     int no_levels;
     double ball_size;
     // // Find the following for each level
@@ -276,11 +279,11 @@ public:
     std::vector<std::vector<int>> unvisited_src;
     std::vector<Eigen::MatrixXi> isCreated;
     Eigen::VectorXi root_nodes;
-    std::vector<Eigen::MatrixXd> greedy_list;
+    std::vector<Eigen::MatrixXi> greedy_list;
 
 
     Actions(std::vector<Eigen::MatrixXd>& ff_frames){
-        infeasibility = false;
+        feasibility = true;
         no_levels = ff_frames.size();
         sampler.M.resize(no_levels);
         ball_size = 0.05;
@@ -333,14 +336,12 @@ public:
                         ikHandler* ik_handler, WM::WM* wm, GeometricFilterHarness* geo_filter,
                         std::vector<node*>& node_map, std::vector<Eigen::VectorXi>& node_list,
                         boost_graph* boost_graph, string type, bool src_bias, int resource){
-        bool AreSamplesGen = false;
         std::stack<std::vector<int>> greedy_ff;
         greedy_list.clear();
         greedy_list.resize(ff_frames.size());
         int total_depth;
         if (type=="fwd"){
             if (unvisited_src[0].size()!=0){
-                AreSamplesGen = true;
                 if ( InitSource(1, ff_frames, ik_handler, wm, geo_filter, node_map, node_list,
                         boost_graph, src_bias, resource, greedy_ff) )
                     DFSProgression(1, ff_frames,ik_handler,wm, geo_filter, node_map, node_list, 
@@ -356,7 +357,6 @@ public:
         }
         if (type=="bck"){
             if (unvisited_src[1].size()!=0){
-                AreSamplesGen = true;
                 if ( InitSource(-1, ff_frames, ik_handler, wm, geo_filter, node_map, node_list,
                         boost_graph, src_bias, resource, greedy_ff) )
                     DFSProgression(-1, ff_frames,ik_handler,wm, geo_filter, node_map, node_list, 
@@ -371,8 +371,8 @@ public:
             }
         }
         if (unvisited_src[0].size()==0 && unvisited_src[1].size()==0)
-            infeasibility = true;
-        return AreSamplesGen;
+            feasibility = false;
+        return feasibility;
     };
 
     void sort_vec(const Eigen::VectorXd& vec, Eigen::VectorXd& sorted_vec,  

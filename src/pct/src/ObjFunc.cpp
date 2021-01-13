@@ -149,14 +149,17 @@ int main(int argc, char** argv){
         ROS_WARN("Unable to Obtain Waypoint Tolerances");
         return 1;
     }
-    // Add 7 0 tolerance points at 25% intervals to constraint problem
-    int idx1 = floor(NumWaypoints/8);
-    int idx2 = idx1 + floor(NumWaypoints/8);
-    int idx3 = idx2 + floor(NumWaypoints/8);
-    int idx4 = idx3 + floor(NumWaypoints/8);
-    int idx5 = idx4 + floor(NumWaypoints/8);
-    int idx6 = idx5 + floor(NumWaypoints/8);
-    int idx7 = idx6 + floor(NumWaypoints/8);
+    int idx1 = floor(NumWaypoints/12);
+    int idx2 = idx1 + floor(NumWaypoints/12);
+    int idx3 = idx2 + floor(NumWaypoints/12);
+    int idx4 = idx3 + floor(NumWaypoints/12);
+    int idx5 = idx4 + floor(NumWaypoints/12);
+    int idx6 = idx5 + floor(NumWaypoints/12);
+    int idx7 = idx6 + floor(NumWaypoints/12);
+    int idx8 = idx7 + floor(NumWaypoints/12);
+    int idx9 = idx8 + floor(NumWaypoints/12);
+    int idx10 = idx9 + floor(NumWaypoints/12);
+    int idx11 = idx10 + floor(NumWaypoints/12);
     
     Eigen::MatrixXd tolerances(path.rows(),tolerances_vec.size());
     for (int i=0; i<path.rows(); ++i){
@@ -176,6 +179,10 @@ int main(int argc, char** argv){
     tolerances.row(idx5) = tolerances.row(idx5)*tol_constr;
     tolerances.row(idx6) = tolerances.row(idx6)*tol_constr;
     tolerances.row(idx7) = tolerances.row(idx7)*tol_constr;
+    tolerances.row(idx8) = tolerances.row(idx8)*tol_constr;
+    tolerances.row(idx9) = tolerances.row(idx9)*tol_constr;
+    tolerances.row(idx10) = tolerances.row(idx10)*tol_constr;
+    tolerances.row(idx11) = tolerances.row(idx11)*tol_constr;
 
     // Add a piece of code here that randomly selects 10-20% of points
     // and makes the tolerances zero to make the problem tougher
@@ -200,7 +207,7 @@ int main(int argc, char** argv){
     double cost = 0;
     int no_sols = 0;
     double exec_time = 0;
-    int max_trials = 50;
+    int max_trials = 20;
     Eigen::MatrixXd cost_histories;
     Eigen::MatrixXd wpcost_histories;
     Eigen::MatrixXd node_histories;

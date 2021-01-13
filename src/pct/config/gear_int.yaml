@@ -31,6 +31,4 @@ tolerances: [ -70,70,-70,70,-180,180 ]
 max_pct_time: 20
 tol_constraint: 1.0
 opt_cost: 5.29
-# Jiffy lube
-# United motors
-# Geico
+src_bias: true

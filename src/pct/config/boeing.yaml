@@ -60,3 +60,4 @@ sampling_res: 10 # Degrees
 max_pct_time: 10
 tol_constraint: 0.2
 opt_cost: 90.92
+src_bias: true

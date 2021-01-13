@@ -1,0 +1,21 @@
+clear all;
+close all;
+clc;
+
+
+part = 'bath_tub';
+
+fwd_map = csvread( strcat(part,'/fwd_src_map.csv') );
+
+points = fwd_map(:,1:7);
+wp_costs = fwd_map(:,1:end-1);
+q_costs = fwd_map(:,1:end);
+
+% Knn search nXd matrix X and query points Y mXd where d is dimension
+kdtree = KDTreeSearcher(points);
+idx = knnsearch(kdtree,points(i,:),5);
+return;
+
+for i=1:size(points,1)
+    idx = knnsearch(kdtree,points(i,:),5);
+end

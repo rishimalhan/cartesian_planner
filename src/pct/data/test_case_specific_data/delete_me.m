@@ -6,9 +6,9 @@ figure
 hold on;
 
 % part = 'gear';
-% part = 'step_slab';
+part = 'step_slab';
 % part = 'bath_tub';
-part = 'boeing';
+% part = 'boeing';
 % part = 'fender';
 
 % g_cost_history = csvread( strcat(part,'/random_cost_histories.csv') );
@@ -20,21 +20,22 @@ part = 'boeing';
 g_cost_history = csvread( strcat(part,'/greedy_cost_histories.csv') );
 n_history = csvread( strcat(part,'/greedy_node_histories.csv') );
 % n_history = csvread( strcat(part,'/greedy_src_histories.csv') );
-m = getmean(g_cost_history,true);
+m = getmean(g_cost_history,false);
+max(getmean(g_cost_history,false))
 n = getmean(n_history,false);
 plot(n, m, 'linewidth', 4)
 
-g_cost_history = csvread( strcat(part,'/gb_cost_histories.csv') );
-n_history = csvread( strcat(part,'/gb_node_histories.csv') );
-% n_history = csvread( strcat(part,'/gb_src_histories.csv') );
-m = getmean(g_cost_history,true);
+g_cost_history = csvread( strcat(part,'/srcbias_cost_histories.csv') );
+n_history = csvread( strcat(part,'/srcbias_node_histories.csv') );
+% n_history = csvread( strcat(part,'/srcbias_src_histories.csv') );
+m = getmean(g_cost_history,false);
 n = getmean(n_history,false);
 plot(n, m, 'linewidth', 4)
 
 set(gca,'fontsize',30)
 set(gcf, 'color', [1,1,1])
 
-legend( 'Greedy', 'G+B' )
+legend( 'Greedy',  'G+B' )
 
 return;
 

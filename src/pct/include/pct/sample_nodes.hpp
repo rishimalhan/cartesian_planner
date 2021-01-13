@@ -55,61 +55,117 @@ int PickSource( std::vector<std::vector<int>>& unvisited_src,
         unvisited_src[src_id].erase( it );
     }
     else{
+        if (unvisited_src[src_id].size()==1){
+            ff_frame_id = unvisited_src[src_id][0];
+            unvisited_src[src_id].clear();
+            return ff_frame_id;
+        }
+
         Nabo::NNSearchD* tree;
         double max_cost;
         double min_cost;
+        int no_wps;
         if (src_id==0){
+            no_wps = src_waypoints.cols();
             tree = Nabo::NNSearchD::createKDTreeLinearHeap(src_waypoints);
             max_cost = src_cost[0];
             min_cost = src_cost[1];
         }
         if (src_id==1){
+            no_wps = snk_waypoints.cols();
             tree = Nabo::NNSearchD::createKDTreeLinearHeap(snk_waypoints);
             max_cost = snk_cost[0];
             min_cost = snk_cost[1];
         }
 
+        // Normalize costs across source points
         for (int i=0; i<src_costs[src_id].size(); ++i){
             if (src_costs[src_id](i) > 1e7){
-                src_balls[src_id](i) = radius;
+                src_balls[src_id](i) = 1.0;
                 continue;
             }
-            src_balls[src_id](i) = (1.1-((src_costs[src_id](i)-min_cost)/(max_cost-min_cost))) * radius;
+            src_balls[src_id](i) = (src_costs[src_id](i)-min_cost)/(max_cost-min_cost);
             // ROS_WARN_STREAM("Wp_cost: " << src_costs[src_id](i) << ". Radius: " << src_balls[src_id](i));
         }
 
+        Eigen::MatrixXd doa(unvisited_src[src_id].size(),3);
         int itr = 0;
-        double max_dist = 0;
-        while(itr < unvisited_src[src_id].size()){
-            // Generate a random ff_frame index
-            int index = 0 + ( std::rand() % ( unvisited_src[src_id].size() ) );
-            ff_frame_id = unvisited_src[src_id][index];
-            vector<int>::iterator it = unvisited_src[src_id].begin() + index;
-            unvisited_src[src_id].erase( it );
-
+        for (int ff_frame_id : unvisited_src[src_id]){
             // Calculate distance
             Eigen::VectorXi indices(1);
             Eigen::VectorXd dists2(1);
             tree->knn(GetQTWp(ff_frames[depth].row(ff_frame_id).transpose()), indices, dists2, 1);
-            if ( dists2(0) <= src_balls[src_id](indices(0)) )
-                break;
-            
-            junk_yard.push_back( ff_frame_id );
-            ff_frame_id = -1;
+            doa(itr,0) = dists2(0);
+            doa(itr,1) = src_balls[src_id](indices(0));
             itr++;
         }
         delete tree;
-        
-        if (unvisited_src[src_id].size()==0 && junk_yard.size()!=0){
-            unvisited_src[src_id] = junk_yard;
-            // ROS_WARN_STREAM("SRC size: " << unvisited_src[src_id].size());
-            junk_yard.clear();
+
+        // Compute Degree of Attraction
+        Eigen::VectorXd idvec = Eigen::VectorXd::Ones(unvisited_src[src_id].size());
+        double min_val = doa.col(0).minCoeff();
+        double max_val = doa.col(0).maxCoeff();
+        doa.col(0) = ( (doa.col(0) - (idvec*min_val)) / (max_val-min_val) );
+        doa.col(0) += idvec*1e-5;
+        min_val = doa.col(1).minCoeff();
+        max_val = doa.col(1).maxCoeff();
+        doa.col(1) = ( (doa.col(1) - (idvec*min_val)) / (max_val-min_val) );
+        doa.col(1) += idvec*1e-5;
+
+        doa.col(2) = doa.col(0).array().cwiseProduct(doa.col(1).array());
+        // doa.col(2) = 0.5*doa.col(0) + 0.5*doa.col(1);
+        // doa.col(2) = doa.col(1);
+        // min_val = doa.col(2).minCoeff();
+        // max_val = doa.col(2).maxCoeff();
+        // doa.col(2) = ( (doa.col(2) - (idvec*min_val)) / (max_val-min_val) );
+        // doa.col(2) += idvec*1e-5;
+
+        max_val = doa.col(2).maxCoeff();
+        doa.col(2) = max_val*idvec - doa.col(2); // Making it a reward
+
+
+        // Generate probability distribution
+        std::vector<int> distribution;
+        for (int i=0; i<doa.rows(); ++i){
+            distribution.push_back( i );
+            // if (doa(i,2) < 0.5)
+            //     continue;
+            int no_smpls = doa(i,2)*100;
+            for (int j=0; j<no_smpls; ++j){
+                distribution.push_back( i );
+            }
         }
+        // ROS_WARN_STREAM(doa.col(2).transpose() << "\n");
+        // if (distribution.size()==0){
+        //     ROS_WARN_STREAM("WpCost" << doa.col(1).transpose() << "\n");
+        //     ROS_WARN_STREAM("Cost" << doa.col(2).transpose() << "\n\n");
+        // }
+
+        auto rng = std::default_random_engine {};
+        std::shuffle(std::begin(distribution), std::end(distribution), rng);
+
+        // for (auto val : distribution)
+        //     std::cout << val << ",  ";
+        // ROS_WARN("\n\n");
+
+        // Generate a random ff_frame index
+        int index = 0 + ( std::rand() % ( distribution.size() ) );
+        ff_frame_id = unvisited_src[src_id][distribution[index]];
+        vector<int>::iterator it = unvisited_src[src_id].begin() + distribution[index];
+        unvisited_src[src_id].erase( it );
     }
-    if (ff_frame_id==-1){
-        radius += 0.005;
-        return -1;
-    }
+
+    
+    // if (unvisited_src[src_id].size()==0 && junk_yard.size()!=0){
+    //     unvisited_src[src_id] = junk_yard;
+    //     // ROS_WARN_STREAM("SRC size: " << unvisited_src[src_id].size());
+    //     junk_yard.clear();
+    // }
+    // }
+    // if (ff_frame_id==-1){
+    //     radius += 0.005;
+    //     return -1;
+    // }
 
     return ff_frame_id;
 }
@@ -253,7 +309,7 @@ Eigen::VectorXd GetWp(Eigen::VectorXd waypoint){
 bool GenNodeSamples(std::vector<Eigen::MatrixXd>& ff_frames, ikHandler* ik_handler,
                     WM::WM* wm, GeometricFilterHarness* geo_filter,
                     std::vector<std::vector<int>>& unvisited_src, std::vector<node*>& node_map,
-                    std::vector<Eigen::VectorXi>& node_list,  int depth, Eigen::VectorXi& sampled_wps,
+                    std::vector<Eigen::VectorXi>& node_list,  int depth, Eigen::MatrixXi& sampled_wps,
                     std::vector<Eigen::MatrixXi>& isCreated, Eigen::VectorXd& graph_metrics, 
                     bool isSource, boost_graph* boost_graph, bool src_bias, int resource){
     Eigen::VectorXi optID;
@@ -308,8 +364,8 @@ bool GenNodeSamples(std::vector<Eigen::MatrixXd>& ff_frames, ikHandler* ik_handl
     for (int i=0; i<optID.size(); ++i){
         if (isCreated[depth](optID(i),0)==1){
             samples_found = true;
-            sampled_wps.conservativeResize(sampled_wps.size()+1);
-            sampled_wps(sampled_wps.size()-1) = optID(i);
+            sampled_wps.conservativeResize(sampled_wps.rows()+1,isCreated[depth].cols()-1);
+            sampled_wps.row(sampled_wps.rows()-1) = isCreated[depth].block(optID(i),1,1,8);
             continue;
         }
 
@@ -346,9 +402,9 @@ bool GenNodeSamples(std::vector<Eigen::MatrixXd>& ff_frames, ikHandler* ik_handl
         }
 
         if (isCreated[depth](optID(i),0)==1){
-            sampled_wps.conservativeResize(sampled_wps.size()+1);
-            sampled_wps(sampled_wps.size()-1) = optID(i);
             samples_found = true;
+            sampled_wps.conservativeResize(sampled_wps.rows()+1,isCreated[depth].cols()-1);
+            sampled_wps.row(sampled_wps.rows()-1) = isCreated[depth].block(optID(i),1,1,8);
         }
     }
     return samples_found;

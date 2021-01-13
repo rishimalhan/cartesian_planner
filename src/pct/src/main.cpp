@@ -105,7 +105,7 @@ int main(int argc, char** argv){
     }
     resolution *= (M_PI / 180);
 
-    
+
     // std::vector<int> src_list = {2,4,1,3,6,8};
     // std::cout<< std::find( src_list.begin(), src_list.end(), 0 ) - src_list.begin() << "\n";
     // return 0;
@@ -260,15 +260,14 @@ int main(int argc, char** argv){
         ROS_WARN("Unable to Obtain Waypoint Tolerances");
         return 1;
     }
-    // Add 7 0 tolerance points at 25% intervals to constraint problem
-    int idx1 = floor(NumWaypoints/8);
-    int idx2 = idx1 + floor(NumWaypoints/8);
-    int idx3 = idx2 + floor(NumWaypoints/8);
-    int idx4 = idx3 + floor(NumWaypoints/8);
-    int idx5 = idx4 + floor(NumWaypoints/8);
-    int idx6 = idx5 + floor(NumWaypoints/8);
-    int idx7 = idx6 + floor(NumWaypoints/8);
     
+    int choke_pts = 30;
+    std::vector<int> idx;
+
+    idx.push_back(floor(NumWaypoints/choke_pts));
+    for (int i=1; i<choke_pts-1; ++i)
+        idx.push_back( idx[i-1] + floor(NumWaypoints/choke_pts) );
+
     Eigen::MatrixXd tolerances(path.rows(),tolerances_vec.size());
     for (int i=0; i<path.rows(); ++i){
         for (int j=0; j<tolerances_vec.size(); ++j){
@@ -280,14 +279,9 @@ int main(int argc, char** argv){
     double tol_constr;
     ros::param::get("/tol_constraint",tol_constr);
 
-    tolerances.row(idx1) = tolerances.row(idx1)*tol_constr;
-    tolerances.row(idx2) = tolerances.row(idx2)*tol_constr;
-    tolerances.row(idx3) = tolerances.row(idx3)*tol_constr;
-    tolerances.row(idx4) = tolerances.row(idx4)*tol_constr;
-    tolerances.row(idx5) = tolerances.row(idx5)*tol_constr;
-    tolerances.row(idx6) = tolerances.row(idx6)*tol_constr;
-    tolerances.row(idx7) = tolerances.row(idx7)*tol_constr;
-
+    for (int i=0; i<idx.size(); ++i)
+        tolerances.row(idx[i]) = tolerances.row(idx[i])*tol_constr;
+    
     // Add a piece of code here that randomly selects 10-20% of points
     // and makes the tolerances zero to make the problem tougher
 
@@ -303,14 +297,17 @@ int main(int argc, char** argv){
     geo_filter.generate_flange_frames( wpTol,tcp_list );
 
     int fframes_cnt = 0, max_fframes = 0, min_fframes = 1e8;
+    int id = 0;
     for (auto frames : ff_frames){
         fframes_cnt += frames.rows();
+        // ROS_WARN_STREAM("Level: " << id << ". FF count: " << frames.rows());
         if (max_fframes < frames.rows())
             max_fframes = frames.rows();
         if (min_fframes > frames.rows())
             min_fframes = frames.rows();
+        id++;
     }
-
+    // return 0;
 
     // Get trajectory path
     std::string traj_path;

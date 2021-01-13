@@ -27,8 +27,9 @@ viz_param:
 
 gen_path: false
 rob_config: [0,0,0,0,0,0]
-sampling_res: 20 # Degrees
+sampling_res: 5 # Degrees
 tolerances: [ 0,0,0,0,-180,180 ]
 max_pct_time: 5
-tol_constraint: 0.2
+tol_constraint: 0.05
 opt_cost: 4.2
+src_bias: true
