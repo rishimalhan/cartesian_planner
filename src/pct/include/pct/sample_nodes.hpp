@@ -48,6 +48,7 @@ int PickSource( std::vector<std::vector<int>>& unvisited_src,
 
     // // Pick the first source
     if (!src_bias){
+        ROS_WARN_STREAM("EXPLORATION");
         // Generate a random ff_frame index
         int index = 0 + ( std::rand() % ( unvisited_src[src_id].size() ) );
         ff_frame_id = unvisited_src[src_id][index];
@@ -55,6 +56,7 @@ int PickSource( std::vector<std::vector<int>>& unvisited_src,
         unvisited_src[src_id].erase( it );
     }
     else{
+        ROS_WARN_STREAM("EXPLOITATION");
         if (unvisited_src[src_id].size()==1){
             ff_frame_id = unvisited_src[src_id][0];
             unvisited_src[src_id].clear();
@@ -100,11 +102,17 @@ int PickSource( std::vector<std::vector<int>>& unvisited_src,
             itr++;
         }
         delete tree;
+        double min_val;
+        double max_val;
+
+        Eigen::VectorXd idvec = Eigen::VectorXd::Ones(unvisited_src[src_id].size());
+
+        max_val = doa.col(1).maxCoeff();
+        doa.col(1) = max_val*idvec - doa.col(1); // Making it a reward
 
         // Compute Degree of Attraction
-        Eigen::VectorXd idvec = Eigen::VectorXd::Ones(unvisited_src[src_id].size());
-        double min_val = doa.col(0).minCoeff();
-        double max_val = doa.col(0).maxCoeff();
+        min_val = doa.col(0).minCoeff();
+        max_val = doa.col(0).maxCoeff();
         doa.col(0) = ( (doa.col(0) - (idvec*min_val)) / (max_val-min_val) );
         doa.col(0) += idvec*1e-5;
         min_val = doa.col(1).minCoeff();
@@ -119,9 +127,7 @@ int PickSource( std::vector<std::vector<int>>& unvisited_src,
         // max_val = doa.col(2).maxCoeff();
         // doa.col(2) = ( (doa.col(2) - (idvec*min_val)) / (max_val-min_val) );
         // doa.col(2) += idvec*1e-5;
-
-        max_val = doa.col(2).maxCoeff();
-        doa.col(2) = max_val*idvec - doa.col(2); // Making it a reward
+        
 
 
         // Generate probability distribution

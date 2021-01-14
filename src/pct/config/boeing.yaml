@@ -61,3 +61,5 @@ max_pct_time: 10
 tol_constraint: 0.2
 opt_cost: 90.92
 src_bias: true
+opt_trigger: 0.1
+alpha: 10

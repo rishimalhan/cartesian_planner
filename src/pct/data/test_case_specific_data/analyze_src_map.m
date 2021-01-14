@@ -4,6 +4,7 @@ clc;
 
 
 part = 'bath_tub';
+% part = 'boeing';
 % part = 'step_slab';
 % part = 'fender';
 
@@ -18,13 +19,14 @@ q_neigh = [];
 
 % Knn search nXd matrix X and query points Y mXd where d is dimension
 kdtree = KDTreeSearcher(points);
-for i=1:size(points,1)
-    idx = knnsearch(kdtree,points(i,:),'K',10);
-    wp_neigh(i,:) = [ wp_costs(i),wp_costs(idx)' ];
-    q_neigh(i,:) = [ q_costs(i),q_costs(idx)' ];
+for i=135
+    idx = knnsearch(kdtree,points(i,:),'K',40);
+    wp_neigh = [wp_neigh; wp_costs(i),wp_costs(idx)' ];
+    q_neigh = [q_neigh; q_costs(i),q_costs(idx)' ];
 end
+q_neigh'
 
-wp_costs = (wp_costs-min(wp_costs)) / (max(wp_costs)-min(wp_costs));
-q_costs = (q_costs-min(q_costs)) / (max(q_costs)-min(q_costs));
-
-scatter( wp_costs,q_costs,20,'filled' )
+% wp_costs = (wp_costs-min(wp_costs)) / (max(wp_costs)-min(wp_costs));
+% q_costs = (q_costs-min(q_costs)) / (max(q_costs)-min(q_costs));
+% 
+% scatter( wp_costs,q_costs,20,'filled' )

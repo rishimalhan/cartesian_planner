@@ -212,6 +212,18 @@ bool BuildRefineGraph(ikHandler* ik_handler, std::vector<Eigen::MatrixXd>& ff_fr
     ik_handler->setTcpFrame(Eigen::MatrixXd::Identity(4,4));
     node_list.resize(ff_frames.size());
 
+    double opt_trigger;
+    if(!ros::param::get("/opt_trigger",opt_trigger)){
+        std::cout<< "Unable to Obtain Trigger Point\n";
+        return 0;
+    }
+
+    double alpha;
+    if(!ros::param::get("/alpha",alpha)){
+        std::cout<< "Unable to Obtain Alpha\n";
+        return 0;
+    }
+
     std::cout<< "Number of levels in the graph: " << ff_frames.size() << "\n";
     int itr = 0;
     int max_time;
@@ -245,7 +257,7 @@ bool BuildRefineGraph(ikHandler* ik_handler, std::vector<Eigen::MatrixXd>& ff_fr
     Eigen::MatrixXd trajectory(graph->no_levels, ik_handler->OptVarDim);
     Eigen::VectorXi path;
     Eigen::VectorXd path_costs(graph->no_levels-1);
-    bool src_bias = false;
+    std::vector<bool> src_bias = {false,false};
     int resource = 1;
     int prev_nodes = 0;
     int tot_nodes = 0;
@@ -261,16 +273,40 @@ bool BuildRefineGraph(ikHandler* ik_handler, std::vector<Eigen::MatrixXd>& ff_fr
         std::cout<< "Unable to Obtain Maximum Iterations\n";
         return 0;
     }
+
+    // Generate Exploration VS Exploitation Profile
+    std::vector<int> trigger_itr = { (int)floor(opt_trigger*ff_frames[0].rows()),
+                    (int) floor(opt_trigger*ff_frames[graph->no_levels-1].rows()) };
+    std::vector<int> domain = { (int)floor((1-opt_trigger)*ff_frames[0].rows()),
+                    (int) floor((1-opt_trigger)*ff_frames[graph->no_levels-1].rows()) };
+    double x;
     while(itr < 100){
         // int action = GenAction(feature_vec,cell_prob, past_action);
 
         // Greedy
-        if ( path_found && (actions.sampler.src_waypoints.cols()>1 && actions.sampler.snk_waypoints.cols()>1) )
-            src_bias = _src_bias;
-        
+        x = ff_frames[0].rows()-actions.unvisited_src[0].size();
+        if (x > trigger_itr[0]){
+            // Probability distribution
+            double prob = (double) std::rand() / RAND_MAX;
+            if( prob < exp( -alpha*(x-trigger_itr[0])/(domain[0]) ) )
+                src_bias[0] = false;
+            else
+                src_bias[0] = true;
+        }
+        x = ff_frames[graph->no_levels-1].rows()-actions.unvisited_src[0].size();
+        if (x > trigger_itr[1]){
+            // Probability distribution
+            double prob = (double) std::rand() / RAND_MAX;
+            if( prob < exp( -alpha*(x-trigger_itr[1])/(domain[1]) ) )
+                src_bias[1] = false;
+            else
+                src_bias[1] = true;
+        }
+    
+
         ROS_INFO_STREAM("Applying Fwd progression");
         if( !actions.GreedyProgression(ff_frames,ik_handler,wm,geo_filter,node_map,
-                node_list, graph, "fwd", src_bias, resource/2) )
+                node_list, graph, "fwd", src_bias[0], resource/2) )
             break;
         // wp_cost = wpCost(actions.greedy_list, node_map,"wp");
         q_cost = wpCost(actions.greedy_list, node_map,"q");
@@ -289,9 +325,11 @@ bool BuildRefineGraph(ikHandler* ik_handler, std::vector<Eigen::MatrixXd>& ff_fr
                 actions.sampler.src_cost[1] = q_cost;
         }
         actions.sampler.src_costs[0](actions.sampler.src_costs[0].size()-1) = q_cost;
+
+
         ROS_INFO_STREAM("Applying Bck progression");
         if( !actions.GreedyProgression(ff_frames,ik_handler,wm,geo_filter,node_map,
-                node_list, graph, "bck", src_bias, resource/2) )
+                node_list, graph, "bck", src_bias[1], resource/2) )
             break;
         // wp_cost = wpCost(actions.greedy_list, node_map,"wp");
         q_cost = wpCost(actions.greedy_list, node_map,"q");
