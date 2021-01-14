@@ -38,7 +38,7 @@ node* generate_node(Eigen::VectorXd joint_cfg,
 
 
 int PickSource( std::vector<std::vector<int>>& unvisited_src,
-                    std::vector<Eigen::MatrixXd>& ff_frames, int depth, bool src_bias ){
+                    std::vector<Eigen::MatrixXd>& ff_frames, int depth, bool& src_bias ){
     int ff_frame_id = -1;
     int src_id;
     if (depth==0)
@@ -48,7 +48,7 @@ int PickSource( std::vector<std::vector<int>>& unvisited_src,
 
     // // Pick the first source
     if (!src_bias){
-        ROS_WARN_STREAM("EXPLORATION");
+        // ROS_WARN_STREAM("EXPLORATION");
         // Generate a random ff_frame index
         int index = 0 + ( std::rand() % ( unvisited_src[src_id].size() ) );
         ff_frame_id = unvisited_src[src_id][index];
@@ -56,7 +56,7 @@ int PickSource( std::vector<std::vector<int>>& unvisited_src,
         unvisited_src[src_id].erase( it );
     }
     else{
-        ROS_WARN_STREAM("EXPLOITATION");
+        // ROS_WARN_STREAM("EXPLOITATION");
         if (unvisited_src[src_id].size()==1){
             ff_frame_id = unvisited_src[src_id][0];
             unvisited_src[src_id].clear();
@@ -87,91 +87,42 @@ int PickSource( std::vector<std::vector<int>>& unvisited_src,
                 continue;
             }
             src_balls[src_id](i) = (src_costs[src_id](i)-min_cost)/(max_cost-min_cost);
-            // ROS_WARN_STREAM("Wp_cost: " << src_costs[src_id](i) << ". Radius: " << src_balls[src_id](i));
+            // ROS_WARN_STREAM("Cost: " << src_balls[src_id](i));
         }
+        double threshold = src_balls[src_id].mean() + (1-src_balls[src_id].mean())*neigh_thrld;
 
-        Eigen::MatrixXd doa(unvisited_src[src_id].size(),3);
+        std::vector<int> sampleable_ids;
         int itr = 0;
-        for (int ff_frame_id : unvisited_src[src_id]){
+        for (int i=0; i<unvisited_src[src_id].size(); ++i){
             // Calculate distance
             Eigen::VectorXi indices(1);
             Eigen::VectorXd dists2(1);
-            tree->knn(GetQTWp(ff_frames[depth].row(ff_frame_id).transpose()), indices, dists2, 1);
-            doa(itr,0) = dists2(0);
-            doa(itr,1) = src_balls[src_id](indices(0));
+            tree->knn(GetQTWp(ff_frames[depth].row(unvisited_src[src_id][i]).transpose()), 
+                        indices, dists2, 1);
+            if (src_balls[src_id](indices(0)) > threshold)
+                sampleable_ids.push_back( i );
             itr++;
         }
         delete tree;
-        double min_val;
-        double max_val;
 
-        Eigen::VectorXd idvec = Eigen::VectorXd::Ones(unvisited_src[src_id].size());
-
-        max_val = doa.col(1).maxCoeff();
-        doa.col(1) = max_val*idvec - doa.col(1); // Making it a reward
-
-        // Compute Degree of Attraction
-        min_val = doa.col(0).minCoeff();
-        max_val = doa.col(0).maxCoeff();
-        doa.col(0) = ( (doa.col(0) - (idvec*min_val)) / (max_val-min_val) );
-        doa.col(0) += idvec*1e-5;
-        min_val = doa.col(1).minCoeff();
-        max_val = doa.col(1).maxCoeff();
-        doa.col(1) = ( (doa.col(1) - (idvec*min_val)) / (max_val-min_val) );
-        doa.col(1) += idvec*1e-5;
-
-        doa.col(2) = doa.col(0).array().cwiseProduct(doa.col(1).array());
-        // doa.col(2) = 0.5*doa.col(0) + 0.5*doa.col(1);
-        // doa.col(2) = doa.col(1);
-        // min_val = doa.col(2).minCoeff();
-        // max_val = doa.col(2).maxCoeff();
-        // doa.col(2) = ( (doa.col(2) - (idvec*min_val)) / (max_val-min_val) );
-        // doa.col(2) += idvec*1e-5;
-        
-
-
-        // Generate probability distribution
-        std::vector<int> distribution;
-        for (int i=0; i<doa.rows(); ++i){
-            distribution.push_back( i );
-            // if (doa(i,2) < 0.5)
-            //     continue;
-            int no_smpls = doa(i,2)*100;
-            for (int j=0; j<no_smpls; ++j){
-                distribution.push_back( i );
-            }
+        if (sampleable_ids.size()!=0){
+            // ROS_WARN_STREAM("SUCCESSFULLY EXPLOITED" << ". Sampleable size: " << sampleable_ids.size()
+            //     << ". threshold value: " << threshold);
+            // Generate a random ff_frame index
+            int index = 0 + ( std::rand() % ( sampleable_ids.size() ) );
+            ff_frame_id = unvisited_src[src_id][sampleable_ids[index]];
+            vector<int>::iterator it = unvisited_src[src_id].begin() + sampleable_ids[index];
+            unvisited_src[src_id].erase( it );
         }
-        // ROS_WARN_STREAM(doa.col(2).transpose() << "\n");
-        // if (distribution.size()==0){
-        //     ROS_WARN_STREAM("WpCost" << doa.col(1).transpose() << "\n");
-        //     ROS_WARN_STREAM("Cost" << doa.col(2).transpose() << "\n\n");
+        else
+            src_bias = false;
+        // else{
+        //     // ROS_WARN_STREAM("!!!!!!!! FAILURE TO EXPLOIT !!!!!!!!" << 
+        //     //     ". Sampleable size: " << sampleable_ids.size()
+        //     //     << ". threshold value: " << threshold);
+        //     neigh_thrld -= 0.1;
         // }
-
-        auto rng = std::default_random_engine {};
-        std::shuffle(std::begin(distribution), std::end(distribution), rng);
-
-        // for (auto val : distribution)
-        //     std::cout << val << ",  ";
-        // ROS_WARN("\n\n");
-
-        // Generate a random ff_frame index
-        int index = 0 + ( std::rand() % ( distribution.size() ) );
-        ff_frame_id = unvisited_src[src_id][distribution[index]];
-        vector<int>::iterator it = unvisited_src[src_id].begin() + distribution[index];
-        unvisited_src[src_id].erase( it );
     }
-
-    
-    // if (unvisited_src[src_id].size()==0 && junk_yard.size()!=0){
-    //     unvisited_src[src_id] = junk_yard;
-    //     // ROS_WARN_STREAM("SRC size: " << unvisited_src[src_id].size());
-    //     junk_yard.clear();
-    // }
-    // }
-    // if (ff_frame_id==-1){
-    //     radius += 0.005;
-    //     return -1;
-    // }
 
     return ff_frame_id;
 }
@@ -290,11 +241,18 @@ std::vector<int> junk_yard;
 std::vector<double> d_list;
 std::vector<double> src_cost;
 std::vector<double> snk_cost;
+double neigh_thrld;
 
-FFSampler(){infeasibility = false; attempts = 0; src_cnt = 0; src_balls.resize(2); radius = 0.01;
-            src_costs.resize(2); src_cost.resize(2); snk_cost.resize(2); 
-            src_cost[0] = std::numeric_limits<float>::infinity(); src_cost[1] = 0;
-            snk_cost[0] = std::numeric_limits<float>::infinity(); snk_cost[1] = 0;}
+FFSampler(){
+    infeasibility = false; attempts = 0; src_cnt = 0; src_balls.resize(2); radius = 0.01;
+    src_costs.resize(2); src_cost.resize(2); snk_cost.resize(2); 
+    src_cost[0] = std::numeric_limits<float>::infinity(); src_cost[1] = 0;
+    snk_cost[0] = std::numeric_limits<float>::infinity(); snk_cost[1] = 0;
+    if(!ros::param::get("/neigh_thrld",neigh_thrld)){
+        std::cout<< "Unable to Obtain Maximum Iterations. Setting Default\n";
+        neigh_thrld = 0.8;
+    }
+    }
 ~FFSampler(){};
 
 Eigen::VectorXd GetQTWp(Eigen::VectorXd waypoint){
@@ -317,7 +275,7 @@ bool GenNodeSamples(std::vector<Eigen::MatrixXd>& ff_frames, ikHandler* ik_handl
                     std::vector<std::vector<int>>& unvisited_src, std::vector<node*>& node_map,
                     std::vector<Eigen::VectorXi>& node_list,  int depth, Eigen::MatrixXi& sampled_wps,
                     std::vector<Eigen::MatrixXi>& isCreated, Eigen::VectorXd& graph_metrics, 
-                    bool isSource, boost_graph* boost_graph, bool src_bias, int resource){
+                    bool isSource, boost_graph* boost_graph, bool& src_bias, int resource){
     Eigen::VectorXi optID;
     Eigen::VectorXd waypoint;
     if (isSource){

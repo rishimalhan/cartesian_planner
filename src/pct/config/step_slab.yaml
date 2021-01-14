@@ -29,6 +29,6 @@ tolerances: [   0,0,0,0,-180,180  ]
 max_pct_time: 5
 tol_constraint: 1.0
 opt_cost: 6.22
-src_bias: true
-opt_trigger: 0.1
+opt_trigger: 0.15
 alpha: 10
+neigh_thrld: 0.8

@@ -138,7 +138,7 @@ private:
     bool InitSource(int seq, std::vector<Eigen::MatrixXd>& ff_frames,
                         ikHandler* ik_handler, WM::WM* wm, GeometricFilterHarness* geo_filter,
                         std::vector<node*>& node_map, std::vector<Eigen::VectorXi>& node_list,
-                        boost_graph* boost_graph, bool src_bias, int resource, 
+                        boost_graph* boost_graph, bool& src_bias, int resource, 
                         std::stack<std::vector<int>>& greedy_ff){
         int depth;
         int src_id;
@@ -319,6 +319,11 @@ public:
             unvisited_src[0].push_back(i);
         for (int i=0; i<ff_frames[ff_frames.size()-1].rows(); ++i)
             unvisited_src[1].push_back(i);
+
+        auto rng = std::default_random_engine {};
+        std::shuffle(std::begin(unvisited_src[0]), std::end(unvisited_src[0]), rng);
+        std::shuffle(std::begin(unvisited_src[1]), std::end(unvisited_src[1]), rng);
+
         // List to store the created node references 
         isCreated.clear();
         isCreated.resize(ff_frames.size());

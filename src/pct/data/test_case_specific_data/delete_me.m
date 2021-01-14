@@ -6,8 +6,8 @@ figure
 hold on;
 
 % part = 'gear';
-part = 'step_slab';
-% part = 'bath_tub';
+% part = 'step_slab';
+part = 'bath_tub';
 % part = 'boeing';
 % part = 'fender';
 

@@ -231,12 +231,6 @@ bool BuildRefineGraph(ikHandler* ik_handler, std::vector<Eigen::MatrixXd>& ff_fr
         std::cout<< "Unable to Obtain Maximum Time\n";
         return 0;
     }
-
-    bool _src_bias;
-    if(!ros::param::get("/src_bias",_src_bias)){
-        std::cout<< "Unable to Obtain SRC Bias\n";
-        return 0;
-    }
     
     ROS_INFO_STREAM("Defining actions object");
     Actions actions(ff_frames);
@@ -288,15 +282,19 @@ bool BuildRefineGraph(ikHandler* ik_handler, std::vector<Eigen::MatrixXd>& ff_fr
         if (x > trigger_itr[0]){
             // Probability distribution
             double prob = (double) std::rand() / RAND_MAX;
+            // ROS_WARN_STREAM("Sampled Prob: " << prob << ". Current allowed: " << 
+            //     exp( -alpha*(x-trigger_itr[0])/(domain[0]) ));
             if( prob < exp( -alpha*(x-trigger_itr[0])/(domain[0]) ) )
                 src_bias[0] = false;
             else
                 src_bias[0] = true;
         }
-        x = ff_frames[graph->no_levels-1].rows()-actions.unvisited_src[0].size();
+        x = ff_frames[graph->no_levels-1].rows()-actions.unvisited_src[1].size();
         if (x > trigger_itr[1]){
             // Probability distribution
             double prob = (double) std::rand() / RAND_MAX;
+            // ROS_WARN_STREAM("Sampled Prob: " << prob << ". Current allowed: " << 
+            //     exp( -alpha*(x-trigger_itr[1])/(domain[1]) ));
             if( prob < exp( -alpha*(x-trigger_itr[1])/(domain[1]) ) )
                 src_bias[1] = false;
             else
@@ -310,21 +308,21 @@ bool BuildRefineGraph(ikHandler* ik_handler, std::vector<Eigen::MatrixXd>& ff_fr
             break;
         // wp_cost = wpCost(actions.greedy_list, node_map,"wp");
         q_cost = wpCost(actions.greedy_list, node_map,"q");
-
-        // if (actions.greedy_list[0].rows() > 0){
-        //     fwd_src.conservativeResize(fwd_src.rows()+1,9);
-        //     fwd_src.row(fwd_src.rows()-1) << node_map[actions.greedy_list[0](0,0)]->wp_qt.transpose() ,
-        //                                 wp_cost, q_cost;
-        // }
-
         ROS_INFO_STREAM("Fwd costs: Wp: " << wp_cost << ". Q: " << q_cost);
-        if (wp_cost < 1e7){
+        if (q_cost < 1e7){
             if (actions.sampler.src_cost[0] > q_cost)
                 actions.sampler.src_cost[0] = q_cost;
             if (actions.sampler.src_cost[1] < q_cost)
                 actions.sampler.src_cost[1] = q_cost;
         }
         actions.sampler.src_costs[0](actions.sampler.src_costs[0].size()-1) = q_cost;
+        // if (actions.greedy_list[0].rows() > 0){
+        //     fwd_src.conservativeResize(fwd_src.rows()+1,9);
+        //     fwd_src.row(fwd_src.rows()-1) << node_map[actions.greedy_list[0](0,0)]->wp_qt.transpose() ,
+        //                                 wp_cost, q_cost;
+        // }
+
+        
 
 
         ROS_INFO_STREAM("Applying Bck progression");
@@ -333,21 +331,19 @@ bool BuildRefineGraph(ikHandler* ik_handler, std::vector<Eigen::MatrixXd>& ff_fr
             break;
         // wp_cost = wpCost(actions.greedy_list, node_map,"wp");
         q_cost = wpCost(actions.greedy_list, node_map,"q");
-        
-        // if (actions.greedy_list[graph->no_levels-1].rows() > 0){
-        //     bck_src.conservativeResize(bck_src.rows()+1,9);
-        //     bck_src.row(bck_src.rows()-1) << node_map[actions.greedy_list[graph->no_levels-1](0,0)]->wp_qt.transpose() ,
-        //                                 wp_cost, q_cost;
-        // }
-
         ROS_INFO_STREAM("Bck costs: Wp: " << wp_cost << ". Q: " << q_cost);
-        if (wp_cost < 1e7){
+        if (q_cost < 1e7){
             if (actions.sampler.snk_cost[0] > q_cost)
                 actions.sampler.snk_cost[0] = q_cost;
             if (actions.sampler.snk_cost[1] < q_cost)
                 actions.sampler.snk_cost[1] = q_cost;
         }
         actions.sampler.src_costs[1](actions.sampler.src_costs[1].size()-1) = q_cost;
+        // if (actions.greedy_list[graph->no_levels-1].rows() > 0){
+        //     bck_src.conservativeResize(bck_src.rows()+1,9);
+        //     bck_src.row(bck_src.rows()-1) << node_map[actions.greedy_list[graph->no_levels-1](0,0)]->wp_qt.transpose() ,
+        //                                 wp_cost, q_cost;
+        // }
 
 
         // if (trigger_random){
