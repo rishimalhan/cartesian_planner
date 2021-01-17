@@ -7,9 +7,9 @@ hold on;
 
 % part = 'gear';
 % part = 'step_slab';
-part = 'bath_tub';
+% part = 'bath_tub';
 % part = 'boeing';
-% part = 'fender';
+part = 'fender';
 
 % g_cost_history = csvread( strcat(part,'/random_cost_histories.csv') );
 % n_history = csvread( strcat(part,'/random_node_histories.csv') );

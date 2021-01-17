@@ -321,8 +321,8 @@ bool BuildRefineGraph(ikHandler* ik_handler, std::vector<Eigen::MatrixXd>& ff_fr
                 if (actions.sampler.src_cost[1] < q_cost)
                     actions.sampler.src_cost[1] = q_cost;
             }
-            // ROS_INFO_STREAM("Fwd costs: Q: " << q_cost <<
-            //     ". MinCost: " << actions.sampler.src_cost[0] << ". MaxCost: " << actions.sampler.src_cost[1]);
+            ROS_INFO_STREAM("Fwd costs: Q: " << q_cost <<
+                ". MinCost: " << actions.sampler.src_cost[0] << ". MaxCost: " << actions.sampler.src_cost[1]);
             actions.sampler.src_costs[0](actions.sampler.src_costs[0].size()-1) = q_cost;
             // if (actions.greedy_list[0].rows() > 0){
             //     int row_id = 0;
@@ -347,8 +347,8 @@ bool BuildRefineGraph(ikHandler* ik_handler, std::vector<Eigen::MatrixXd>& ff_fr
                 if (actions.sampler.snk_cost[1] < q_cost)
                     actions.sampler.snk_cost[1] = q_cost;
             }
-            // ROS_INFO_STREAM("Bck costs: Q: " << q_cost <<
-            //     ". MinCost: " << actions.sampler.snk_cost[0] << ". MaxCost: " << actions.sampler.snk_cost[1]);
+            ROS_INFO_STREAM("Bck costs: Q: " << q_cost <<
+                ". MinCost: " << actions.sampler.snk_cost[0] << ". MaxCost: " << actions.sampler.snk_cost[1]);
             actions.sampler.src_costs[1](actions.sampler.src_costs[1].size()-1) = q_cost;
 
             // if (actions.greedy_list[graph->no_levels-1].rows() > 0){

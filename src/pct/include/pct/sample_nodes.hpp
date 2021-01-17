@@ -412,7 +412,7 @@ bool GenNodeSamples(std::vector<Eigen::MatrixXd>& ff_frames, ikHandler* ik_handl
     if (isSource){
         optID.conservativeResize(1);
         optID(0) = PickSource( unvisited_src, ff_frames, depth, src_bias);
-        optID(0) = 680; // Gear source
+        // optID(0) = 680; // Gear source
         // optID(0) = 717; // Bath tub source
         // optID(0) = 233; // Gear source
         // optID(0) = 144; // Bath tub source
