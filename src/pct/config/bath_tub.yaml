@@ -29,10 +29,14 @@ gen_path: false
 rob_config: [0,0,0,0,0,0]
 sampling_res: 5 # Degrees
 tolerances: [ 0,0,0,0,-180,180 ]
-max_pct_time: 5
+max_itr: 500
 tol_constraint: 0.05
 opt_cost: 4.2
-opt_trigger: 0.2
-alpha: 5
-neigh_thrld: 0.8
+opt_trigger: 0.07
+# opt_trigger: 1.0
+alpha: 10
+neigh_thrld: 0.2
 k: 10
+
+
+# Worked: 0.07, 10, 0.3

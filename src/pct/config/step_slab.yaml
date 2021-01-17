@@ -21,14 +21,16 @@ viz_param:
 
 gen_path: false
 rob_config: [0,0,0,0,0,0]
-sampling_res: 20 # Degrees
+sampling_res: 5 # Degrees
 # The first two values in tolerances are angle
 # theta1 and theta2 bounds
 # Three bounds in total for X Y and Z
 tolerances: [   0,0,0,0,-180,180  ]
-max_pct_time: 5
-tol_constraint: 1.0
+max_itr: 200
+tol_constraint: 0.2
 opt_cost: 6.22
-opt_trigger: 0.15
+opt_trigger: 0.04
+# opt_trigger: 1.0
 alpha: 10
-neigh_thrld: 0.8
+neigh_thrld: 0.2
+k: 10

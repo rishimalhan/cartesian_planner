@@ -226,9 +226,9 @@ bool BuildRefineGraph(ikHandler* ik_handler, std::vector<Eigen::MatrixXd>& ff_fr
 
     std::cout<< "Number of levels in the graph: " << ff_frames.size() << "\n";
     int itr = 0;
-    int max_time;
-    if(!ros::param::get("/max_pct_time",max_time)){
-        std::cout<< "Unable to Obtain Maximum Time\n";
+    int max_itr;
+    if(!ros::param::get("/max_itr",max_itr)){
+        std::cout<< "Unable to Obtain Maximum Itr\n";
         return 0;
     }
     
@@ -264,7 +264,7 @@ bool BuildRefineGraph(ikHandler* ik_handler, std::vector<Eigen::MatrixXd>& ff_fr
     ROS_INFO_STREAM("PCT BEGIN");
     double opt_Cost;
     if(!ros::param::get("/opt_cost",opt_Cost)){
-        std::cout<< "Unable to Obtain Maximum Iterations\n";
+        std::cout<< "Unable to Obtain OptCost\n";
         return 0;
     }
 
@@ -274,12 +274,18 @@ bool BuildRefineGraph(ikHandler* ik_handler, std::vector<Eigen::MatrixXd>& ff_fr
     std::vector<int> domain = { (int)floor((1-opt_trigger)*ff_frames[0].rows()),
                     (int) floor((1-opt_trigger)*ff_frames[graph->no_levels-1].rows()) };
     double x;
-    while(itr < 100){
+    bool fwd_print = true;
+    bool bck_print = true;
+    ROS_WARN_STREAM("Total number of samples: " << actions.unvisited_src[0].size() + actions.unvisited_src[1].size());
+    while(itr < max_itr){
         // int action = GenAction(feature_vec,cell_prob, past_action);
 
         // Greedy
         x = ff_frames[0].rows()-actions.unvisited_src[0].size();
         if (x > trigger_itr[0]){
+            if (fwd_print)
+                ROS_WARN_STREAM("******** TRIGGERING FWD BIAS ********");
+            fwd_print = false;
             // Probability distribution
             double prob = (double) std::rand() / RAND_MAX;
             // ROS_WARN_STREAM("Sampled Prob: " << prob << ". Current allowed: " << 
@@ -291,6 +297,9 @@ bool BuildRefineGraph(ikHandler* ik_handler, std::vector<Eigen::MatrixXd>& ff_fr
         }
         x = ff_frames[graph->no_levels-1].rows()-actions.unvisited_src[1].size();
         if (x > trigger_itr[1]){
+            if (bck_print)
+                ROS_WARN_STREAM("******** TRIGGERING BCK BIAS ********");
+            bck_print = false;
             // Probability distribution
             double prob = (double) std::rand() / RAND_MAX;
             // ROS_WARN_STREAM("Sampled Prob: " << prob << ". Current allowed: " << 
@@ -302,57 +311,61 @@ bool BuildRefineGraph(ikHandler* ik_handler, std::vector<Eigen::MatrixXd>& ff_fr
         }
     
 
-        ROS_INFO_STREAM("Applying Fwd progression");
-        if( !actions.GreedyProgression(ff_frames,ik_handler,wm,geo_filter,node_map,
-                node_list, graph, "fwd", src_bias[0], resource/2) )
-            break;
-        // wp_cost = wpCost(actions.greedy_list, node_map,"wp");
-        q_cost = wpCost(actions.greedy_list, node_map,"q");
-        ROS_INFO_STREAM("Fwd costs: Wp: " << wp_cost << ". Q: " << q_cost);
-        if (q_cost < 1e7){
-            if (actions.sampler.src_cost[0] > q_cost)
-                actions.sampler.src_cost[0] = q_cost;
-            if (actions.sampler.src_cost[1] < q_cost)
-                actions.sampler.src_cost[1] = q_cost;
+        // ROS_INFO_STREAM("Applying Fwd progression");
+        if(actions.GreedyProgression(ff_frames,ik_handler,wm,geo_filter,node_map,
+                node_list, graph, "fwd", src_bias[0], resource/2)){
+            // q_cost = wpCost(actions.greedy_list, node_map,"wp");
+            q_cost = wpCost(actions.greedy_list, node_map,"q");
+            if (q_cost < 1e7){
+                if (actions.sampler.src_cost[0] > q_cost)
+                    actions.sampler.src_cost[0] = q_cost;
+                if (actions.sampler.src_cost[1] < q_cost)
+                    actions.sampler.src_cost[1] = q_cost;
+            }
+            // ROS_INFO_STREAM("Fwd costs: Q: " << q_cost <<
+            //     ". MinCost: " << actions.sampler.src_cost[0] << ". MaxCost: " << actions.sampler.src_cost[1]);
+            actions.sampler.src_costs[0](actions.sampler.src_costs[0].size()-1) = q_cost;
+
+            if (actions.greedy_list[0].rows() > 0){
+                fwd_src.conservativeResize(fwd_src.rows()+1,9);
+                fwd_src.row(fwd_src.rows()-1) << node_map[actions.greedy_list[0](0,0)]->wp_qt.transpose() ,
+                                            wp_cost, q_cost;
+            }
         }
-        actions.sampler.src_costs[0](actions.sampler.src_costs[0].size()-1) = q_cost;
-        // if (actions.greedy_list[0].rows() > 0){
-        //     fwd_src.conservativeResize(fwd_src.rows()+1,9);
-        //     fwd_src.row(fwd_src.rows()-1) << node_map[actions.greedy_list[0](0,0)]->wp_qt.transpose() ,
-        //                                 wp_cost, q_cost;
-        // }
 
         
 
 
-        ROS_INFO_STREAM("Applying Bck progression");
-        if( !actions.GreedyProgression(ff_frames,ik_handler,wm,geo_filter,node_map,
-                node_list, graph, "bck", src_bias[1], resource/2) )
-            break;
-        // wp_cost = wpCost(actions.greedy_list, node_map,"wp");
-        q_cost = wpCost(actions.greedy_list, node_map,"q");
-        ROS_INFO_STREAM("Bck costs: Wp: " << wp_cost << ". Q: " << q_cost);
-        if (q_cost < 1e7){
-            if (actions.sampler.snk_cost[0] > q_cost)
-                actions.sampler.snk_cost[0] = q_cost;
-            if (actions.sampler.snk_cost[1] < q_cost)
-                actions.sampler.snk_cost[1] = q_cost;
+        // ROS_INFO_STREAM("Applying Bck progression");
+        if(actions.GreedyProgression(ff_frames,ik_handler,wm,geo_filter,node_map,
+                node_list, graph, "bck", src_bias[1], resource/2)){
+            // q_cost = wpCost(actions.greedy_list, node_map,"wp");
+            q_cost = wpCost(actions.greedy_list, node_map,"q");
+            if (q_cost < 1e7){
+                if (actions.sampler.snk_cost[0] > q_cost)
+                    actions.sampler.snk_cost[0] = q_cost;
+                if (actions.sampler.snk_cost[1] < q_cost)
+                    actions.sampler.snk_cost[1] = q_cost;
+            }
+            // ROS_INFO_STREAM("Bck costs: Q: " << q_cost <<
+            //     ". MinCost: " << actions.sampler.snk_cost[0] << ". MaxCost: " << actions.sampler.snk_cost[1]);
+            actions.sampler.src_costs[1](actions.sampler.src_costs[1].size()-1) = q_cost;
+
+            if (actions.greedy_list[graph->no_levels-1].rows() > 0){
+                bck_src.conservativeResize(bck_src.rows()+1,9);
+                bck_src.row(bck_src.rows()-1) << node_map[actions.greedy_list[graph->no_levels-1](0,0)]->wp_qt.transpose() ,
+                                            wp_cost, q_cost;
+            }
         }
-        actions.sampler.src_costs[1](actions.sampler.src_costs[1].size()-1) = q_cost;
-        // if (actions.greedy_list[graph->no_levels-1].rows() > 0){
-        //     bck_src.conservativeResize(bck_src.rows()+1,9);
-        //     bck_src.row(bck_src.rows()-1) << node_map[actions.greedy_list[graph->no_levels-1](0,0)]->wp_qt.transpose() ,
-        //                                 wp_cost, q_cost;
-        // }
 
-
+        // actions.EdgeConnections(ik_handler, node_list, graph, node_map);
+        
         // if (trigger_random){
         //     // Random
         //     actions.NodeAdditions(ff_frames, ik_handler, wm, geo_filter, node_map,
         //         node_list, graph, 0.001);
         // }
 
-        actions.EdgeConnections(ik_handler, node_list, graph, node_map);
 
         // if (src_bias)
         //     return false;
@@ -368,24 +381,31 @@ bool BuildRefineGraph(ikHandler* ik_handler, std::vector<Eigen::MatrixXd>& ff_fr
         //     dist_opt = (node_map[path(0)]->wp-ff_frames[0].row(245).transpose()).norm();
         // }
 
-
         graph->no_nodes = num_vertices(graph->g);
         graph->no_edges = num_edges(graph->g);
         std::vector<double> d(num_vertices(graph->g)); graph->d = d;
         if ( GetMinCost(graph, node_map, 
-                        ik_handler, min_cost, path_found, path, path_costs, trajectory ) )
-            ROS_INFO_STREAM("EOF Iteration: " << itr << ". Path Found");
-        else
-            ROS_INFO_STREAM("EOF Iteration: " << itr << ". Path not found");
+                        ik_handler, min_cost, path_found, path, path_costs, trajectory ) ){}
+            // ROS_INFO_STREAM("EOF Iteration: " << itr << ". Path Found");
+        else{
+            // ROS_INFO_STREAM("EOF Iteration: " << itr << ". Path not found");
+        }
         // ROS_WARN_STREAM("G Stats: " << actions.graph_metrics.transpose() << "\n");
 
-        ROS_WARN_STREAM("Path Cost: " << min_cost << ". # Sources Sampled: " << actions.sampler.src_cnt <<
+        ROS_WARN_STREAM("EOF Iteration: " << itr << ". Path Cost: " 
+                        << min_cost << ". # Sources Sampled: " << actions.sampler.src_cnt <<
             ". Nodes Sampled: " << actions.sampler.attempts );
+
         cost_hist.conservativeResize(3,itr+1);
         cost_hist(0,itr) = min_cost;
         cost_hist(1,itr) = actions.sampler.attempts;
         cost_hist(2,itr) = actions.sampler.src_cnt;
 
+
+        if (!actions.feasibility){
+            ROS_WARN_STREAM("All sources exhausted. Terminating");
+            break;
+        }
 
         // prev_nodes = no_nodes;
 
@@ -413,6 +433,7 @@ bool BuildRefineGraph(ikHandler* ik_handler, std::vector<Eigen::MatrixXd>& ff_fr
 
         itr ++;
     }
+    ROS_WARN_STREAM("Cost Profile: " << cost_hist.row(0) << "\n");
     // // Smoothing
     // if (path_found){
     //     ROS_INFO_STREAM("Applying Smoothing");

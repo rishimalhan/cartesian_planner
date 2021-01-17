@@ -27,8 +27,12 @@ sampling_res: 20 # Degrees
 # The first two values in tolerances are angle
 # theta1 and theta2 bounds
 # Three bounds in total for X Y and Z
-tolerances: [ -70,70,-70,70,-180,180 ]
-max_pct_time: 20
+tolerances: [ -50,50,-50,50,-100,100 ]
+max_itr: 1
 tol_constraint: 1.0
 opt_cost: 5.29
-src_bias: true
+# opt_trigger: 0.07
+opt_trigger: 1.0
+alpha: 10
+neigh_thrld: 0.2
+k: 10

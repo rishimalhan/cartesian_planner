@@ -106,11 +106,6 @@ int main(int argc, char** argv){
     resolution *= (M_PI / 180);
 
 
-    // std::vector<int> src_list = {2,4,1,3,6,8};
-    // std::cout<< std::find( src_list.begin(), src_list.end(), 0 ) - src_list.begin() << "\n";
-    // return 0;
-
-
     ///////////////// CAUTION ///////////////////////////////////////
     // WHEN CHANGING A 6DOF ROBOT FOR ANALYTICAL IK, MAKE SURE CHANGES ARE MADE
     // IN IK GATEWAY HEADER AND APPROPRIATE CPP IS INCLUDED
@@ -307,7 +302,9 @@ int main(int argc, char** argv){
             min_fframes = frames.rows();
         id++;
     }
-    // return 0;
+
+    ROS_WARN_STREAM("Average FFrames per level: " << fframes_cnt / NumWaypoints << "\n" << 
+                        "Max/Min FFrames: " << max_fframes << " / " << min_fframes);
 
     // Get trajectory path
     std::string traj_path;
@@ -636,8 +633,6 @@ int main(int argc, char** argv){
             min_val_attmpts = attmps(i,1);
     }
 
-    ROS_WARN_STREAM("Average FFrames per level: " << fframes_cnt / NumWaypoints << "\n" << 
-                        "Max/Min FFrames: " << max_fframes << " / " << min_fframes);
     ROS_WARN_STREAM("Average Attempts per level: " << tot_attmpts / NumWaypoints << "\n" << 
                         "Max/Min Attempts: " << max_attmps << " / " << min_attmpts);
     ROS_WARN_STREAM("Average Valid Nodes per level: " << graph.no_nodes / NumWaypoints << "\n" << 

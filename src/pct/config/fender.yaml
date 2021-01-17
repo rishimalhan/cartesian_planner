@@ -39,8 +39,10 @@ cvrg_file_paths:
     cvrg_path: !!python/object/apply:string.join [[$(arg pkg_path),"data/csv/waypoints.csv"], /], # Path to save the path
     success_flags: !!python/object/apply:string.join [[$(arg pkg_path),"data/csv/success_flags.csv"], /], # Path to save the path
     joint_states: !!python/object/apply:string.join [[$(arg pkg_path),"data/csv/joint_states.csv"], /], # Path to save the trajectory
-    mesh_path: !!python/object/apply:string.join [[$(arg pkg_path),"data/meshes/fender_binScaled.stl"], /],
-    mesh_viz_path: "package://pct/data/meshes/fender_binScaled.stl",
+    # mesh_path: !!python/object/apply:string.join [[$(arg pkg_path),"data/meshes/fender_binScaled.stl"], /],
+    mesh_path: !!python/object/apply:string.join [[$(arg pkg_path),"data/meshes/fender_bin.stl"], /],
+    # mesh_viz_path: "package://pct/data/meshes/fender_binScaled.stl",
+    mesh_viz_path: "package://pct/data/meshes/fender_bin.stl",
   }
 
 cvrg_tf_param:
@@ -58,8 +60,12 @@ rob_config: [0,0,0,0,0,0]
 # The first two values in tolerances are angle
 # theta1 and theta2 bounds
 # Three bounds in total for X Y and Z
-tolerances: [ -40,40,-40,40,-180,180 ]
-sampling_res: 20 # Degrees
-max_pct_itr: 15
-tol_constraint: 0.3
-src_bias: true
+tolerances: [ 0,0,0,0,-90,90 ]
+sampling_res: 5 # Degrees
+max_itr: 300
+tol_constraint: 1.0
+opt_trigger: 0.02
+# opt_trigger: 1.0
+alpha: 10
+neigh_thrld: 0.2
+k: 10

@@ -149,18 +149,14 @@ int main(int argc, char** argv){
         ROS_WARN("Unable to Obtain Waypoint Tolerances");
         return 1;
     }
-    int idx1 = floor(NumWaypoints/12);
-    int idx2 = idx1 + floor(NumWaypoints/12);
-    int idx3 = idx2 + floor(NumWaypoints/12);
-    int idx4 = idx3 + floor(NumWaypoints/12);
-    int idx5 = idx4 + floor(NumWaypoints/12);
-    int idx6 = idx5 + floor(NumWaypoints/12);
-    int idx7 = idx6 + floor(NumWaypoints/12);
-    int idx8 = idx7 + floor(NumWaypoints/12);
-    int idx9 = idx8 + floor(NumWaypoints/12);
-    int idx10 = idx9 + floor(NumWaypoints/12);
-    int idx11 = idx10 + floor(NumWaypoints/12);
-    
+
+    int choke_pts = 30;
+    std::vector<int> idx;
+
+    idx.push_back(floor(NumWaypoints/choke_pts));
+    for (int i=1; i<choke_pts-1; ++i)
+        idx.push_back( idx[i-1] + floor(NumWaypoints/choke_pts) );
+
     Eigen::MatrixXd tolerances(path.rows(),tolerances_vec.size());
     for (int i=0; i<path.rows(); ++i){
         for (int j=0; j<tolerances_vec.size(); ++j){
@@ -172,17 +168,8 @@ int main(int argc, char** argv){
     double tol_constr;
     ros::param::get("/tol_constraint",tol_constr);
 
-    tolerances.row(idx1) = tolerances.row(idx1)*tol_constr;
-    tolerances.row(idx2) = tolerances.row(idx2)*tol_constr;
-    tolerances.row(idx3) = tolerances.row(idx3)*tol_constr;
-    tolerances.row(idx4) = tolerances.row(idx4)*tol_constr;
-    tolerances.row(idx5) = tolerances.row(idx5)*tol_constr;
-    tolerances.row(idx6) = tolerances.row(idx6)*tol_constr;
-    tolerances.row(idx7) = tolerances.row(idx7)*tol_constr;
-    tolerances.row(idx8) = tolerances.row(idx8)*tol_constr;
-    tolerances.row(idx9) = tolerances.row(idx9)*tol_constr;
-    tolerances.row(idx10) = tolerances.row(idx10)*tol_constr;
-    tolerances.row(idx11) = tolerances.row(idx11)*tol_constr;
+    for (int i=0; i<idx.size(); ++i)
+        tolerances.row(idx[i]) = tolerances.row(idx[i])*tol_constr;
 
     // Add a piece of code here that randomly selects 10-20% of points
     // and makes the tolerances zero to make the problem tougher
@@ -207,7 +194,7 @@ int main(int argc, char** argv){
     double cost = 0;
     int no_sols = 0;
     double exec_time = 0;
-    int max_trials = 20;
+    int max_trials = 30;
     Eigen::MatrixXd cost_histories;
     Eigen::MatrixXd wpcost_histories;
     Eigen::MatrixXd node_histories;

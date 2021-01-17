@@ -20,23 +20,31 @@ part = 'bath_tub';
 g_cost_history = csvread( strcat(part,'/greedy_cost_histories.csv') );
 n_history = csvread( strcat(part,'/greedy_node_histories.csv') );
 % n_history = csvread( strcat(part,'/greedy_src_histories.csv') );
-m = getmean(g_cost_history,false);
+m1 = getmean(g_cost_history,false);
 max(getmean(g_cost_history,false))
-n = getmean(n_history,false);
-plot(n, m, 'linewidth', 4)
+n1 = getmean(n_history,false);
 
 g_cost_history = csvread( strcat(part,'/srcbias_cost_histories.csv') );
 n_history = csvread( strcat(part,'/srcbias_node_histories.csv') );
 % n_history = csvread( strcat(part,'/srcbias_src_histories.csv') );
-m = getmean(g_cost_history,false);
-n = getmean(n_history,false);
-plot(n, m, 'linewidth', 4)
+m2 = getmean(g_cost_history,false);
+n2 = getmean(n_history,false);
+
+max_val = max( max(m1),max(m2) );
+min_val = min( min(m1),min(m2) );
+diff = max_val - min_val;
+
+m1 = (m1-min_val) / diff;
+m2 = (m2-min_val) / diff;
+ 
+plot(n1, m1, 'linewidth', 4)
+plot(n2, m2, 'linewidth', 4)
 
 set(gca,'fontsize',30)
 set(gcf, 'color', [1,1,1])
 
 legend( 'Greedy',  'G+B' )
-
+% title('Bath Tub')
 return;
 
 
@@ -720,7 +728,7 @@ title('Step Slab')
 
 function m = getmean(g_cost_history,n)
     m = [];
-    for i=1:size(g_cost_history,2)
+    for i=1:size(g_cost_history,2)-1
         idx = g_cost_history(:,i) < inf;
         m(i,1) = mean(g_cost_history(idx,i));
     end

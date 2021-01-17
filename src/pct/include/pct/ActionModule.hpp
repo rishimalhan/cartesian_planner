@@ -23,68 +23,56 @@
 
 class Actions{
 private:
-    bool isEdge(const std::vector<node*>& node_map, const int parent, const int child){
-        if ((node_map[child]->jt_config - node_map[parent]->jt_config).array().abs().maxCoeff() > 1.57)
-            return false;
-        return true;
-    };
+    // bool MakeConnections( Eigen::VectorXi parents, Eigen::VectorXi children, 
+    //                 ikHandler* ik_handler, const std::vector<node*>& node_map, boost_graph* boost_graph){
+    //     bool atleast_one_edge = false;
+    //     if (parents.size()==0 || children.size()==0)
+    //         return atleast_one_edge;
 
-    double computeGCost( const std::vector<node*>& node_map, const int parent, const int child ){
-        // return (node_map[child]->jt_config - node_map[parent]->jt_config).array().abs().maxCoeff();
-        // return (node_map[child]->jt_config - node_map[parent]->jt_config).array().abs().maxCoeff();
-        return (node_map[child]->jt_config - node_map[parent]->jt_config).norm();
-    };
-
-    bool MakeConnections( Eigen::VectorXi parents, Eigen::VectorXi children, 
-                    ikHandler* ik_handler, const std::vector<node*>& node_map, boost_graph* boost_graph){
-        bool atleast_one_edge = false;
-        if (parents.size()==0 || children.size()==0)
-            return atleast_one_edge;
-
-        // Connect dummy root
-        if (node_map[parents(0)]->depth==0){
-            boost_graph->root_connected = true;
-            for (int i=0; i<parents.size(); ++i)
-                add_edge( boost_graph->p[0], boost_graph->p[parents(i)],
-                            EdgeWeightProperty(0),boost_graph->g );
-        }
-        if (node_map[parents(0)]->depth==boost_graph->no_levels-1){
-            boost_graph->root_connected = true;
-            for (int i=0; i<parents.size(); ++i)
-                add_edge( boost_graph->p[parents(i)], boost_graph->p[1],
-                            EdgeWeightProperty(0),boost_graph->g );
-        }
+    //     // Connect dummy root
+    //     if (node_map[parents(0)]->depth==0){
+    //         boost_graph->root_connected = true;
+    //         for (int i=0; i<parents.size(); ++i)
+    //             add_edge( boost_graph->p[0], boost_graph->p[parents(i)],
+    //                         EdgeWeightProperty(0),boost_graph->g );
+    //     }
+    //     if (node_map[parents(0)]->depth==boost_graph->no_levels-1){
+    //         boost_graph->root_connected = true;
+    //         for (int i=0; i<parents.size(); ++i)
+    //             add_edge( boost_graph->p[parents(i)], boost_graph->p[1],
+    //                         EdgeWeightProperty(0),boost_graph->g );
+    //     }
         
-        // Connect dummy leaf
-        if (node_map[children(0)]->depth==boost_graph->no_levels-1){
-            boost_graph->leaf_connected = true;
-            for (int j=0; j<children.size(); ++j)
-                add_edge( boost_graph->p[children(j)], boost_graph->p[1],
-                            EdgeWeightProperty(0),boost_graph->g );
-        }
-        if (node_map[children(0)]->depth==0){
-            boost_graph->leaf_connected = true;
-            for (int j=0; j<children.size(); ++j)
-                add_edge( boost_graph->p[0], boost_graph->p[children(j)],
-                            EdgeWeightProperty(0),boost_graph->g );
-        }
+    //     // Connect dummy leaf
+    //     if (node_map[children(0)]->depth==boost_graph->no_levels-1){
+    //         boost_graph->leaf_connected = true;
+    //         for (int j=0; j<children.size(); ++j)
+    //             add_edge( boost_graph->p[children(j)], boost_graph->p[1],
+    //                         EdgeWeightProperty(0),boost_graph->g );
+    //     }
+    //     if (node_map[children(0)]->depth==0){
+    //         boost_graph->leaf_connected = true;
+    //         for (int j=0; j<children.size(); ++j)
+    //             add_edge( boost_graph->p[0], boost_graph->p[children(j)],
+    //                         EdgeWeightProperty(0),boost_graph->g );
+    //     }
             
-        for (int i=0; i<parents.size(); ++i){
-            for (int j=0; j<children.size(); ++j){
-                // graph_metrics(0)++;
-                if ( isEdge(node_map, parents(i), children(j)) ){
-                    // graph_metrics(1)++;
-                    // edges.push_back( Edge(parents(i),children(j)) );
-                    double cost = computeGCost(node_map, parents(i), children(j));
-                    // weights.push_back( cost );
-                    add_edge( boost_graph->p[parents(i)],
-                                boost_graph->p[children(j)],EdgeWeightProperty(cost),boost_graph->g );
-                    atleast_one_edge = true;
-                }
-            }
-        }
-        return atleast_one_edge;
-    };
+    //     for (int i=0; i<parents.size(); ++i){
+    //         for (int j=0; j<children.size(); ++j){
+    //             // graph_metrics(0)++;
+    //             if ( isEdge(node_map, parents(i), children(j)) ){
+    //                 // graph_metrics(1)++;
+    //                 // edges.push_back( Edge(parents(i),children(j)) );
+    //                 double cost = computeGCost(node_map, parents(i), children(j));
+    //                 // weights.push_back( cost );
+    //                 add_edge( boost_graph->p[parents(i)],
+    //                             boost_graph->p[children(j)],EdgeWeightProperty(cost),boost_graph->g );
+    //                 atleast_one_edge = true;
+    //             }
+    //         }
+    //     }
+    //     return atleast_one_edge;
+    // };
 
     // void GreedyProgression(int strt, int end, std::vector<Eigen::MatrixXd>& ff_frames,
     //                     ikHandler* ik_handler, WM::WM* wm, GeometricFilterHarness* geo_filter,
@@ -138,7 +126,7 @@ private:
     bool InitSource(int seq, std::vector<Eigen::MatrixXd>& ff_frames,
                         ikHandler* ik_handler, WM::WM* wm, GeometricFilterHarness* geo_filter,
                         std::vector<node*>& node_map, std::vector<Eigen::VectorXi>& node_list,
-                        boost_graph* boost_graph, bool& src_bias, int resource, 
+                        boost_graph* boost_graph, bool src_bias, int resource, 
                         std::stack<std::vector<int>>& greedy_ff){
         int depth;
         int src_id;
@@ -152,13 +140,34 @@ private:
             src_id = 1;
         }
         bool sourceFound = false;
+        Eigen::VectorXd src_wp;
+        int unv_id;
         while(!sourceFound){
-            sampler.GenNodeSamples(ff_frames, ik_handler, wm, 
+            bool samples_found = sampler.GenNodeSamples(ff_frames, ik_handler, wm, 
                                 geo_filter, unvisited_src, node_map, node_list, depth, sampled_wps,
-                                isCreated, graph_metrics, true, boost_graph, src_bias, resource);
-            if (sampled_wps.rows()==0){
+                                isCreated, graph_metrics, true, boost_graph, src_bias, src_wp, unv_id);
+            if (src_wp.size()!=0){
+                sampler.src_balls[src_id].conservativeResize(sampler.src_balls[src_id].size()+1);
+                sampler.src_costs[src_id].conservativeResize(sampler.src_costs[src_id].size()+1);
+
+                if (src_id==0){
+                    sampler.src_waypoints.conservativeResize(7,sampler.src_waypoints.cols()+1);
+                    sampler.src_waypoints.col(sampler.src_waypoints.cols()-1) = src_wp;
+                }
+
+                if (src_id==1){
+                    sampler.snk_waypoints.conservativeResize(7,sampler.snk_waypoints.cols()+1);
+                    sampler.snk_waypoints.col(sampler.snk_waypoints.cols()-1) = src_wp;
+                }
+
+                sampler.src_ids[src_id].conservativeResize(sampler.src_ids[src_id].size()+1);
+                sampler.src_ids[src_id](sampler.src_ids[src_id].size()-1) = unv_id;
+            }
+
+            if (!samples_found){
+                sampler.src_costs[src_id](sampler.src_costs[src_id].size()-1) = 1e8;
                 if (depth==0)
-                    if (unvisited_src[depth].size()!=0)
+                    if (unvisited_src[0].size()!=0)
                         continue;
                 if (depth==no_levels-1)
                     if (unvisited_src[1].size()!=0)
@@ -167,25 +176,10 @@ private:
             }
             sourceFound = true;
         }
-        std::vector<int> ff_node = {depth,node_map[sampled_wps(0,0)]->row_id};
-        Eigen::VectorXd wp = sampler.GetQTWp( ff_frames[depth].row(node_map[sampled_wps(0,0)]->row_id).transpose() );
+        std::vector<int> ff_node = {depth,sampled_wps(0,0)};
         greedy_ff.push( ff_node );
-        greedy_list[depth] = sampled_wps;
-
-        if (src_id==0){
-            sampler.src_waypoints.conservativeResize(7,sampler.src_waypoints.cols()+1);
-            sampler.src_waypoints.col(sampler.src_waypoints.cols()-1) = wp;
-        }
-
-        if (src_id==1){
-            sampler.snk_waypoints.conservativeResize(7,sampler.snk_waypoints.cols()+1);
-            sampler.snk_waypoints.col(sampler.snk_waypoints.cols()-1) = wp;
-        }
-
-        sampler.src_balls[src_id].conservativeResize(sampler.src_balls[src_id].size()+1);
-        sampler.src_costs[src_id].conservativeResize(sampler.src_costs[src_id].size()+1);
-
-        // ROS_INFO_STREAM("Source picked: " << sampled_wps(0,0));
+        greedy_list[depth] = sampled_wps.block(0,1,1,8);
+        // ROS_WARN_STREAM("Picking SRC: " << sampled_wps(0,0));
         return true;
     }
 
@@ -193,46 +187,55 @@ private:
     void DFSProgression(int seq, std::vector<Eigen::MatrixXd>& ff_frames,
                         ikHandler* ik_handler, WM::WM* wm, GeometricFilterHarness* geo_filter,
                         std::vector<node*>& node_map, std::vector<Eigen::VectorXi>& node_list,
-                        boost_graph* boost_graph, bool src_bias, int itr, 
-                        std::stack<std::vector<int>>& greedy_ff
+                        boost_graph* boost_graph, bool src_bias, std::stack<std::vector<int>> greedy_ff
                         ){
-        itr++;
+        std::vector<std::unordered_set<int>> visited_ids;
+        visited_ids.resize(ff_frames.size());
         // If stack empty we need a new source
-        if (greedy_ff.empty())
-            return;
+        while (!greedy_ff.empty()){
+            int depth;
+            Eigen::MatrixXi sampled_wps;
+            std::vector<int> ff_node(2);
+            
+            ff_node = greedy_ff.top();
+            sampler.prev_wp = sampler.GetQTWp( ff_frames[ff_node[0]].row(ff_node[1]).transpose() );
+            depth = ff_node[0] + seq;
+            greedy_ff.pop();
+            if (depth<=ff_frames.size()-1 && depth>=0){
+                bool samples_found = false;
+                Eigen::VectorXd src_wp;
+                int unv_id;
+                while (!samples_found){
+                    // Picking next nodes
+                    samples_found = sampler.GenNodeSamples(ff_frames, ik_handler, wm, 
+                                geo_filter, unvisited_src, node_map, node_list, depth, sampled_wps,
+                                isCreated, graph_metrics, false, boost_graph, src_bias, src_wp, unv_id);
+                }
 
-        int depth;
-        Eigen::MatrixXi sampled_wps;
-        std::vector<int> ff_node(2);
-        
-        ff_node = greedy_ff.top();
-        sampler.prev_wp = sampler.GetQTWp( ff_frames[ff_node[0]].row(ff_node[1]).transpose() );
-        depth = ff_node[0] + seq;
-        greedy_ff.pop();
-        if (depth<=ff_frames.size()-1 && depth>=0){
-            bool samples_found = false;
-            while (!samples_found){
-                // Picking next nodes
-                samples_found = sampler.GenNodeSamples(ff_frames, ik_handler, wm, 
-                            geo_filter, unvisited_src, node_map, node_list, depth, sampled_wps,
-                            isCreated, graph_metrics, false, boost_graph, src_bias, itr);
-            }
+                Eigen::MatrixXi sampled_wp_list;
+                for (int i=0; i<sampled_wps.rows(); ++i){
+                    ff_node = {depth,sampled_wps(i,0)};
+                    int old_size = visited_ids[depth].size();
+                    visited_ids[depth].insert(sampled_wps(i,0));
+                    if (visited_ids[depth].size()-old_size!=0){
+                        greedy_ff.push( ff_node );
+                        sampled_wp_list.conservativeResize(sampled_wp_list.rows()+1,sampled_wps.cols()-1);
+                        sampled_wp_list.row(sampled_wp_list.rows()-1) = sampled_wps.block(i,1,1,8);
+                    }
+                }
 
-            for (int i=0; i<sampled_wps.rows(); ++i){
-                // ff_node.segment(0,7) = sampler.GetQTWp( ff_frames[depth].row(sampled_wps(i)).transpose() );
-                ff_node = {depth,node_map[sampled_wps(i,0)]->row_id};
-                greedy_ff.push( ff_node );
-                if (greedy_list[depth].rows()==0)
-                    greedy_list[depth] = sampled_wps;
-                else{
-                    Eigen::MatrixXi combined_mat(greedy_list[depth].rows()+sampled_wps.rows(),sampled_wps.cols());
-                    combined_mat << greedy_list[depth] , sampled_wps;
-                    greedy_list[depth] = combined_mat;
+                if (sampled_wp_list.rows()>0){
+                    if (greedy_list[depth].rows()==0)
+                        greedy_list[depth] = sampled_wp_list;
+                    else{
+                        Eigen::MatrixXi combined_mat(greedy_list[depth].rows()+sampled_wp_list.rows(),
+                                                    sampled_wp_list.cols());
+                        combined_mat << greedy_list[depth] , sampled_wp_list;
+                        greedy_list[depth] = combined_mat;
+                    }
                 }
             }
         }
-        DFSProgression(seq, ff_frames, ik_handler, wm, geo_filter, node_map, node_list,
-                        boost_graph, src_bias, itr, greedy_ff);
     };
 
 
@@ -303,7 +306,6 @@ public:
                 // sampler.M[i].col(j) = ff_frames[i].block(j,0,1,3).transpose();
             sampler.kdtrees[i] = Nabo::NNSearchD::createKDTreeLinearHeap(sampler.M[i]);
         }
-        
 
         graph_metrics = Eigen::VectorXd::Zero(14);
         // cost_tracker.clear();
@@ -341,6 +343,20 @@ public:
                         ikHandler* ik_handler, WM::WM* wm, GeometricFilterHarness* geo_filter,
                         std::vector<node*>& node_map, std::vector<Eigen::VectorXi>& node_list,
                         boost_graph* boost_graph, string type, bool src_bias, int resource){
+        if (unvisited_src[0].size()==0 && sampler.junk_yard[0].size()!=0){
+            ROS_WARN_STREAM("Restoring fwd nodes");
+            unvisited_src[0] = sampler.junk_yard[0];
+            sampler.junk_yard[0].clear();
+            sampler.reject_samples = false;
+        }
+
+        if (unvisited_src[1].size()==0 && sampler.junk_yard[1].size()!=0){
+            ROS_WARN_STREAM("Restoring bck nodes");
+            unvisited_src[1] = sampler.junk_yard[1];
+            sampler.junk_yard[1].clear();
+            sampler.reject_samples = false;
+        }
+
         std::stack<std::vector<int>> greedy_ff;
         greedy_list.clear();
         greedy_list.resize(ff_frames.size());
@@ -349,9 +365,8 @@ public:
             if (unvisited_src[0].size()!=0){
                 if ( InitSource(1, ff_frames, ik_handler, wm, geo_filter, node_map, node_list,
                         boost_graph, src_bias, resource, greedy_ff) )
-                    DFSProgression(1, ff_frames,ik_handler,wm, geo_filter, node_map, node_list, 
-                        boost_graph, src_bias, 0, greedy_ff
-                                );
+                    DFSProgression( 1, ff_frames,ik_handler,wm, geo_filter, node_map, node_list, 
+                        boost_graph, src_bias, greedy_ff );
                 // // Avg Fwd Depth
                 // graph_metrics(6) = ((graph_metrics(5)-1)*graph_metrics(6) 
                 //                 + total_depth)/graph_metrics(5);
@@ -364,9 +379,8 @@ public:
             if (unvisited_src[1].size()!=0){
                 if ( InitSource(-1, ff_frames, ik_handler, wm, geo_filter, node_map, node_list,
                         boost_graph, src_bias, resource, greedy_ff) )
-                    DFSProgression(-1, ff_frames,ik_handler,wm, geo_filter, node_map, node_list, 
-                        boost_graph, src_bias, 0, greedy_ff
-                                );
+                    DFSProgression( -1, ff_frames,ik_handler,wm, geo_filter, node_map, node_list, 
+                        boost_graph, src_bias, greedy_ff );
                 // // Avg Bck Depth
                 // graph_metrics(11) = ((graph_metrics(10)-1)*graph_metrics(11) 
                 //                 + total_depth)/graph_metrics(10);
@@ -375,6 +389,22 @@ public:
                 //     graph_metrics(12) = total_depth;
             }
         }
+
+        if (unvisited_src[0].size()==0 && sampler.junk_yard[0].size()!=0){
+            ROS_WARN_STREAM("Restoring fwd nodes");
+            unvisited_src[0] = sampler.junk_yard[0];
+            sampler.junk_yard[0].clear();
+            sampler.reject_samples = false;
+        }
+
+        if (unvisited_src[1].size()==0 && sampler.junk_yard[1].size()!=0){
+            ROS_WARN_STREAM("Restoring bck nodes");
+            unvisited_src[1] = sampler.junk_yard[1];
+            sampler.junk_yard[1].clear();
+            sampler.reject_samples = false;
+        }
+
+
         if (unvisited_src[0].size()==0 && unvisited_src[1].size()==0)
             feasibility = false;
         return feasibility;
@@ -403,71 +433,71 @@ public:
         return it - vec.begin();
     }
 
-    bool InterConnections(ikHandler* ik_handler, std::vector<node*>& node_map, 
-                        std::vector<Eigen::VectorXi>& node_list,
-                        std::vector<Edge>& edges, std::vector<double>& weights, boost_graph* boost_graph,
-                        double path_cost, std::vector<double> path_costs){
-        // Find the level with maximum cost from tracker and make interconnections
-        int index;
-        // Create Bias
-        // Eigen::VectorXd node_counts(node_list.size());
-        // for (int i=0; i<node_list.size(); ++i)
-        //     node_counts(i) = node_list[i].size();
+    // bool InterConnections(ikHandler* ik_handler, std::vector<node*>& node_map, 
+    //                     std::vector<Eigen::VectorXi>& node_list,
+    //                     std::vector<Edge>& edges, std::vector<double>& weights, boost_graph* boost_graph,
+    //                     double path_cost, std::vector<double> path_costs){
+    //     // Find the level with maximum cost from tracker and make interconnections
+    //     int index;
+    //     // Create Bias
+    //     // Eigen::VectorXd node_counts(node_list.size());
+    //     // for (int i=0; i<node_list.size(); ++i)
+    //     //     node_counts(i) = node_list[i].size();
 
-        // Eigen::VectorXd temp1 = bc_count.array().inverse();
-        // temp1 = (temp1 / temp1.maxCoeff()) * 1;
-        // Eigen::VectorXd temp2 = node_counts.array().inverse();
-        // temp2 = (temp2 / temp2.maxCoeff()) * 0;
-        // Eigen::VectorXd score = temp1 + temp2;
+    //     // Eigen::VectorXd temp1 = bc_count.array().inverse();
+    //     // temp1 = (temp1 / temp1.maxCoeff()) * 1;
+    //     // Eigen::VectorXd temp2 = node_counts.array().inverse();
+    //     // temp2 = (temp2 / temp2.maxCoeff()) * 0;
+    //     // Eigen::VectorXd score = temp1 + temp2;
 
-        // Eigen::VectorXd sorted_conn;
-        // Eigen::VectorXi sorted_index;
-        // sort_vec(score,sorted_conn,sorted_index);
-        // // Create probabilities for top 4 bottlenecks
-        // Eigen::VectorXd probs(5);
-        // probs(4) = 0.2; // Prob for randomly sampling a depth
-        // probs.segment(0,4) = sorted_conn.segment(0,4) / 
-        //                     (sorted_conn(0)+sorted_conn(1)+sorted_conn(2)+sorted_conn(3));
-        // probs.segment(0,4) *= (1-probs(4));
+    //     // Eigen::VectorXd sorted_conn;
+    //     // Eigen::VectorXi sorted_index;
+    //     // sort_vec(score,sorted_conn,sorted_index);
+    //     // // Create probabilities for top 4 bottlenecks
+    //     // Eigen::VectorXd probs(5);
+    //     // probs(4) = 0.2; // Prob for randomly sampling a depth
+    //     // probs.segment(0,4) = sorted_conn.segment(0,4) / 
+    //     //                     (sorted_conn(0)+sorted_conn(1)+sorted_conn(2)+sorted_conn(3));
+    //     // probs.segment(0,4) *= (1-probs(4));
         
-        // Eigen::VectorXi depths(5);
-        // depths.segment(0,4) = sorted_index.segment(0,4);
-        // // Generate a random level index
-        // depths(4) = 0 + ( std::rand() % ( no_levels ) );
+    //     // Eigen::VectorXi depths(5);
+    //     // depths.segment(0,4) = sorted_index.segment(0,4);
+    //     // // Generate a random level index
+    //     // depths(4) = 0 + ( std::rand() % ( no_levels ) );
 
-        // double prob = (double) std::rand() / RAND_MAX;
-        // if (prob <= probs(0))
-        //     index = depths(0);
-        // if (prob <= probs(0)+probs(1) && prob > probs(0))
-        //     index = depths(1);
-        // if (prob <= probs(0)+probs(1)+probs(2) && prob > probs(0)+probs(1))
-        //     index = depths(2);
-        // if (prob <= probs(0)+probs(1)+probs(2)+probs(3) && prob > probs(0)+probs(1)+probs(2))
-        //     index = depths(3);
-        // if (prob <= 1.0 && prob > probs(0)+probs(1)+probs(2)+probs(3))
-        //     index = depths(4);
+    //     // double prob = (double) std::rand() / RAND_MAX;
+    //     // if (prob <= probs(0))
+    //     //     index = depths(0);
+    //     // if (prob <= probs(0)+probs(1) && prob > probs(0))
+    //     //     index = depths(1);
+    //     // if (prob <= probs(0)+probs(1)+probs(2) && prob > probs(0)+probs(1))
+    //     //     index = depths(2);
+    //     // if (prob <= probs(0)+probs(1)+probs(2)+probs(3) && prob > probs(0)+probs(1)+probs(2))
+    //     //     index = depths(3);
+    //     // if (prob <= 1.0 && prob > probs(0)+probs(1)+probs(2)+probs(3))
+    //     //     index = depths(4);
 
-        // ROS_INFO_STREAM("Top Candidates: " << depths.transpose() << "\n");
+    //     // ROS_INFO_STREAM("Top Candidates: " << depths.transpose() << "\n");
 
-        index = 0 + ( std::rand() % ( no_levels ) );
-        // Connection with nodes above
-        if (index-1 >= 0){
-            MakeConnections( node_list[index-1],node_list[index],ik_handler,node_map, boost_graph );
-        }
+    //     index = 0 + ( std::rand() % ( no_levels ) );
+    //     // Connection with nodes above
+    //     if (index-1 >= 0){
+    //         MakeConnections( node_list[index-1],node_list[index],ik_handler,node_map, boost_graph );
+    //     }
 
-        if (index+1 <= no_levels-1){
-            MakeConnections( node_list[index],node_list[index+1],ik_handler,node_map, boost_graph );
-        }
+    //     if (index+1 <= no_levels-1){
+    //         MakeConnections( node_list[index],node_list[index+1],ik_handler,node_map, boost_graph );
+    //     }
 
-        return true;
-    };
+    //     return true;
+    // };
 
-    bool EdgeConnections(ikHandler* ik_handler, std::vector<Eigen::VectorXi>& node_list,
-                    boost_graph* boost_graph, std::vector<node*>& node_map){
-        for (int index=0; index<node_list.size()-1; ++index)
-            MakeConnections( node_list[index],node_list[index+1],ik_handler,node_map, boost_graph );
-        return true;
-    };
+    // bool EdgeConnections(ikHandler* ik_handler, std::vector<Eigen::VectorXi>& node_list,
+    //                 boost_graph* boost_graph, std::vector<node*>& node_map){
+    //     for (int index=0; index<node_list.size()-1; ++index)
+    //         MakeConnections( node_list[index],node_list[index+1],ik_handler,node_map, boost_graph );
+    //     return true;
+    // };
 
     void NearestNode(ikHandler* ik_handler, WM::WM* wm, Eigen::VectorXd waypoint,
                 std::vector<Eigen::MatrixXd>& ff_frames, int depth,
