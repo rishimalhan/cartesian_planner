@@ -309,8 +309,7 @@ bool BuildRefineGraph(ikHandler* ik_handler, std::vector<Eigen::MatrixXd>& ff_fr
             else
                 src_bias[1] = true;
         }
-    
-
+        
         // ROS_INFO_STREAM("Applying Fwd progression");
         if(actions.GreedyProgression(ff_frames,ik_handler,wm,geo_filter,node_map,
                 node_list, graph, "fwd", src_bias[0], resource/2)){
@@ -325,14 +324,15 @@ bool BuildRefineGraph(ikHandler* ik_handler, std::vector<Eigen::MatrixXd>& ff_fr
             // ROS_INFO_STREAM("Fwd costs: Q: " << q_cost <<
             //     ". MinCost: " << actions.sampler.src_cost[0] << ". MaxCost: " << actions.sampler.src_cost[1]);
             actions.sampler.src_costs[0](actions.sampler.src_costs[0].size()-1) = q_cost;
-
-            if (actions.greedy_list[0].rows() > 0){
-                fwd_src.conservativeResize(fwd_src.rows()+1,9);
-                fwd_src.row(fwd_src.rows()-1) << node_map[actions.greedy_list[0](0,0)]->wp_qt.transpose() ,
-                                            wp_cost, q_cost;
-            }
+            // if (actions.greedy_list[0].rows() > 0){
+            //     int row_id = 0;
+            //     while (actions.greedy_list[0](0,row_id)!=-1){row_id++;}
+            //     fwd_src.conservativeResize(fwd_src.rows()+1,9);
+            //     fwd_src.row(fwd_src.rows()-1) << node_map[actions.greedy_list[0](0,row_id)]->wp_qt.transpose() ,
+            //                                 wp_cost, q_cost;
+            
+            // }
         }
-
         
 
 
@@ -351,11 +351,14 @@ bool BuildRefineGraph(ikHandler* ik_handler, std::vector<Eigen::MatrixXd>& ff_fr
             //     ". MinCost: " << actions.sampler.snk_cost[0] << ". MaxCost: " << actions.sampler.snk_cost[1]);
             actions.sampler.src_costs[1](actions.sampler.src_costs[1].size()-1) = q_cost;
 
-            if (actions.greedy_list[graph->no_levels-1].rows() > 0){
-                bck_src.conservativeResize(bck_src.rows()+1,9);
-                bck_src.row(bck_src.rows()-1) << node_map[actions.greedy_list[graph->no_levels-1](0,0)]->wp_qt.transpose() ,
-                                            wp_cost, q_cost;
-            }
+            // if (actions.greedy_list[graph->no_levels-1].rows() > 0){
+            //     int row_id = 0;
+            //     while (actions.greedy_list[graph->no_levels-1](0,row_id)!=-1){row_id++;}
+            //     bck_src.conservativeResize(bck_src.rows()+1,9);
+            //     bck_src.row(bck_src.rows()-1) << node_map[actions.greedy_list[graph->no_levels-1](0,row_id)]->wp_qt.transpose() ,
+            //                                 wp_cost, q_cost;
+            
+            // }
         }
 
         // actions.EdgeConnections(ik_handler, node_list, graph, node_map);

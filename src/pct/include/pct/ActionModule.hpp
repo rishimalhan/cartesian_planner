@@ -179,7 +179,10 @@ private:
         std::vector<int> ff_node = {depth,sampled_wps(0,0)};
         greedy_ff.push( ff_node );
         greedy_list[depth] = sampled_wps.block(0,1,1,8);
-        // ROS_WARN_STREAM("Picking SRC: " << sampled_wps(0,0));
+        // if (src_id==0)
+        //     ROS_WARN_STREAM("Picking FWD SRC: " << sampled_wps(0,0));
+        // if (src_id==1)
+        //     ROS_WARN_STREAM("Picking BCK SRC: " << sampled_wps(0,0));
         return true;
     }
 
