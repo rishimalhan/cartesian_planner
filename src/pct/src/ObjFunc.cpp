@@ -194,7 +194,7 @@ int main(int argc, char** argv){
     double cost = 0;
     int no_sols = 0;
     double exec_time = 0;
-    int max_trials = 10;
+    int max_trials = 30;
     Eigen::MatrixXd cost_histories;
     Eigen::MatrixXd wpcost_histories;
     Eigen::MatrixXd node_histories;

@@ -5,11 +5,11 @@ clc;
 figure
 hold on;
 
-% part = 'gear';
-% part = 'step_slab';
-% part = 'bath_tub';
-% part = 'boeing';
-part = 'fender';
+% part = 'gear'; opt_Cost = 6.09;
+% part = 'step_slab'; opt_Cost = 5.46;
+% part = 'bath_tub'; opt_Cost = 4.16;
+% part = 'boeing'; opt_Cost = 46.28;
+part = 'fender'; opt_Cost = 8.31;
 
 % g_cost_history = csvread( strcat(part,'/random_cost_histories.csv') );
 % n_history = csvread( strcat(part,'/random_node_histories.csv') );
@@ -30,12 +30,8 @@ n_history = csvread( strcat(part,'/srcbias_node_histories.csv') );
 m2 = getmean(g_cost_history,false);
 n2 = getmean(n_history,false);
 
-max_val = max( max(m1),max(m2) );
-min_val = min( min(m1),min(m2) );
-diff = max_val - min_val;
-
-m1 = (m1-min_val) / diff;
-m2 = (m2-min_val) / diff;
+m1 = m1 / opt_Cost;
+m2 = m2 / opt_Cost;
  
 plot(n1, m1, 'linewidth', 4)
 plot(n2, m2, 'linewidth', 4)

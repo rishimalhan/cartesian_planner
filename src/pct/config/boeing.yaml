@@ -53,15 +53,15 @@ viz_param:
         rob_speed: 10
     }
 
-tolerances: [ -10,10,-10,10,-180,180 ]
+tolerances: [ 0,0,0,0,-180,180 ]
 gen_path: true
 rob_config: [0,0,0,0,0,0]
-sampling_res: 10 # Degrees
+sampling_res: 5 # Degrees
 max_itr: 300
-tol_constraint: 0.3
+tol_constraint: 1.0
 opt_cost: 90.92
-opt_trigger: 0.002
-# opt_trigger: 1.0
+# opt_trigger: 0.02
+opt_trigger: 1.0
 alpha: 10
-neigh_thrld: 0.1
+neigh_thrld: 0.3
 k: 10

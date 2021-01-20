@@ -18,7 +18,7 @@
 
 bool isEdge(const std::vector<node*>& node_map, const int parent, const int child){
 
-    if ((node_map[child]->jt_config - node_map[parent]->jt_config).array().abs().maxCoeff() > 1.57)
+    if ((node_map[child]->jt_config - node_map[parent]->jt_config).array().abs().maxCoeff() > 0.87)
         return false;
     return true;
 }
@@ -95,7 +95,7 @@ bool build_graph(ikHandler* ik_handler, std::vector<Eigen::MatrixXd>& ff_frames,
             std::cout<< "##############################################################\n";
             return false;
         }
-        if (edges.size() > 35000000){ // Safe limit for not blowing up memory
+        if (edges.size() > 50000000){ // Safe limit for not blowing up memory
             std::cout<< "\n!!!CAUTION!!!\n";
             std::cout<< "Number of edges exceed the threshold of 35 million.\n";
             std::cout<< "Memory space more than 5 gb will be required.\n";

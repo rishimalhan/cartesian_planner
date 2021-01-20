@@ -60,11 +60,11 @@ rob_config: [0,0,0,0,0,0]
 # The first two values in tolerances are angle
 # theta1 and theta2 bounds
 # Three bounds in total for X Y and Z
-tolerances: [ 0,0,0,0,-90,90 ]
+tolerances: [ 0,0,0,0,-180,180 ]
 sampling_res: 5 # Degrees
 max_itr: 300
 tol_constraint: 1.0
-opt_trigger: 0.02
+opt_trigger: 0.015
 # opt_trigger: 1.0
 alpha: 10
 neigh_thrld: 0.2
