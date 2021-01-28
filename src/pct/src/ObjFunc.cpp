@@ -266,6 +266,7 @@ int main(int argc, char** argv){
         }
     }
     ROS_WARN_STREAM("Average execution time: " << exec_time / no_sols);
+    ROS_WARN_STREAM("Average Cost: " << cost / no_sols);
     main_timer.end();
     file_rw::file_write( csv_dir+"../test_case_specific_data/cost_histories.csv",cost_histories );
     file_rw::file_write( csv_dir+"../test_case_specific_data/node_histories.csv",node_histories );

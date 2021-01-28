@@ -117,7 +117,7 @@ node* generate_node(Eigen::VectorXd joint_cfg,
 
 int PickSource( std::vector<std::vector<int>>& unvisited_src,
                     std::vector<Eigen::MatrixXd>& ff_frames, int depth, bool src_bias ){
-    int ff_frame_id;
+    int ff_frame_id = -1;
     int src_id;
     if (depth==0)
         src_id = 0;
@@ -165,7 +165,6 @@ int PickSource( std::vector<std::vector<int>>& unvisited_src,
 
         double threshold = src_balls[src_id].mean()*neigh_thrld;
         double bad_threshold = src_balls[src_id].mean() + (1-src_balls[src_id].mean())*(1-neigh_thrld);
-
         if (reject_samples){
             for (int i=0; i<src_costs[src_id].size(); ++i){
                 if (src_balls[src_id](i) > bad_threshold){
@@ -186,7 +185,6 @@ int PickSource( std::vector<std::vector<int>>& unvisited_src,
                 }
             }
         }
-
         std::vector<int> sampleable_ids;
         // std::cout<< "Selecting Cost Value: ";
         for (int i=0; i<src_balls[src_id].size(); ++i){
@@ -207,7 +205,6 @@ int PickSource( std::vector<std::vector<int>>& unvisited_src,
                 }
             }
         }
-
         // std::cout<< std::endl;
 
         // for (auto id : sampleable_ids)
@@ -237,11 +234,13 @@ int PickSource( std::vector<std::vector<int>>& unvisited_src,
             unvisited_src[src_id].erase( it );
         }
         else{
-            // Generate a random ff_frame index
-            int index = 0 + ( std::rand() % ( unvisited_src[src_id].size() ) );
-            ff_frame_id = unvisited_src[src_id][index];
-            vector<int>::iterator it = unvisited_src[src_id].begin() + index;
-            unvisited_src[src_id].erase( it );
+            if (unvisited_src[src_id].size()!=0){
+                // Generate a random ff_frame index
+                int index = 0 + ( std::rand() % ( unvisited_src[src_id].size() ) );
+                ff_frame_id = unvisited_src[src_id][index];
+                vector<int>::iterator it = unvisited_src[src_id].begin() + index;
+                unvisited_src[src_id].erase( it );
+            }
         }
     }
     return ff_frame_id;
@@ -412,6 +411,8 @@ bool GenNodeSamples(std::vector<Eigen::MatrixXd>& ff_frames, ikHandler* ik_handl
     if (isSource){
         optID.conservativeResize(1);
         optID(0) = PickSource( unvisited_src, ff_frames, depth, src_bias);
+        if (optID(0)==-1)
+            return false;
         // optID(0) = 680; // Gear source
         // optID(0) = 717; // Bath tub source
         // optID(0) = 233; // Gear source
@@ -452,7 +453,6 @@ bool GenNodeSamples(std::vector<Eigen::MatrixXd>& ff_frames, ikHandler* ik_handl
         }
         // std::cout<< "\n";
     }
-
     bool samples_found = false;
     for (int i=0; i<optID.size(); ++i){
         if (isCreated[depth](optID(i),0) == 0) // Under collision
@@ -675,7 +675,8 @@ void NearestNode(ikHandler* ik_handler, WM::WM* wm, Eigen::VectorXd waypoint,
     // int counter = 0;
     // Eigen::MatrixXd wps(101,12);
     // wps.row(0) = waypoint.transpose();
-    int no_neigh = ceil(resource*ff_frames[depth].rows());
+    // int no_neigh = ceil(resource*ff_frames[depth].rows());
+    int no_neigh = resource;
     Eigen::VectorXd wp_quat = GetQTWp(waypoint);
     // while( (trial_itr < ff_frames[depth].rows()-1) && !node_created ){
     // while( counter < 2000 && trial_itr < ff_frames[depth].rows()-1 ){

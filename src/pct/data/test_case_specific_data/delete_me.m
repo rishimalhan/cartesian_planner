@@ -5,11 +5,11 @@ clc;
 figure
 hold on;
 
-% part = 'gear'; opt_Cost = 6.09;
-% part = 'step_slab'; opt_Cost = 5.46;
-% part = 'bath_tub'; opt_Cost = 4.16;
-% part = 'boeing'; opt_Cost = 46.28;
-part = 'fender'; opt_Cost = 8.31;
+% part = 'gear'; opt_Cost = 6.09; id= 'D';
+% part = 'step_slab'; opt_Cost = 5.46; id= 'B';
+% part = 'bath_tub'; opt_Cost = 4.16; id= 'A';
+part = 'boeing'; opt_Cost = 46.28; id= 'C';
+% part = 'fender'; opt_Cost = 8.31; id= 'E';
 
 % g_cost_history = csvread( strcat(part,'/random_cost_histories.csv') );
 % n_history = csvread( strcat(part,'/random_node_histories.csv') );
@@ -39,8 +39,10 @@ plot(n2, m2, 'linewidth', 4)
 set(gca,'fontsize',30)
 set(gcf, 'color', [1,1,1])
 
-legend( 'Greedy',  'G+B' )
-% title('Bath Tub')
+legend( 'WS-heuristic',  'WS-heuristic + SRC&SNK Bias' )
+title( ['Part: ',id] )
+xlabel('Number of Nodes Evaluated')
+ylabel('Ratio of Cost to Optimal Cost')
 return;
 
 

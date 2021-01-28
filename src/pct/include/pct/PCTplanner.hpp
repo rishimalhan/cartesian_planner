@@ -437,15 +437,17 @@ bool BuildRefineGraph(ikHandler* ik_handler, std::vector<Eigen::MatrixXd>& ff_fr
         itr ++;
     }
     ROS_WARN_STREAM("Cost Profile: " << cost_hist.row(0) << "\n");
-    // // Smoothing
-    // if (path_found){
-    //     ROS_INFO_STREAM("Applying Smoothing");
-    //     // Smoothing
-    //     for (int i=0; i<graph->no_levels; ++i){
-    //         actions.NearestNode( ik_handler, wm, node_map[path(i)]->wp, ff_frames, i,
-    //             graph, geo_filter, node_map, node_list, 0.005 );
-    //     }
-    // }
+
+    // Smoothing
+    if (path_found){
+        ROS_INFO_STREAM("Applying Smoothing");
+        // Smoothing
+        for (int i=0; i<graph->no_levels; ++i){
+            actions.NearestNode( ik_handler, wm, node_map[path(i)]->wp, ff_frames, i,
+                graph, geo_filter, node_map, node_list, 5 );
+        }
+    }
+    
 
     // int tot_cnt = 0;
     // int hits = 0;

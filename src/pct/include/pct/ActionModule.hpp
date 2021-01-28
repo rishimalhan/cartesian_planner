@@ -149,7 +149,6 @@ private:
             if (src_wp.size()!=0){
                 sampler.src_balls[src_id].conservativeResize(sampler.src_balls[src_id].size()+1);
                 sampler.src_costs[src_id].conservativeResize(sampler.src_costs[src_id].size()+1);
-
                 if (src_id==0){
                     sampler.src_waypoints.conservativeResize(7,sampler.src_waypoints.cols()+1);
                     sampler.src_waypoints.col(sampler.src_waypoints.cols()-1) = src_wp;
@@ -159,11 +158,9 @@ private:
                     sampler.snk_waypoints.conservativeResize(7,sampler.snk_waypoints.cols()+1);
                     sampler.snk_waypoints.col(sampler.snk_waypoints.cols()-1) = src_wp;
                 }
-
-                sampler.src_ids[src_id].conservativeResize(sampler.src_ids[src_id].size()+1);
-                sampler.src_ids[src_id](sampler.src_ids[src_id].size()-1) = unv_id;
+                // sampler.src_ids[src_id].conservativeResize(sampler.src_ids[src_id].size()+1);
+                // sampler.src_ids[src_id](sampler.src_ids[src_id].size()-1) = unv_id;
             }
-
             if (!samples_found){
                 sampler.src_costs[src_id](sampler.src_costs[src_id].size()-1) = 1e8;
                 if (depth==0)
@@ -176,13 +173,10 @@ private:
             }
             sourceFound = true;
         }
+        // ROS_WARN_STREAM(sampled_wps);
         std::vector<int> ff_node = {depth,sampled_wps(0,0)};
         greedy_ff.push( ff_node );
         greedy_list[depth] = sampled_wps.block(0,1,1,8);
-        // if (src_id==0)
-        //     ROS_WARN_STREAM("Picking FWD SRC: " << sampled_wps(0,0));
-        // if (src_id==1)
-        //     ROS_WARN_STREAM("Picking BCK SRC: " << sampled_wps(0,0));
         return true;
     }
 
