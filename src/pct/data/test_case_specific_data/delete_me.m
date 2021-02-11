@@ -5,11 +5,46 @@ clc;
 figure
 hold on;
 
-% part = 'gear'; opt_Cost = 6.09; id= 'D';
+part = 'gear'; opt_Cost = 6.09; id= 'D';
 % part = 'step_slab'; opt_Cost = 5.46; id= 'B';
 % part = 'bath_tub'; opt_Cost = 4.16; id= 'A';
-part = 'boeing'; opt_Cost = 46.28; id= 'C';
+% part = 'boeing'; opt_Cost = 46.48; id= 'C';
 % part = 'fender'; opt_Cost = 8.31; id= 'E';
+
+
+
+
+% % Random search
+% opt_Costs = [ 4.16, 5.46, 44.09, 7.31 ];
+% rnd1m = mean(csvread('bath_tub/rnd_cost_histories.csv')) / opt_Costs(1);
+% rnd1n = mean(csvread('bath_tub/rnd_node_histories.csv'));
+% 
+% rnd2m = mean(csvread('step_slab/rnd_cost_histories.csv')) / opt_Costs(2);
+% rnd2n = mean(csvread('step_slab/rnd_node_histories.csv'));
+% 
+% rnd3m = mean(csvread('boeing/rnd_cost_histories.csv')) / opt_Costs(3);
+% rnd3n = mean(csvread('boeing/rnd_node_histories.csv'));
+% 
+% rnd4m = mean(csvread('fender/rnd_cost_histories.csv')) / opt_Costs(4);
+% rnd4n = mean(csvread('fender/rnd_node_histories.csv'));
+% 
+%  
+% plot(rnd1n, rnd1m, 'k', 'linewidth', 8)
+% plot(rnd2n, rnd2m, 'g', 'linewidth', 8)
+% plot(rnd3n, rnd3m, 'b', 'linewidth', 8)
+% plot(rnd4n, rnd4m, 'm', 'linewidth', 8)
+% 
+% set(gca,'fontsize',50, 'FontWeight','Bold')
+% set(gcf, 'color', [1,1,1])
+% 
+% legend( 'Part:A',  'Part:B', 'Part:C', 'Part:E' )
+% title( 'Random Sampling' )
+% xlabel('# Nodes Evaluated')
+% ylabel('Cost Ratio')
+% 
+% return;
+
+
 
 % g_cost_history = csvread( strcat(part,'/random_cost_histories.csv') );
 % n_history = csvread( strcat(part,'/random_node_histories.csv') );
@@ -33,16 +68,16 @@ n2 = getmean(n_history,false);
 m1 = m1 / opt_Cost;
 m2 = m2 / opt_Cost;
  
-plot(n1, m1, 'linewidth', 4)
-plot(n2, m2, 'linewidth', 4)
+plot(n1, m1, 'b', 'linewidth', 8)
+plot(n2, m2, 'g', 'linewidth', 8)
 
-set(gca,'fontsize',30)
+set(gca,'fontsize',50, 'FontWeight','Bold')
 set(gcf, 'color', [1,1,1])
 
-legend( 'WS-heuristic',  'WS-heuristic + SRC&SNK Bias' )
+legend( 'No Bias',  'With Bias' )
 title( ['Part: ',id] )
-xlabel('Number of Nodes Evaluated')
-ylabel('Ratio of Cost to Optimal Cost')
+xlabel('# Nodes Evaluated')
+ylabel('Cost Ratio')
 return;
 
 

@@ -280,6 +280,7 @@ bool BuildRefineGraph(ikHandler* ik_handler, std::vector<Eigen::MatrixXd>& ff_fr
     while(itr < max_itr){
         // int action = GenAction(feature_vec,cell_prob, past_action);
 
+        // ################################################ BEGIN
         // Greedy
         x = ff_frames[0].rows()-actions.unvisited_src[0].size();
         if (x > trigger_itr[0]){
@@ -360,29 +361,16 @@ bool BuildRefineGraph(ikHandler* ik_handler, std::vector<Eigen::MatrixXd>& ff_fr
             
             // }
         }
-
-        // actions.EdgeConnections(ik_handler, node_list, graph, node_map);
-        
-        // if (trigger_random){
-        //     // Random
-        //     actions.NodeAdditions(ff_frames, ik_handler, wm, geo_filter, node_map,
-        //         node_list, graph, 0.001);
-        // }
+        // ################################################ END
 
 
-        // if (src_bias)
-        //     return false;
 
-        // if (actions.infeasibility){
-        //     ROS_WARN_STREAM("All IKs infeasible at a level");
-        //     return false;
-        // }
-        // double dist_opt = 0;
-        // if (path_found){
-        //     for (int i=0; i<graph->no_levels-1; ++i)
-        //         wp_cost += (node_map[path(i+1)]->wp - node_map[path(i)]->wp).norm();
-        //     dist_opt = (node_map[path(0)]->wp-ff_frames[0].row(245).transpose()).norm();
-        // }
+
+        // // Random Sampling
+        // actions.NodeAdditions(ff_frames, ik_handler, wm, geo_filter, node_map,
+        //     node_list, graph, 10);
+
+
 
         graph->no_nodes = num_vertices(graph->g);
         graph->no_edges = num_edges(graph->g);

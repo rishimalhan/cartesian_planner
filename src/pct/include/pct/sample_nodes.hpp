@@ -607,7 +607,7 @@ bool RandomSample(std::vector<Eigen::MatrixXd>& ff_frames, ikHandler* ik_handler
     }
 
     int itr = 0;
-    int max_resc = ceil( resource * ff_frames[depth].rows() );
+    int max_resc = resource;
     while (unvisited_samples.size()!=0 && itr < max_resc){
         // Generate a random ff_frame index
         int index = 0 + ( std::rand() % ( unvisited_samples.size() ) );
